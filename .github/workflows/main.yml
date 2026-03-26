@@ -1,0 +1,22 @@
+name: Auto Update Index
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Generate index.json
+        run: node generate-index.js
+      - name: Commit and Push changes
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add index.json
+          git commit -m "chore: auto-update index.json" || echo "No changes to commit"
+          git push
