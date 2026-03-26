@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+
+<html lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Exploração de Olhos e Sorriso Refinados</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        :root {
+            --primary: #6366f1; /* More vibrant indigo */
+            --secondary: #f43f5e; /* More vibrant rose */
+            --bg: #000000;
+            --text: #f8fafc;
+            --glow-primary: rgba(99, 102, 241, 0.6);
+            --glow-secondary: rgba(244, 63, 94, 0.6);
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            max-width: 600px;
+        }
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        .header p {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .card {
+            background: #050505;
+            padding: 2.5rem;
+            border-radius: 2rem;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 0 40px -10px var(--glow-primary);
+            transition: box-shadow 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 0 60px -5px var(--glow-primary);
+        }
+        .variation-title {
+            font-size: 1.125rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 10px var(--glow-primary);
+        }
+        svg {
+            width: 250px;
+            height: 250px;
+            margin-bottom: 1rem;
+            overflow: visible;
+        }
+        
+        /* Neon Glow Filters */
+        .neon-primary {
+            filter: drop-shadow(0 0 2px #fff) 
+                    drop-shadow(0 0 5px var(--primary)) 
+                    drop-shadow(0 0 15px var(--primary))
+                    drop-shadow(0 0 30px var(--primary));
+        }
+        .neon-secondary {
+            filter: drop-shadow(0 0 1px #fff)
+                    drop-shadow(0 0 4px var(--secondary)) 
+                    drop-shadow(0 0 12px var(--secondary))
+                    drop-shadow(0 0 25px var(--secondary));
+        }
+
+        .head-shape {
+            fill: url(#headGradientLiquid);
+            stroke: var(--primary);
+            stroke-width: 1;
+            stroke-opacity: 0.2;
+            filter: blur(2px);
+        }
+
+        .mouth-main, .eye-line {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 12;
+            stroke-linecap: round;
+            opacity: 1;
+        }
+        .vibration-line, .eye-vibration {
+            fill: none;
+            stroke: var(--secondary);
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 1;
+        }
+        .eye-vibration {
+            stroke-width: 4;
+        }
+        .controls {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: var(--primary);
+            background: #111827;
+            border-radius: 9999px;
+            height: 4px;
+            appearance: none;
+        }
+        .labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .debug-mini {
+            margin-top: 2rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.7rem;
+            color: #64748b;
+            background: #0a0a0a;
+            padding: 0.6rem 1rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #111827;
+        }
+        .label-val, .freq-val {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+<h1>Exploração de Olhos e Sorriso Refinados</h1>
+<p>Variações de comportamento da camada secundária durante a transição de expressões positivas com estética neon vibrante.</p>
+</div>
+<div class="grid-container">
+<!-- Variation A -->
+<div class="card" id="block-a">
+<h2 class="variation-title">A: Harmonic Lift</h2>
+<svg viewbox="0 0 200 200">
+<defs>
+<radialgradient cx="50%" cy="40%" id="headGradientLiquid" r="60%">
+<stop offset="0%" stop-color="#312e81" stop-opacity="0.9"></stop>
+<stop offset="60%" stop-color="#1e1b4b" stop-opacity="0.6"></stop>
+<stop offset="100%" stop-color="#000000" stop-opacity="0.2"></stop>
+</radialgradient>
+</defs>
+<path class="head-shape" id="head-a"></path>
+<g class="neon-primary">
+<path class="eye-line" id="eye-l-a"></path>
+<path class="eye-line" id="eye-r-a"></path>
+<path class="mouth-main" id="mouth-a"></path>
+</g>
+<g class="neon-secondary">
+<path class="eye-vibration" id="eye-l-vib-a"></path>
+<path class="eye-vibration" id="eye-r-vib-a"></path>
+<path class="vibration-line" d="" id="vib-a"></path>
+</g>
+</svg>
+<div class="controls">
+<input class="slider" data-var="a" max="100" min="0" type="range" value="0"/>
+<div class="labels">
+<span>Alegre</span>
+<span>Neutro</span>
+<span>Tenso</span>
+</div>
+</div>
+<div class="debug-mini">
+<span>Estado: <b class="label-val">Alegre</b></span>
+<span>Freq: <b class="freq-val">0.5</b></span>
+</div>
+</div>
+<!-- Variation B -->
+<div class="card" id="block-b">
+<h2 class="variation-title">B: Lateral Expansion</h2>
+<svg viewbox="0 0 200 200">
+<path class="head-shape" id="head-b"></path>
+<g class="neon-primary">
+<path class="eye-line" id="eye-l-b"></path>
+<path class="eye-line" id="eye-r-b"></path>
+<path class="mouth-main" id="mouth-b"></path>
+</g>
+<g class="neon-secondary">
+<path class="eye-vibration" id="eye-l-vib-b"></path>
+<path class="eye-vibration" id="eye-r-vib-b"></path>
+<path class="vibration-line" d="" id="vib-b"></path>
+</g>
+</svg>
+<div class="controls">
+<input class="slider" data-var="b" max="100" min="0" type="range" value="0"/>
+<div class="labels">
+<span>Alegre</span>
+<span>Neutro</span>
+<span>Tenso</span>
+</div>
+</div>
+<div class="debug-mini">
+<span>Estado: <b class="label-val">Alegre</b></span>
+<span>Freq: <b class="freq-val">0.5</b></span>
+</div>
+</div>
+<!-- Variation C -->
+<div class="card" id="block-c">
+<h2 class="variation-title">C: Soft Bounce</h2>
+<svg viewbox="0 0 200 200">
+<path class="head-shape" id="head-c"></path>
+<g class="neon-primary">
+<path class="eye-line" id="eye-l-c"></path>
+<path class="eye-line" id="eye-r-c"></path>
+<path class="mouth-main" id="mouth-c"></path>
+</g>
+<g class="neon-secondary">
+<path class="eye-vibration" id="eye-l-vib-c"></path>
+<path class="eye-vibration" id="eye-r-vib-c"></path>
+<path class="vibration-line" d="" id="vib-c"></path>
+</g>
+</svg>
+<div class="controls">
+<input class="slider" data-var="c" max="100" min="0" type="range" value="0"/>
+<div class="labels">
+<span>Alegre</span>
+<span>Neutro</span>
+<span>Tenso</span>
+</div>
+</div>
+<div class="debug-mini">
+<span>Estado: <b class="label-val">Alegre</b></span>
+<span>Freq: <b class="freq-val">0.5</b></span>
+</div>
+</div>
+</div>
+<script>
+    const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+    const lerpFactor = 0.08;
+    let time = 0;
+
+    const variations = {
+        a: {
+            mouth: document.getElementById('mouth-a'),
+            vib: document.getElementById('vib-a'),
+            eyeL: document.getElementById('eye-l-a'),
+            eyeR: document.getElementById('eye-r-a'),
+            eyeLVib: document.getElementById('eye-l-vib-a'),
+            eyeRVib: document.getElementById('eye-r-vib-a'),
+            head: document.getElementById('head-a'),
+            slider: document.querySelector('[data-var="a"]'),
+            label: document.querySelector('#block-a .label-val'),
+            freq: document.querySelector('#block-a .freq-val'),
+            target: { yControl: 170, yEnds: 110, amp: 4, freq: 0.5, chaos: 0, bounce: 0, eyeCurve: -15, eyeY: 60, headWidth: 90, headHeight: 80, headBottom: 175, mouthScale: 1.0 },
+            current: { yControl: 170, yEnds: 110, amp: 4, freq: 0.5, chaos: 0, bounce: 0, eyeCurve: -15, eyeY: 60, headWidth: 90, headHeight: 80, headBottom: 175, mouthScale: 1.0 }
+        },
+        b: {
+            mouth: document.getElementById('mouth-b'),
+            vib: document.getElementById('vib-b'),
+            eyeL: document.getElementById('eye-l-b'),
+            eyeR: document.getElementById('eye-r-b'),
+            eyeLVib: document.getElementById('eye-l-vib-b'),
+            eyeRVib: document.getElementById('eye-r-vib-b'),
+            head: document.getElementById('head-b'),
+            slider: document.querySelector('[data-var="b"]'),
+            label: document.querySelector('#block-b .label-val'),
+            freq: document.querySelector('#block-b .freq-val'),
+            target: { yControl: 170, yEnds: 110, amp: 4, freq: 0.5, chaos: 0, bounce: 0, eyeCurve: -15, eyeY: 60, headWidth: 90, headHeight: 80, headBottom: 175, mouthScale: 1.0 },
+            current: { yControl: 170, yEnds: 110, amp: 4, freq: 0.5, chaos: 0, bounce: 0, eyeCurve: -15, eyeY: 60, headWidth: 90, headHeight: 80, headBottom: 175, mouthScale: 1.0 }
+        },
+        c: {
+            mouth: document.getElementById('mouth-c'),
+            vib: document.getElementById('vib-c'),
+            eyeL: document.getElementById('eye-l-c'),
+            eyeR: document.getElementById('eye-r-c'),
+            eyeLVib: document.getElementById('eye-l-vib-c'),
+            eyeRVib: document.getElementById('eye-r-vib-c'),
+            head: document.getElementById('head-c'),
+            slider: document.querySelector('[data-var="c"]'),
+            label: document.querySelector('#block-c .label-val'),
+            freq: document.querySelector('#block-c .freq-val'),
+            target: { yControl: 170, yEnds: 110, amp: 4, freq: 0.5, chaos: 0, bounce: 0, eyeCurve: -15, eyeY: 60, headWidth: 90, headHeight: 80, headBottom: 175, mouthScale: 1.0 },
+            current: { yControl: 170, yEnds: 110, amp: 4, freq: 0.5, chaos: 0, bounce: 0, eyeCurve: -15, eyeY: 60, headWidth: 90, headHeight: 80, headBottom: 175, mouthScale: 1.0 }
+        }
+    };
+
+    function updateState(id, val) {
+        const v = variations[id];
+        
+        if (val <= 50) {
+            const t = val / 50;
+            v.target.yControl = 170 - (val / 100) * 120;
+            v.target.yEnds = 110 - (val < 30 ? (30 - val) * 0.5 : 0);
+            
+            v.target.eyeCurve = lerp(-15, 1, t);
+            v.target.eyeY = 60;
+            
+            // Liquid Head Logic: Happy is very wide and voluminous at the bottom
+            v.target.headWidth = lerp(105, 80, t); 
+            v.target.headHeight = 75;
+            v.target.headBottom = lerp(185, 170, t); // Bulging chin area
+            v.target.mouthScale = lerp(1.1, 0.9, t);
+
+            v.target.chaos = 0;
+            v.label.textContent = val < 20 ? "Alegre" : "Calmo";
+
+            if (id === 'a') {
+                v.target.amp = lerp(4, 2, t);
+                v.target.freq = lerp(0.5, 0.2, t);
+                v.target.bounce = 0;
+            } else if (id === 'b') {
+                v.target.amp = lerp(5, 2, t);
+                v.target.freq = lerp(0.3, 0.2, t);
+                v.target.bounce = 0;
+            } else if (id === 'c') {
+                v.target.amp = lerp(3, 2, t);
+                v.target.freq = lerp(0.4, 0.2, t);
+                v.target.bounce = lerp(2, 0, t);
+            }
+        } else {
+            const t = (val - 50) / 50;
+            
+            v.target.yControl = 110 - (val - 50) * 0.2;
+            v.target.yEnds = 110 + (val - 50) * 0.1333;
+            
+            v.target.eyeCurve = lerp(1, 10, t);
+            v.target.eyeY = 60 + (t * 4);
+            
+            // Liquid Head Logic: Tense is squashed and stretched vertically
+            v.target.headWidth = lerp(80, 75, t);
+            v.target.headHeight = lerp(75, 100, t); 
+            v.target.headBottom = lerp(170, 150, t); // Squashed bottom (but still rounded)
+            v.target.mouthScale = lerp(0.9, 0.75, t);
+
+            v.target.amp = lerp(2, 4.67, t); 
+            v.target.freq = lerp(0.2, 6.0, t);
+            v.target.chaos = lerp(0, 3.5, t);
+            v.target.bounce = 0;
+            v.label.textContent = val > 85 ? "Tenso" : "Preocupado";
+        }
+        v.freq.textContent = v.target.freq.toFixed(1);
+    }
+
+    function animate() {
+        time += 0.04;
+
+        Object.keys(variations).forEach(id => {
+            const v = variations[id];
+            
+            v.current.yControl = lerp(v.current.yControl, v.target.yControl, lerpFactor);
+            v.current.yEnds = lerp(v.current.yEnds, v.target.yEnds, lerpFactor);
+            v.current.amp = lerp(v.current.amp, v.target.amp, lerpFactor);
+            v.current.freq = lerp(v.current.freq, v.target.freq, lerpFactor);
+            v.current.chaos = lerp(v.current.chaos, v.target.chaos, lerpFactor);
+            v.current.bounce = lerp(v.current.bounce, v.target.bounce, lerpFactor);
+            v.current.eyeCurve = lerp(v.current.eyeCurve, v.target.eyeCurve, lerpFactor);
+            v.current.eyeY = lerp(v.current.eyeY, v.target.eyeY, lerpFactor);
+            v.current.headWidth = lerp(v.current.headWidth, v.target.headWidth, lerpFactor);
+            v.current.headHeight = lerp(v.current.headHeight, v.target.headHeight, lerpFactor);
+            v.current.headBottom = lerp(v.current.headBottom, v.target.headBottom, lerpFactor);
+            v.current.mouthScale = lerp(v.current.mouthScale, v.target.mouthScale, lerpFactor);
+
+            const pulse = Math.sin(time * 2) * 1.5;
+            const breathingScale = 1 + Math.sin(time * 1.5) * 0.03;
+            const breathingOpacity = 0.7 + Math.sin(time * 1.5) * 0.1;
+
+            // Update Liquid Head Shape
+            const centerX = 100;
+            const centerY = 100;
+            const w = v.current.headWidth * breathingScale;
+            const h = v.current.headHeight * breathingScale;
+            const bottom = v.current.headBottom;
+            const top = centerY - h;
+            const left = centerX - w;
+            const right = centerX + w;
+
+            // Modular Liquid Path with extra rounding for 'abaloado' effect
+            const headPath = `
+                M ${centerX},${top} 
+                C ${right + 25},${top + 10} ${right + 35},${bottom - 40} ${centerX},${bottom}
+                C ${left - 35},${bottom - 40} ${left - 25},${top + 10} ${centerX},${top}
+            `;
+            v.head.setAttribute('d', headPath);
+            v.head.style.opacity = breathingOpacity;
+
+            const currentYEnds = v.current.yEnds + pulse;
+            const currentYControl = v.current.yControl - (pulse * 2);
+
+            // Update Main Mouth - Proportional scaling to stay within volume
+            const mouthBaseWidth = 120;
+            const scaledMouthWidth = mouthBaseWidth * v.current.mouthScale;
+            const mouthXLeft = 100 - scaledMouthWidth/2;
+            const mouthXRight = 100 + scaledMouthWidth/2;
+
+            const mouthD = `M ${mouthXLeft},${currentYEnds.toFixed(2)} Q 100,${currentYControl.toFixed(2)} ${mouthXRight},${currentYEnds.toFixed(2)}`;
+            v.mouth.setAttribute('d', mouthD);
+
+            // Update Eyes - Also scale positions slightly
+            const eyeWidth = 15;
+            const eyeGap = 30 * v.current.mouthScale;
+            const eyeL_X = 100 - eyeGap;
+            const eyeR_X = 100 + eyeGap;
+            const eyeY = v.current.eyeY + (pulse * 0.5);
+            const curve = v.current.eyeCurve;
+
+            // Main Eyes
+            const eyeLPath = `M ${eyeL_X - eyeWidth/2},${eyeY} Q ${eyeL_X},${eyeY + curve} ${eyeL_X + eyeWidth/2},${eyeY}`;
+            const eyeRPath = `M ${eyeR_X - eyeWidth/2},${eyeY} Q ${eyeR_X},${eyeY + curve} ${eyeR_X + eyeWidth/2},${eyeY}`;
+            v.eyeL.setAttribute('d', eyeLPath);
+            v.eyeR.setAttribute('d', eyeRPath);
+
+            // Eye Vibrations (Energy layer)
+            const createEyeVib = (centerX, baseY, side) => {
+                const steps = 15;
+                let pts = [];
+                for (let i = 0; i <= steps; i++) {
+                    const t = i / steps;
+                    const x = (centerX - eyeWidth/2) + (t * eyeWidth);
+                    const yBase = (1 - t) * (1 - t) * baseY + 2 * (1 - t) * t * (baseY + curve) + t * t * baseY;
+                    const wave = Math.sin(t * Math.PI * v.current.freq * 2 + time * 2.5);
+                    const jitter = Math.sin(t * 10 - time * 6) * v.current.chaos * 0.4;
+                    const envelope = Math.sin(t * Math.PI);
+                    const offset = (wave * (v.current.amp * 0.5) + jitter) * envelope;
+                    pts.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(2)},${(yBase + offset).toFixed(2)}`);
+                }
+                return pts.join(' ');
+            };
+
+            v.eyeLVib.setAttribute('d', createEyeVib(eyeL_X, eyeY, 'L'));
+            v.eyeRVib.setAttribute('d', createEyeVib(eyeR_X, eyeY, 'R'));
+
+            // Update Mouth Vibration Line
+            const steps = 60;
+            let points = [];
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const x = (1 - t) * (1 - t) * mouthXLeft + 2 * (1 - t) * t * 100 + t * t * mouthXRight;
+                const yBase = (1 - t) * (1 - t) * currentYEnds + 2 * (1 - t) * t * currentYControl + t * t * currentYEnds;
+                const wave1 = Math.sin(t * Math.PI * v.current.freq * 5 + time * 1.5);
+                const wave2 = Math.sin(t * Math.PI * 40 - time * 8.0) * v.current.chaos;
+                const breathing = Math.sin(time * 1.2) * v.current.bounce;
+                const envelope = Math.sin(t * Math.PI);
+                const waveOffset = (wave1 + wave2) * v.current.amp * envelope + (breathing * envelope);
+                points.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(2)},${(yBase + waveOffset).toFixed(2)}`);
+            }
+            v.vib.setAttribute('d', points.join(' '));
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    Object.keys(variations).forEach(id => {
+        variations[id].slider.addEventListener('input', (e) => updateState(id, parseInt(e.target.value)));
+        updateState(id, 0);
+    });
+
+    animate();
+</script>
+</body></html>

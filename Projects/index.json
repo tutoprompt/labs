@@ -1,6 +1,12 @@
 [
-  "project-1.html",
-  "project-2.html",
-  "project-3.html",
-	"Claude_Volcano_Simulator.html"
+  { "title": "Claude Volcano Simulator", "url": "Projects/Claude_Volcano_Simulator.html" },
+  { "title": "BCards", "url": "Projects/BCards.html" },
+  { "title": "Soul", "url": "Projects/Soul.html" },
+  { "title": "Persona Ai", "url": "Projects/Persona_Ai.html" },
+  { "title": "Tralha Queue", "url": "Projects/Tralha_Queue_.html" },
+  { "title": "Weaviews stitch 03", "url": "Projects/Weaviews_stitch_03.html" },
+  { "title": "Weaviews claude 03", "url": "Projects/Weaviews_claude_03.html" },
+  { "title": "Weaviews manu 04", "url": "Projects/Weaviews_manu_04.html" },
+  { "title": "Volcano", "url": "Projects/Volcano.html" },
+  { "title": "Elements Base", "url": "Projects/Elements_Base.html" }
 ]

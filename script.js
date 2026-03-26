@@ -1,70 +1,91 @@
-const grid = document.getElementById('grid');
-const counter = document.getElementById('project-count');
+const grid = document.getElementById("grid");
+const counter = document.getElementById("project-count");
 
-async function getTitleFromIframe(iframe, fallbackTitle) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => resolve(fallbackTitle), 2000);
-
-    iframe.addEventListener('load', () => {
-      clearTimeout(timeout);
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc) return resolve(fallbackTitle);
-
-        const title = doc.querySelector('title')?.textContent?.trim()
-          || doc.querySelector('h1')?.textContent?.trim()
-          || fallbackTitle;
-
-        resolve(title);
-      } catch {
-        resolve(fallbackTitle);
-      }
-    }, { once: true });
-  });
-}
+console.log("Script initialized. Grid:", grid, "Counter:", counter);
 
 function slugToTitle(filename) {
+  if (typeof filename === "object" && filename !== null) {
+    if (filename.title) return filename.title;
+    if (filename.url) {
+      const parts = filename.url.split("/");
+      return slugToTitle(parts[parts.length - 1]);
+    }
+    return "Untitled Project";
+  }
+
   return filename
-    .replace(/\.html$/i, '')
-    .replace(/[-_]/g, ' ')
+    .replace(/\.html$/i, "")
+    .replace(/[-_]/g, " ")
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function createCard(file, index) {
-  const path = `Projects/${file}`;
-  const fallback = slugToTitle(file);
+function createCard(item, index) {
+  let path, title, htmlFilename;
+  
+  if (typeof item === "object" && item !== null) {
+    path = item.url;
+    if (!path.startsWith("Projects/")) {
+        path = `Projects/${path}`;
+    }
+    htmlFilename = item.url.split("/").pop();
+    title = item.title || slugToTitle(item.url);
+  } else {
+    path = `Projects/${item}`;
+    htmlFilename = item;
+    title = slugToTitle(item);
+  }
 
-  const card = document.createElement('article');
-  card.className = 'card';
+  console.log(`Creating card ${index}:`, { title, path, htmlFilename });
 
-  // Preview
-  const previewWrap = document.createElement('div');
-  previewWrap.className = 'card-preview';
+  const card = document.createElement("article");
+  card.className = "card";
 
-  const iframe = document.createElement('iframe');
-  iframe.loading = 'lazy';
-  iframe.title = fallback;
-  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-  previewWrap.appendChild(iframe);
+  const previewWrap = document.createElement("div");
+  previewWrap.className = "card-preview";
+  
+  // Criar elemento de vídeo
+  const video = document.createElement("video");
+  video.className = "card-video";
+  video.autoplay = true;
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.preload = "metadata";
+  video.controls = false;
+  
+  // Extrair nome base do arquivo (sem extensão)
+  const baseName = htmlFilename.replace(/\.html$/i, "");
+  
+  // Extensões de vídeo suportadas
+  const videoExtensions = ["mp4", "webm", "mov", "avi", "mkv"];
+  
+  // Criar sources para cada extensão
+  videoExtensions.forEach(ext => {
+    const source = document.createElement("source");
+    source.src = `Projects/${baseName}.${ext}`;
+    source.type = `video/${ext === "mkv" ? "x-matroska" : ext}`;
+    video.appendChild(source);
+  });
+  
+  previewWrap.appendChild(video);
 
-  // Info
-  const info = document.createElement('div');
-  info.className = 'card-info';
+  const info = document.createElement("div");
+  info.className = "card-info";
+  
+  const idx = document.createElement("span");
+  idx.className = "card-index";
+  idx.textContent = String(index + 1).padStart(2, "0");
 
-  const idx = document.createElement('span');
-  idx.className = 'card-index';
-  idx.textContent = String(index + 1).padStart(2, '0');
+  const titleEl = document.createElement("span");
+  titleEl.className = "card-title";
+  titleEl.textContent = title;
 
-  const titleEl = document.createElement('span');
-  titleEl.className = 'card-title';
-  titleEl.textContent = fallback;
-
-  const link = document.createElement('a');
-  link.className = 'card-link';
+  const link = document.createElement("a");
+  link.className = "card-link";
   link.href = path;
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.textContent = 'Open';
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "Open";
 
   info.appendChild(idx);
   info.appendChild(titleEl);
@@ -73,39 +94,34 @@ function createCard(file, index) {
   card.appendChild(previewWrap);
   card.appendChild(info);
 
-  // Set iframe src and resolve real title after load
-  iframe.src = path;
-  getTitleFromIframe(iframe, fallback).then(title => {
-    titleEl.textContent = title;
-    iframe.title = title;
-    link.setAttribute('aria-label', `Open ${title}`);
-  });
-
   return card;
 }
 
 async function init() {
+  console.log("Fetching Projects/index.json...");
   try {
-    const res = await fetch('Projects/index.json');
+    const res = await fetch("Projects/index.json");
+    console.log("Response status:", res.status);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
     const files = await res.json();
-
+    console.log("Files loaded:", files);
+    
     if (!Array.isArray(files) || files.length === 0) {
-      grid.innerHTML = '<p class="empty">No projects found.</p>';
-      counter.textContent = '0';
+      grid.innerHTML = "<p class=\"empty\">No projects found.</p>";
+      counter.textContent = "0";
       return;
     }
 
     counter.textContent = files.length;
-
+    grid.innerHTML = "";
+    
     files.forEach((file, i) => {
       grid.appendChild(createCard(file, i));
     });
-
+    console.log("Grid populated with video previews.");
   } catch (err) {
-    console.error('Failed to load projects:', err);
-    grid.innerHTML = '<p class="empty">Could not load Projects/index.json</p>';
+    console.error("Failed to load projects:", err);
+    grid.innerHTML = `<p class=\"empty\">Error: ${err.message}</p>`;
   }
 }
 

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Entropy of Being</title>
+    <style>
+        :root {
+            --bg: #030305;
+            --fg: #f0f0f5;
+            --accent: rgba(255, 255, 255, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            cursor: crosshair;
+        }
+
+        .ui {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+            mix-blend-mode: difference;
+        }
+
+        h1 {
+            font-weight: 200;
+            letter-spacing: 0.8em;
+            text-transform: uppercase;
+            font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+            opacity: 0.3;
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 4rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            pointer-events: auto;
+        }
+
+        .intensity-slider {
+            -webkit-appearance: none;
+            width: 200px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            transition: all 0.5s ease;
+        }
+
+        .intensity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 6px; height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .label-container {
+            display: flex;
+            gap: 2rem;
+            opacity: 0.2;
+            transition: opacity 0.8s ease;
+        }
+
+        .label-container:hover { opacity: 0.6; }
+
+        .emotion-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .emotion-label.active {
+            opacity: 1;
+            transform: scale(1.2);
+            text-shadow: 0 0 10px #fff;
+        }
+
+        .status {
+            position: fixed;
+            top: 4rem;
+            font-size: 0.5rem;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            opacity: 0.15;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status" id="status">System Harmonic</div>
+    
+    <div class="ui">
+        <h1>The Entropy of Being</h1>
+    </div>
+
+    <canvas id="stage"></canvas>
+
+    <div class="controls">
+        <div class="label-container" id="labels">
+            <div class="emotion-label" data-idx="0">Presence</div>
+            <div class="emotion-label" data-idx="1">Void</div>
+            <div class="emotion-label" data-idx="2">Pulse</div>
+            <div class="emotion-label" data-idx="3">Echo</div>
+            <div class="emotion-label" data-idx="4">Flow</div>
+        </div>
+        <input type="range" class="intensity-slider" id="intensity" min="0" max="10" step="0.1" value="0">
+    </div>
+
+    <script>
+        const canvas = document.getElementById('stage');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('intensity');
+        const labels = document.querySelectorAll('.emotion-label');
+        const status = document.getElementById('status');
+
+        let width, height;
+        let activeIdx = 0;
+        let time = 0;
+        
+        const FLUX = [
+            { color: '#ffffff', freq: 0.001, amp: 40, phase: 0 },
+            { color: '#707070', freq: 0.0015, amp: 30, phase: 2 },
+            { color: '#a0a0a0', freq: 0.0008, amp: 50, phase: 4 },
+            { color: '#404040', freq: 0.002, amp: 25, phase: 1 },
+            { color: '#d0d0d0', freq: 0.0012, amp: 35, phase: 5 }
+        ];
+
+        class Point {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.baseY = y;
+                this.vy = 0;
+                this.ay = 0;
+                this.friction = 0.92;
+                this.stiffness = 0.05;
+            }
+
+            update(targetY) {
+                let force = (targetY - this.y) * this.stiffness;
+                this.ay = force;
+                this.vy += this.ay;
+                this.vy *= this.friction;
+                this.y += this.vy;
+            }
+        }
+
+        let lines = [];
+
+        function init() {
+            resize();
+            lines = FLUX.map((f, idx) => {
+                let points = [];
+                let res = 60;
+                let yBase = height * (0.3 + idx * 0.1);
+                for (let i = 0; i <= res; i++) {
+                    points.push(new Point((width / res) * i, yBase));
+                }
+                return { ...f, points, yBase };
+            });
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(3, 3, 5, 0.15)';
+            ctx.fillRect(0, 0, width, height);
+            
+            time += 0.01;
+            const globalIntensity = parseFloat(slider.value);
+            
+            // Update Status Text
+            if (globalIntensity > 8) status.innerText = "Critical Dissonance";
+            else if (globalIntensity > 4) status.innerText = "Emergent Entropy";
+            else status.innerText = "System Harmonic";
+
+            lines.forEach((line, lIdx) => {
+                ctx.beginPath();
+                ctx.strokeStyle = line.color;
+                ctx.lineWidth = 0.8;
+                ctx.globalAlpha = 0.1 + (1 - globalIntensity / 12) * 0.4;
+
+                // Dissonance Factor
+                const isSource = lIdx === activeIdx;
+                const noiseScale = isSource ? globalIntensity * 2 : (globalIntensity * 0.5);
+                
+                line.points.forEach((p, pIdx) => {
+                    let targetY = line.yBase;
+                    
+                    // 1. Base Harmonic Wave
+                    let wave = Math.sin(time + p.x * 0.002 + line.phase) * line.amp;
+                    targetY += wave;
+
+                    // 2. Entropy / Noise
+                    if (globalIntensity > 0) {
+                        let noise = (Math.random() - 0.5) * noiseScale * 15;
+                        // Source line gets "spikes", others get "shiver"
+                        if (isSource) {
+                            noise = Math.tan(time * 2 + p.x * 0.01) * globalIntensity * 2;
+                            noise = Math.max(-100, Math.min(100, noise)); // Clamp spikes
+                        }
+                        targetY += noise;
+                    }
+
+                    p.update(targetY);
+
+                    if (pIdx === 0) ctx.moveTo(p.x, p.y);
+                    else {
+                        let prev = line.points[pIdx - 1];
+                        let cx = (p.x + prev.x) / 2;
+                        let cy = (p.y + prev.y) / 2;
+                        ctx.quadraticCurveTo(prev.x, prev.y, cx, cy);
+                    }
+                });
+
+                ctx.stroke();
+
+                // Subtle Glow for active line
+                if (isSource && globalIntensity > 2) {
+                    ctx.shadowBlur = globalIntensity * 5;
+                    ctx.shadowColor = "#fff";
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        // Interaction
+        labels.forEach(label => {
+            label.onclick = () => {
+                labels.forEach(l => l.classList.remove('active'));
+                label.classList.add('active');
+                activeIdx = parseInt(label.dataset.idx);
+            };
+        });
+
+        // Set initial active
+        labels[0].classList.add('active');
+
+        window.addEventListener('resize', () => {
+            resize();
+            lines.forEach(l => l.init ? l.init() : null); // Simple re-init logic
+        });
+
+        init();
+        draw();
+    </script>
+</body>
+</html>
