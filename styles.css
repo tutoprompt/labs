@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0e0e0e;
+  --surface: #161616;
+  --border: #242424;
+  --border-hover: #3a3a3a;
+  --text-primary: #e8e8e8;
+  --text-secondary: #5a5a5a;
+  --text-dim: #333;
+  --accent: #e8e8e8;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.header-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.header-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ── Grid ── */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+/* ── Card ── */
+.card {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: fadeUp 0.4s ease forwards;
+  transition: background 0.2s ease;
+}
+
+.card:hover {
+  background: var(--surface);
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* staggered delays */
+.card:nth-child(1)  { animation-delay: 0.05s; }
+.card:nth-child(2)  { animation-delay: 0.10s; }
+.card:nth-child(3)  { animation-delay: 0.15s; }
+.card:nth-child(4)  { animation-delay: 0.20s; }
+.card:nth-child(5)  { animation-delay: 0.25s; }
+.card:nth-child(6)  { animation-delay: 0.30s; }
+.card:nth-child(7)  { animation-delay: 0.35s; }
+.card:nth-child(8)  { animation-delay: 0.40s; }
+.card:nth-child(9)  { animation-delay: 0.45s; }
+
+/* ── Preview ── */
+.card-preview {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  background: #111;
+  pointer-events: none;
+}
+
+.card-preview iframe {
+  width: 150%;
+  height: 150%;
+  border: none;
+  transform: scale(0.667);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+/* overlay so iframe doesn't capture hover/clicks on card */
+.card-preview::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/* ── Info ── */
+.card-info {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 1;
+}
+
+.card-index {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.card-title {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  flex-shrink: 0;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.card-link:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+/* ── Empty state ── */
+.empty {
+  grid-column: 1 / -1;
+  padding: 80px 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  background: var(--bg);
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .header-inner,
+  main {
+    padding: 20px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

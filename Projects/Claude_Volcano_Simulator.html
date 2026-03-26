@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VOLCANO TOP-DOWN Simulation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary-fixed-variant": "#872100",
+            "tertiary": "#c6c6c7",
+            "on-tertiary-fixed": "#1a1c1c",
+            "on-primary": "#00344a",
+            "surface-container-high": "#2a2a2a",
+            "on-tertiary-container": "#f9f9f9",
+            "surface-container-highest": "#353534",
+            "primary": "#7cd0ff",
+            "surface-container-lowest": "#0e0e0e",
+            "on-primary-fixed-variant": "#004c69",
+            "inverse-surface": "#e5e2e1",
+            "secondary-container": "#d33a01",
+            "error-container": "#93000a",
+            "surface-bright": "#3a3939",
+            "primary-fixed-dim": "#7cd0ff",
+            "outline": "#899299",
+            "primary-container": "#007ba7",
+            "tertiary-fixed": "#e2e2e2",
+            "surface-variant": "#353534",
+            "on-error": "#690005",
+            "outline-variant": "#3f484e",
+            "on-surface-variant": "#bfc8cf",
+            "on-tertiary": "#2f3131",
+            "on-primary-container": "#f5faff",
+            "surface-container": "#201f1f",
+            "surface": "#131313",
+            "surface-dim": "#131313",
+            "secondary-fixed": "#ffdbd1",
+            "on-surface": "#e5e2e1",
+            "inverse-primary": "#00658b",
+            "on-secondary": "#5f1500",
+            "error": "#ffb4ab",
+            "tertiary-fixed-dim": "#c6c6c7",
+            "on-tertiary-fixed-variant": "#454747",
+            "on-secondary-container": "#fff7f5",
+            "on-background": "#e5e2e1",
+            "on-primary-fixed": "#001e2c",
+            "surface-tint": "#7cd0ff",
+            "surface-container-low": "#1c1b1b",
+            "primary-fixed": "#c4e7ff",
+            "inverse-on-surface": "#313030",
+            "secondary-fixed-dim": "#ffb5a0",
+            "secondary": "#ffb5a0",
+            "on-error-container": "#ffdad6",
+            "tertiary-container": "#717373",
+            "background": "#131313",
+            "on-secondary-fixed": "#3b0900"
+          },
+          fontFamily: {
+            "headline": ["Space Grotesk"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          },
+          borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #0a0a0a;
+      font-family: 'Inter', sans-serif;
+    }
+    canvas {
+      display: block;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .intensity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #ffb5a0;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(255, 181, 160, 0.8);
+    }
+    .intensity-slider::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      background: #ffb5a0;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 10px rgba(255, 181, 160, 0.8);
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface select-none">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 no-border bg-gradient-to-b from-[#131313] to-transparent flex justify-between items-center px-8 py-6 w-full">
+<div class="flex items-center gap-4">
+<span class="text-xl font-bold tracking-[-0.02em] text-[#c6c6c7] font-['Space_Grotesk'] tracking-tighter uppercase">VOLCANO TOP-DOWN</span>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-[#c6c6c7]/60 hover:text-[#7cd0ff] transition-colors duration-300 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+<button class="text-[#c6c6c7]/60 hover:text-[#7cd0ff] transition-colors duration-300 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Simulation Stage -->
+<main class="relative w-screen h-screen">
+<canvas id="volcanoCanvas"></canvas>
+<!-- Hud Stats -->
+<div class="absolute top-24 left-8 pointer-events-none flex flex-col gap-2">
+<div class="flex flex-col">
+<span class="text-[10px] font-['Space_Grotesk'] uppercase tracking-widest text-tertiary/40">Telemetry Status</span>
+<span class="text-xl font-['Space_Grotesk'] font-bold text-primary tracking-tight">ACTIVE_VENT_01</span>
+</div>
+<div class="flex gap-8 mt-4">
+<div class="flex flex-col">
+<span class="text-[10px] font-['Space_Grotesk'] uppercase tracking-widest text-tertiary/40">Thermal Flow</span>
+<span class="text-sm font-mono text-secondary" id="thermal-stat">1,240°C</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] font-['Space_Grotesk'] uppercase tracking-widest text-tertiary/40">Particle Density</span>
+<span class="text-sm font-mono text-tertiary" id="density-stat">0.42 ρ</span>
+</div>
+</div>
+</div>
+<!-- Intensity Controller (Above Nav) -->
+<div class="fixed bottom-36 left-1/2 -translate-x-1/2 w-full max-w-xs px-6 py-4 rounded-xl bg-surface-container-low/40 backdrop-blur-xl border border-outline-variant/15 z-50">
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<label class="text-[10px] font-['Space_Grotesk'] uppercase tracking-widest text-secondary" for="intensity">Intensity</label>
+<span class="text-[10px] font-mono text-secondary/60" id="intensity-val">50%</span>
+</div>
+<input class="intensity-slider w-full h-1 bg-surface-container-highest rounded-full appearance-none cursor-pointer accent-secondary" id="intensity" max="100" min="0" type="range" value="50"/>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-12 h-32 bg-gradient-to-t from-[#0a0a0a] to-transparent pb-8">
+<button class="flex flex-col items-center justify-center text-[#ffb5a0] drop-shadow-[0_0_8px_rgba(255,181,160,0.4)] font-['Space_Grotesk'] text-[10px] uppercase tracking-widest hover:text-[#ffb5a0]/80 transition-all cubic-bezier(0.4,0,0.2,1) hover:translate-y-[-2px]">
+<span class="material-symbols-outlined mb-1">volcano</span>
+<span>Eruption</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#c6c6c7]/40 font-['Space_Grotesk'] text-[10px] uppercase tracking-widest hover:text-[#ffb5a0]/80 transition-all cubic-bezier(0.4,0,0.2,1) hover:translate-y-[-2px]">
+<span class="material-symbols-outlined mb-1">query_stats</span>
+<span>Telemetry</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#c6c6c7]/40 font-['Space_Grotesk'] text-[10px] uppercase tracking-widest hover:text-[#ffb5a0]/80 transition-all cubic-bezier(0.4,0,0.2,1) hover:translate-y-[-2px]">
+<span class="material-symbols-outlined mb-1">layers</span>
+<span>Layers</span>
+</button>
+</nav>
+<script>
+    const canvas = document.getElementById('volcanoCanvas');
+    const ctx = canvas.getContext('2d');
+    const intensitySlider = document.getElementById('intensity');
+    const intensityVal = document.getElementById('intensity-val');
+    const thermalStat = document.getElementById('thermal-stat');
+    const densityStat = document.getElementById('density-stat');
+
+    let width, height, centerX, centerY;
+    let particles = [];
+    let intensity = 0.5;
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      centerX = width / 2;
+      centerY = height / 2;
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = centerX;
+        this.y = centerY;
+        // Radial spread
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (0.5 + Math.random() * 2) * (intensity * 4 + 1);
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        
+        // Z-motion (simulated scale)
+        this.z = 0;
+        this.vz = (2 + Math.random() * 4) * (intensity + 0.5);
+        this.gravity = 0.15;
+        
+        this.life = 1.0;
+        this.decay = 0.005 + Math.random() * 0.015;
+        this.maxSize = 2 + Math.random() * 6;
+        this.size = 0;
+        
+        // Color variation (Incandescent)
+        const r = 255;
+        const g = Math.floor(100 + Math.random() * 100);
+        const b = Math.floor(Math.random() * 50);
+        this.color = `rgba(${r}, ${g}, ${b},`;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        // Simulate upward velocity then falling
+        this.z += this.vz;
+        this.vz -= this.gravity;
+        
+        // Scale correlates to Z height
+        this.size = Math.max(0.1, (1 + this.z * 0.1) * this.maxSize * this.life);
+        
+        this.life -= this.decay;
+
+        if (this.life <= 0 || (this.z < -10 && this.life < 0.5)) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        const alpha = Math.min(1, this.life * 2);
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+        
+        // Additive blending simulation via color and glow
+        gradient.addColorStop(0, this.color + alpha + ')');
+        gradient.addColorStop(0.4, this.color + (alpha * 0.6) + ')');
+        gradient.addColorStop(1, this.color + '0)');
+
+        ctx.beginPath();
+        ctx.fillStyle = gradient;
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Initialize particle pool
+    const MAX_PARTICLES = 400;
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      particles.push(new Particle());
+    }
+
+    intensitySlider.addEventListener('input', (e) => {
+      intensity = e.target.value / 100;
+      intensityVal.textContent = Math.round(intensity * 100) + '%';
+      
+      // Update HUD stats based on intensity
+      thermalStat.textContent = Math.floor(800 + intensity * 1200) + '°C';
+      densityStat.textContent = (0.1 + intensity * 0.8).toFixed(2) + ' ρ';
+    });
+
+    function drawBackground() {
+      // Dark volcanic floor
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(0, 0, width, height);
+
+      // Subtle atmospheric floor glow (The Crater)
+      const craterGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 200);
+      craterGlow.addColorStop(0, 'rgba(255, 70, 0, 0.15)');
+      craterGlow.addColorStop(1, 'rgba(10, 10, 10, 0)');
+      ctx.fillStyle = craterGlow;
+      ctx.fillRect(0, 0, width, height);
+
+      // Central vent "Core"
+      const core = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 15 + intensity * 30);
+      core.addColorStop(0, 'rgba(255, 220, 150, 0.8)');
+      core.addColorStop(0.5, 'rgba(255, 100, 0, 0.4)');
+      core.addColorStop(1, 'rgba(255, 50, 0, 0)');
+      ctx.fillStyle = core;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 40 + intensity * 40, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function animate() {
+      ctx.globalCompositeOperation = 'source-over';
+      drawBackground();
+
+      // Additive blending for the "molten" look
+      ctx.globalCompositeOperation = 'lighter';
+      
+      // Variable count based on intensity
+      const activeCount = Math.floor(10 + intensity * (MAX_PARTICLES - 10));
+      
+      for (let i = 0; i < activeCount; i++) {
+        particles[i].update();
+        particles[i].draw();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body></html>
