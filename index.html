@@ -602,16 +602,7 @@
             </svg>
             <span class="identity-meta-text"><a href="/cdn-cgi/l/email-protection#27444b465245425548544667404a464e4b0944484a"><span class="__cf_email__" data-cfemail="e98a85889c8b8c9b869a88a98e84888085c78a8684">[email&#160;protected]</span></a></span>
           </div>
-          <div class="identity-meta-row">
-            <svg class="identity-meta-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1"/>
-              <circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1"/>
-              <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1"/>
-              <line x1="6" y1="7" x2="10" y2="5" stroke="currentColor" stroke-width="0.9"/>
-              <line x1="6" y1="9" x2="10" y2="11" stroke="currentColor" stroke-width="0.9"/>
-            </svg>
-            
-          </div>
+
         </div>
       </div>
 
@@ -824,4 +815,19 @@
 
   </main>
 
-  <script data-cfasync="
+  <script src="script.js"></script>
+  <script>
+    // Mirror project count to header and work section label
+    const projectCountEl = document.getElementById('project-count');
+    const projectCountLabelEl = document.getElementById('project-count-label');
+    const observer = new MutationObserver(() => {
+      const count = projectCountEl ? projectCountEl.textContent : '';
+      if (projectCountLabelEl) projectCountLabelEl.textContent = count ? `— ${count}` : '';
+    });
+    if (projectCountEl) {
+      observer.observe(projectCountEl, { childList: true, characterData: true, subtree: true });
+    }
+  </script>
+
+</body>
+</html>
