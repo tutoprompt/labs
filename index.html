@@ -3,85 +3,656 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portfolio</title>
+  <title>Clauber Rosa — Product Architect</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap');
+
+    /* ── Design Token Overrides ── */
+    :root {
+      --accent: rgba(200, 190, 165, 0.55);
+      --accent-line: rgba(200, 190, 165, 0.22);
+    }
+
+    /* ── Identity / Hero ── */
+    .identity {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 80px 48px 72px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      align-items: end;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .identity-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .identity-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .identity-eyebrow-line {
+      width: 20px;
+      height: 1px;
+      background: var(--ink4);
+    }
+
+    .identity-eyebrow-text {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--ink4);
+    }
+
+    .identity-name {
+      font-family: var(--serif);
+      font-size: clamp(42px, 5.5vw, 72px);
+      font-weight: 300;
+      line-height: 1.04;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .identity-name em {
+      font-style: italic;
+      color: var(--ink2);
+    }
+
+    .identity-role {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      margin-top: 18px;
+    }
+
+    .identity-right {
+      padding-left: 56px;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      padding-bottom: 4px;
+    }
+
+    .identity-tagline {
+      font-family: var(--serif);
+      font-size: clamp(15px, 1.5vw, 17px);
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.68;
+      color: var(--ink2);
+      max-width: 440px;
+    }
+
+    .identity-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .identity-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .identity-meta-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      opacity: 0.3;
+    }
+
+    .identity-meta-text {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      color: var(--ink3);
+      letter-spacing: 0.04em;
+    }
+
+    .identity-meta-text a {
+      color: var(--ink3);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: color var(--ease), border-color var(--ease);
+    }
+
+    .identity-meta-text a:hover {
+      color: var(--ink2);
+      border-color: var(--border-hover);
+    }
+
+    /* ── Section Label ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+
+    .section-label-line {
+      width: 20px;
+      height: 1px;
+      background: var(--ink4);
+      flex-shrink: 0;
+    }
+
+    .section-label-text {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--ink4);
+    }
+
+    .section-label-count {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      color: var(--ink4);
+      opacity: 0.5;
+    }
+
+    /* ── Work Section ── */
+    .work-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 64px 48px 72px;
+    }
+
+    /* ── Profile Section ── */
+    .profile-section {
+      border-top: 1px solid var(--border);
+      padding: 72px 0 0;
+    }
+
+    .profile-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 48px 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .profile-left {}
+
+    .profile-heading {
+      font-family: var(--serif);
+      font-size: clamp(24px, 2.5vw, 34px);
+      font-weight: 300;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      margin-bottom: 32px;
+    }
+
+    .profile-heading em {
+      font-style: italic;
+      color: var(--ink2);
+    }
+
+    .profile-text {
+      font-family: var(--sans);
+      font-size: 13.5px;
+      font-weight: 300;
+      line-height: 1.9;
+      color: var(--ink3);
+    }
+
+    .profile-text p {
+      margin-bottom: 16px;
+    }
+
+    .profile-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    .profile-text strong {
+      font-weight: 400;
+      color: var(--ink2);
+    }
+
+    .profile-text a {
+      color: var(--ink3);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--border-hover);
+      transition: color 0.2s ease;
+    }
+
+    .profile-text a:hover { color: var(--ink2); }
+
+    .profile-right {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    /* ── Workflow Grid ── */
+    .workflow-block {}
+
+    .workflow-block-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .workflow-block-label-text {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink4);
+    }
+
+    .workflow-block-label svg {
+      opacity: 0.3;
+    }
+
+    .workflow-tools {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .workflow-tool-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .workflow-tool-row:last-child {
+      border-bottom: none;
+    }
+
+    .workflow-tool-name {
+      font-family: var(--serif);
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--ink2);
+      min-width: 100px;
+      flex-shrink: 0;
+    }
+
+    .workflow-tool-desc {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      color: var(--ink4);
+      line-height: 1.5;
+    }
+
+    /* ── Process Note (formerly Manifesto) ── */
+    .process-block {
+      border: 1px solid var(--border);
+      padding: 28px;
+    }
+
+    .process-block-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink4);
+      margin-bottom: 14px;
+    }
+
+    .process-block-body {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.78;
+      color: var(--ink3);
+    }
+
+    .process-block-body p {
+      margin-bottom: 12px;
+    }
+
+    .process-block-body p:last-child { margin-bottom: 0; }
+
+    /* ── Insight callout ── */
+    .insight {
+      margin-top: 40px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .insight-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink4);
+      margin-bottom: 14px;
+    }
+
+    .insight-quote {
+      font-family: var(--serif);
+      font-size: clamp(16px, 1.6vw, 20px);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--ink2);
+      line-height: 1.48;
+      border: none;
+      padding: 0;
+    }
+
+    /* ── Footer decoration ── */
+    .footer-sep {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 48px 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .footer-sep-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .footer-sep-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--ink4);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .identity {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        padding: 48px 24px 56px;
+      }
+
+      .identity-right {
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        padding-top: 32px;
+      }
+
+      .profile-inner {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        padding: 0 24px 64px;
+      }
+
+      .work-section {
+        padding: 48px 24px 56px;
+      }
+
+      .footer-sep {
+        padding: 0 24px 48px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .header-inner {
+        padding: 20px 24px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
 
+  <!-- ══ HEADER ══════════════════════════════════════ -->
   <header>
     <div class="header-inner">
-      <span class="header-label">Projects</span>
+      <span class="header-label">Clauber Rosa</span>
       <span class="header-count" id="project-count">—</span>
     </div>
   </header>
 
   <main>
-    <div class="grid" id="grid"></div>
 
-    <!-- Manifesto section — below the project grid -->
-    <section class="manifesto-section">
+    <!-- ══ 1. IDENTITY ═══════════════════════════════ -->
+    <section class="identity" aria-label="Identity">
 
-      <div class="manifesto-eyebrow">
-        <span class="manifesto-eyebrow-line"></span>
-        <span class="manifesto-eyebrow-text">Nota de processo</span>
+      <div class="identity-left">
+        <div class="identity-eyebrow">
+          <span class="identity-eyebrow-line"></span>
+          <span class="identity-eyebrow-text">Product Architect</span>
+        </div>
+        <h1 class="identity-name">
+          Clauber<br><em>Rosa</em>
+        </h1>
+        <p class="identity-role">Product · Design · AI Workflow</p>
       </div>
 
-      <div class="manifesto-body">
+      <div class="identity-right">
+        <p class="identity-tagline">
+          I build product from strategy to interface — connecting system thinking, design execution, and AI-driven workflows into coherent digital experiences.
+        </p>
 
-        <h2 class="manifesto-title">
-          Eu larguei o Figma.<br>
-          <em>Não porque ele é ruim.</em>
-        </h2>
-
-        <div class="manifesto-text">
-          <p>Mas porque eu quis testar até onde consigo ir sem ele. Isso não é um manifesto contra ferramentas. Muito pelo contrário. Minha base vem de estudo, prática e repertório construído ao longo do tempo.</p>
-
-          <p>Faculdade, referências, teoria, tentativa e erro. Tudo isso moldou a forma como eu penso interface hoje. As ferramentas — Figma, Illustrator e até o Photoshop lá atrás — foram o ambiente onde eu exercitei isso por anos. Elas não são a origem do conhecimento, mas foram o campo onde ele ganhou forma.</p>
-
-          <p>Mas em algum momento eu comecei a questionar o processo. Durante anos foi assim: <strong>pensar → Figma → handoff → dev → browser.</strong> Quatro etapas. Vários pontos onde a ideia pode se perder.</p>
-
-          <p>Hoje eu tô experimentando um caminho mais direto: <strong>pensar → prompt → browser.</strong> Menos intermediários, mais proximidade com o resultado final.</p>
-
-          <p>O que eu comecei a construir é um vocabulário de prompt para design. Uma forma de transformar decisões visuais em linguagem. Tipografia, espaçamento, hierarquia, estados de interface, intenção de UX. Tudo vira instrução. Tudo vira texto.</p>
-
-          <p>E pra não ficar só no discurso, já comecei a aplicar isso. Estou montando um pequeno sistema em HTML com blocos de prompt que eu uso no dia a dia — tipo uma biblioteca de decisões de design escritas, prontas pra copiar, adaptar e iterar direto no browser. <a href="https://github.com/royvillasana/figma-to-ai-prompter" target="_blank" rel="noopener">github.com/royvillasana/figma-to-ai-prompter</a></p>
-
-          <p>Importante dizer: essa ideia não surgiu do nada. Ela veio de referências que encontrei, inclusive um projeto no GitHub que me deu um estalo. Não é algo totalmente novo. Mas foi o suficiente pra organizar algo que eu já vinha pensando e testando há um tempo.</p>
-
-          <p>Talvez a novidade não esteja na ideia em si, mas na forma como cada um aplica.</p>
+        <div class="identity-meta">
+          <div class="identity-meta-row">
+            <svg class="identity-meta-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="7" r="3" stroke="currentColor" stroke-width="1"/>
+              <path d="M2 14C2 11.24 4.69 9 8 9C11.31 9 14 11.24 14 14" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+            <span class="identity-meta-text">Joinville, Santa Catarina, Brazil</span>
+          </div>
+          <div class="identity-meta-row">
+            <svg class="identity-meta-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1"/>
+              <path d="M2 6L8 9.5L14 6" stroke="currentColor" stroke-width="1"/>
+            </svg>
+            <span class="identity-meta-text"><a href="mailto:clauber@teken.com.br">clauber@teken.com.br</a></span>
+          </div>
+          <div class="identity-meta-row">
+            <svg class="identity-meta-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="4" cy="8" r="2" stroke="currentColor" stroke-width="1"/>
+              <circle cx="12" cy="4" r="2" stroke="currentColor" stroke-width="1"/>
+              <circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1"/>
+              <line x1="6" y1="7" x2="10" y2="5" stroke="currentColor" stroke-width="0.9"/>
+              <line x1="6" y1="9" x2="10" y2="11" stroke="currentColor" stroke-width="0.9"/>
+            </svg>
+            <span class="identity-meta-text">13 years · Co-Founder, teken Digital Product Studio</span>
+          </div>
         </div>
-
-        <div class="manifesto-warning">
-          <span class="manifesto-warning-icon">Aviso</span>
-          <p class="manifesto-warning-text">
-            Isso não exige que você vire programador. Mas pede uma coisa importante: aprender a nomear melhor o que você vê. Ter noção de HTML e CSS ajuda, não pra escrever tudo do zero, mas pra entender estrutura, espaçamento e comportamento. É mais sobre linguagem do que técnica. Semântica, intenção, clareza. O browser vira teu campo de teste. E o teu olhar crítico vira a principal ferramenta.
-          </p>
-        </div>
-
-        <div class="manifesto-text" style="margin-top: 32px;">
-          <p>Se você já trabalha com interface, isso não é um salto impossível — é um próximo passo. Eu ainda tô aprendendo isso também. Isso aqui não é uma resposta pronta, é um experimento em andamento.</p>
-
-          <p>Cada vez mais, o diferencial não é só desenhar interface, é saber descrever ela com precisão. Já comecei a usar isso em projetos reais e vou compartilhar o que funcionar e o que quebrar no caminho.</p>
-        </div>
-
-        <div class="manifesto-cta">
-          <span class="manifesto-cta-label">Provocação</span>
-          <blockquote class="manifesto-cta-quote">
-            O designer que sabe nomear o que vê<br>não depende só da tela pra construir.
-          </blockquote>
-        </div>
-
-      </div>
-
-      <div class="footer-sep">
-        <span class="footer-sep-dot"></span>
-        <span class="footer-sep-line"></span>
-        <span class="footer-sep-dot"></span>
       </div>
 
     </section>
+
+    <!-- ══ 2. SELECTED WORK ══════════════════════════ -->
+    <section class="work-section" aria-label="Selected Work">
+
+      <div class="section-label">
+        <span class="section-label-line"></span>
+        <span class="section-label-text">Selected Work</span>
+        <span class="section-label-count" id="project-count-label">—</span>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+    </section>
+
+    <!-- ══ 3. PROFILE ════════════════════════════════ -->
+    <section class="profile-section" aria-label="Profile">
+
+      <div class="profile-inner">
+
+        <!-- Left: Background + Process note -->
+        <div class="profile-left">
+          <div class="section-label">
+            <span class="section-label-line"></span>
+            <span class="section-label-text">About</span>
+          </div>
+
+          <h2 class="profile-heading">
+            System thinking<br>
+            <em>meets execution.</em>
+          </h2>
+
+          <div class="profile-text">
+            <p>Over 20 years designing and building digital products — from early-stage concepts through scalable design systems. The through-line has always been the same: reduce friction between strategy and what ships.</p>
+
+            <p>For 13 years I ran teken, a digital product studio operating across SaaS, B2B, agribusiness and logistics. I built and maintained design systems, defined product vision across client contexts, and made product decisions under real resource constraints.</p>
+
+            <p>Today my work sits at the intersection of product architecture, interface design, and AI-augmented workflows. I believe the designer who knows how to name what they see doesn't depend solely on the screen to build.</p>
+          </div>
+
+          <div class="insight">
+            <p class="insight-label">Process note</p>
+            <blockquote class="insight-quote">
+              I replaced Figma as the starting point — not because it's bad, but to test how far I could go without it. The result: think → prompt → browser. Fewer intermediaries, more proximity to the final result.
+            </blockquote>
+          </div>
+        </div>
+
+        <!-- Right: Workflow + Tools -->
+        <div class="profile-right">
+          <div class="section-label">
+            <span class="section-label-line"></span>
+            <span class="section-label-text">How I Work</span>
+          </div>
+
+          <!-- Thinking -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2C5.24 2 3 4.24 3 7C3 8.87 4.02 10.5 5.5 11.4V13H10.5V11.4C11.98 10.5 13 8.87 13 7C13 4.24 10.76 2 8 2Z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+                <line x1="5.5" y1="13" x2="10.5" y2="13" stroke="currentColor" stroke-width="1"/>
+              </svg>
+              <span class="workflow-block-label-text">Thinking</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">ChatGPT</span>
+                <span class="workflow-tool-desc">Exploring ideas, mapping problems, initial frameworks</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Claude</span>
+                <span class="workflow-tool-desc">Structured reasoning, alternative perspectives</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Building -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <polyline points="4,10 1,8 4,6" stroke="currentColor" stroke-width="1" stroke-linejoin="round" fill="none"/>
+                <polyline points="12,6 15,8 12,10" stroke="currentColor" stroke-width="1" stroke-linejoin="round" fill="none"/>
+                <line x1="9.5" y1="3.5" x2="6.5" y2="12.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+              <span class="workflow-block-label-text">Building</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Claude</span>
+                <span class="workflow-tool-desc">Interface architecture, HTML/CSS/JS outputs</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Lovable</span>
+                <span class="workflow-tool-desc">Rapid scaffolding — concept to testable output</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">GitHub Copilot</span>
+                <span class="workflow-tool-desc">Inline completion and refactoring</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Visual Creation -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1"/>
+                <circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.5"/>
+                <path d="M2 11L6 8L9 10L12 6.5L14 9" stroke="currentColor" stroke-width="1" stroke-linejoin="round" fill="none"/>
+              </svg>
+              <span class="workflow-block-label-text">Visual Creation</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Figma</span>
+                <span class="workflow-tool-desc">Design systems, component libraries, production specs</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Framer</span>
+                <span class="workflow-tool-desc">Interactive prototypes and motion design</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Sora</span>
+                <span class="workflow-tool-desc">Visual and motion asset generation at scale</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Process note box -->
+          <div class="process-block">
+            <p class="process-block-label">Prompt Design · Ongoing experiment</p>
+            <div class="process-block-body">
+              <p>Building a vocabulary of prompts for design — turning visual decisions into language. Typography, spacing, hierarchy, UX intent. All become instructions.</p>
+              <p>A working library of design decisions written as prompts, ready to copy, adapt and iterate directly in the browser. <a href="https://github.com/royvillasana/figma-to-ai-prompter" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline; text-underline-offset:3px;">github.com/royvillasana/figma-to-ai-prompter</a></p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══ Footer decoration ════════════════════════ -->
+    <div class="footer-sep">
+      <span class="footer-sep-dot"></span>
+      <span class="footer-sep-line"></span>
+      <span class="footer-sep-dot"></span>
+    </div>
+
   </main>
 
   <script src="script.js"></script>
+  <script>
+    // Mirror project count to both header and work section label
+    const origInit = window._init;
+    const observer = new MutationObserver(() => {
+      const count = document.getElementById('project-count');
+      const labelCount = document.getElementById('project-count-label');
+      if (count && labelCount) {
+        labelCount.textContent = count.textContent;
+      }
+    });
+    const headerCount = document.getElementById('project-count');
+    if (headerCount) {
+      observer.observe(headerCount, { childList: true, characterData: true, subtree: true });
+    }
+  </script>
 </body>
 </html>
