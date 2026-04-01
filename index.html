@@ -6,12 +6,61 @@
   <title>Clauber Rosa — Product Architect</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
 
     /* ── Design Token Overrides ── */
     :root {
       --accent: rgba(200, 190, 165, 0.55);
       --accent-line: rgba(200, 190, 165, 0.22);
+      --ink-rgb: 28,30,33;
+      --rule-l: rgba(28,30,33,0.07);
+    }
+
+    /* ── Prims separator ── */
+    .identity-prims {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0;
+      width: 100%;
+      margin: 14px 0 10px;
+    }
+
+    .identity-prim {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 4px 0;
+    }
+
+    .identity-prim + .identity-prim::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 18%; bottom: 18%;
+      width: 1px;
+      background: var(--rule-l);
+    }
+
+    .identity-prim svg { display: block; overflow: visible; }
+
+    /* ── Tagline stylization ── */
+    .identity-tagline {
+      font-family: 'Cormorant Garamond', var(--serif) !important;
+      font-size: clamp(16px, 1.65vw, 19px) !important;
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.72;
+      color: var(--ink2);
+      max-width: 440px;
+      letter-spacing: 0.01em;
+    }
+
+    .identity-tagline .tagline-w {
+      font-size: 1.18em;
+      font-weight: 400;
+      letter-spacing: -0.01em;
     }
 
     /* ── Identity / Hero ── */
@@ -62,6 +111,8 @@
       letter-spacing: -0.025em;
       color: var(--ink);
       margin-bottom: 6px;
+      display: flex;
+      flex-direction: column;
     }
 
     .identity-name em {
@@ -445,7 +496,7 @@
   <!-- ══ HEADER ══════════════════════════════════════ -->
   <header>
     <div class="header-inner">
-      <span class="header-label">Clauber Rosa</span>
+      <span class="header-label">clauber rosa</span>
       <span class="header-count" id="project-count"></span>
     </div>
   </header>
@@ -461,14 +512,79 @@
           <span class="identity-eyebrow-text">Product Architect</span>
         </div>
         <h1 class="identity-name">
-          Clauber<br><em>Rosa</em>
+          clauber
+          <!-- ── Prims separator ── -->
+          <div class="identity-prims">
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <circle cx="18" cy="18" r="12" stroke="rgba(var(--ink-rgb),0.10)" stroke-width="0.7" fill="none"/>
+                <circle cx="18" cy="18" r="6.5" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.6" fill="none"/>
+                <circle cx="18" cy="18" r="3" fill="rgba(var(--ink-rgb),0.46)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <line x1="4" y1="14" x2="32" y2="14" stroke="rgba(var(--ink-rgb),0.12)" stroke-width="0.6" stroke-dasharray="5 4"/>
+                <line x1="4" y1="18" x2="32" y2="18" stroke="rgba(var(--ink-rgb),0.36)" stroke-width="0.8" stroke-dasharray="5 4"/>
+                <line x1="4" y1="22" x2="32" y2="22" stroke="rgba(var(--ink-rgb),0.12)" stroke-width="0.6" stroke-dasharray="5 4"/>
+                <circle cx="4"  cy="18" r="1.6" fill="rgba(var(--ink-rgb),0.32)"/>
+                <circle cx="32" cy="18" r="1.6" fill="rgba(var(--ink-rgb),0.18)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <circle cx="18" cy="18" r="14" stroke="rgba(var(--ink-rgb),0.08)" stroke-width="0.6" fill="none"/>
+                <circle cx="18" cy="18" r="9" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none" stroke-dasharray="12 16"/>
+                <circle cx="18" cy="9"  r="1.8" fill="rgba(var(--ink-rgb),0.46)"/>
+                <circle cx="18" cy="18" r="2.2" fill="rgba(var(--ink-rgb),0.40)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <polygon points="18,4 33,30 3,30" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none" stroke-linejoin="round"/>
+                <polygon points="18,24 9,11 27,11" stroke="rgba(var(--ink-rgb),0.09)" stroke-width="0.5" fill="none" stroke-linejoin="round"/>
+                <circle cx="18" cy="19" r="1.6" fill="rgba(var(--ink-rgb),0.36)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <rect x="5" y="5" width="26" height="26" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none"/>
+                <rect x="11" y="11" width="14" height="14" stroke="rgba(var(--ink-rgb),0.09)" stroke-width="0.5" fill="none"/>
+                <line x1="6" y1="18" x2="30" y2="18" stroke="rgba(var(--ink-rgb),0.26)" stroke-width="0.6"/>
+                <circle cx="5"  cy="5"  r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+                <circle cx="31" cy="5"  r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+                <circle cx="5"  cy="31" r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+                <circle cx="31" cy="31" r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <line x1="5"  y1="5"  x2="5"  y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="18" y1="5"  x2="18" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="31" y1="5"  x2="31" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="5"  y1="5"  x2="31" y2="5"  stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="5"  y1="18" x2="31" y2="18" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="5"  y1="31" x2="31" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <circle cx="5"  cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="18" cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="31" cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="5"  cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="18" cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="31" cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="5"  cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="18" cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="31" cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+              </svg>
+            </div>
+          </div>
+          <em>rosa</em>
         </h1>
         <p class="identity-role">Product · Design · AI Workflow</p>
       </div>
 
       <div class="identity-right">
         <p class="identity-tagline">
-          I build product from strategy to interface. System thinking, design execution and AI-driven workflows working together toward coherent digital experiences.
+          I build product from strategy to interface. System thinking, design execution and AI-driven <span class="tagline-w">w</span>orkflows <span class="tagline-w">w</span>orking together toward coherent digital experiences.
         </p>
 
         <div class="identity-meta">
@@ -484,7 +600,7 @@
               <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1"/>
               <path d="M2 6L8 9.5L14 6" stroke="currentColor" stroke-width="1"/>
             </svg>
-            <span class="identity-meta-text"><a href="mailto:clauberosa@gmail.com">clauberosa@gmail.com</a></span>
+            <span class="identity-meta-text"><a href="/cdn-cgi/l/email-protection#27444b465245425548544667404a464e4b0944484a"><span class="__cf_email__" data-cfemail="e98a85889c8b8c9b869a88a98e84888085c78a8684">[email&#160;protected]</span></a></span>
           </div>
           <div class="identity-meta-row">
             <svg class="identity-meta-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -494,19 +610,19 @@
               <line x1="6" y1="7" x2="10" y2="5" stroke="currentColor" stroke-width="0.9"/>
               <line x1="6" y1="9" x2="10" y2="11" stroke="currentColor" stroke-width="0.9"/>
             </svg>
-            <span class="identity-meta-text">13 years · Co-Founder, teken Digital Product Studio</span>
+            
           </div>
         </div>
       </div>
 
     </section>
 
-    <!-- ══ 2. SELECTED WORK ══════════════════════════ -->
-    <section class="work-section" aria-label="Selected Work">
+    <!-- ══ 2. EXPERIMENTS ══════════════════════════════ -->
+    <section class="work-section" aria-label="Experiments">
 
       <div class="section-label">
         <span class="section-label-line"></span>
-        <span class="section-label-text">Selected Work</span>
+        <span class="section-label-text">Experiments</span>
         <span class="section-label-count" id="project-count-label"></span>
       </div>
 
@@ -708,8 +824,4 @@
 
   </main>
 
-  <script src="script.js"></script>
-  <script>
-    // Mirror project count to both header and work section label
-    const origInit = window._init;
-    const obs
+  <script data-cfasync="
