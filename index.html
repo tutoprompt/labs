@@ -246,6 +246,18 @@
       gap: 40px;
     }
 
+    /* ── Workflow intro note ── */
+    .workflow-intro-note {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      line-height: 1.72;
+      color: var(--ink4);
+      margin-top: -24px;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
     /* ── Workflow Grid ── */
     .workflow-block {}
 
@@ -434,7 +446,7 @@
   <header>
     <div class="header-inner">
       <span class="header-label">Clauber Rosa</span>
-      <span class="header-count" id="project-count">—</span>
+      <span class="header-count" id="project-count"></span>
     </div>
   </header>
 
@@ -456,7 +468,7 @@
 
       <div class="identity-right">
         <p class="identity-tagline">
-          I build product from strategy to interface — connecting system thinking, design execution, and AI-driven workflows into coherent digital experiences.
+          I build product from strategy to interface. System thinking, design execution and AI-driven workflows working together toward coherent digital experiences.
         </p>
 
         <div class="identity-meta">
@@ -495,7 +507,7 @@
       <div class="section-label">
         <span class="section-label-line"></span>
         <span class="section-label-text">Selected Work</span>
-        <span class="section-label-count" id="project-count-label">—</span>
+        <span class="section-label-count" id="project-count-label"></span>
       </div>
 
       <div class="grid" id="grid"></div>
@@ -520,17 +532,17 @@
           </h2>
 
           <div class="profile-text">
-            <p>Over 20 years designing and building digital products — from early-stage concepts through scalable design systems. The through-line has always been the same: reduce friction between strategy and what ships.</p>
+            <p>Over 20 years designing and building digital products, from early-stage concepts to scalable design systems. The through-line has always been the same: reduce friction between strategy and what ships.</p>
 
-            <p>For 13 years I ran teken, a digital product studio operating across SaaS, B2B, agribusiness and logistics. I built and maintained design systems, defined product vision across client contexts, and made product decisions under real resource constraints.</p>
+            <p>For 13 years I ran teken, a digital product studio operating across SaaS, B2B, agribusiness and logistics. I built and maintained design systems, defined product vision across multiple client contexts, and made product decisions under real resource constraints.</p>
 
-            <p>Today my work sits at the intersection of product architecture, interface design, and AI-augmented workflows. I believe the designer who knows how to name what they see doesn't depend solely on the screen to build.</p>
+            <p>Today my work sits at the intersection of product architecture, interface design and AI-augmented workflows. The designer who knows how to name what they see doesn't depend solely on the screen to build.</p>
           </div>
 
           <div class="insight">
             <p class="insight-label">Process note</p>
             <blockquote class="insight-quote">
-              I replaced Figma as the starting point — not because it's bad, but to test how far I could go without it. The result: think → prompt → browser. Fewer intermediaries, more proximity to the final result.
+              I set Figma aside as the starting point. Not because it is bad, but to test how far I could go without it. The result: think, prompt, browser. Fewer intermediaries, more proximity to the final result.
             </blockquote>
           </div>
         </div>
@@ -541,6 +553,8 @@
             <span class="section-label-line"></span>
             <span class="section-label-text">How I Work</span>
           </div>
+
+          <p class="workflow-intro-note">AI is not a shortcut in this process. It is infrastructure. Each model has a specific cognitive role. Each tool sits exactly where it reduces friction.</p>
 
           <!-- Thinking -->
           <div class="workflow-block">
@@ -554,11 +568,36 @@
             <div class="workflow-tools">
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">ChatGPT</span>
-                <span class="workflow-tool-desc">Exploring ideas, mapping problems, initial frameworks</span>
+                <span class="workflow-tool-desc">Exploring ideas, mapping problems, generating initial frameworks</span>
               </div>
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">Claude</span>
-                <span class="workflow-tool-desc">Structured reasoning, alternative perspectives</span>
+                <span class="workflow-tool-desc">Structured reasoning, alternative perspectives, contrasting conclusions</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Research -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1"/>
+                <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+              <span class="workflow-block-label-text">Research</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Perplexity</span>
+                <span class="workflow-tool-desc">Market signals, competitive context and domain references with sources</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Gemini</span>
+                <span class="workflow-tool-desc">Cross-referencing findings, expanding scope when sources fall short</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Manus</span>
+                <span class="workflow-tool-desc">Structured survey flows and stakeholder input gathering</span>
               </div>
             </div>
           </div>
@@ -576,15 +615,19 @@
             <div class="workflow-tools">
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">Claude</span>
-                <span class="workflow-tool-desc">Interface architecture, HTML/CSS/JS outputs</span>
+                <span class="workflow-tool-desc">Interface architecture, logic structure, HTML/CSS/JS outputs</span>
               </div>
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">Lovable</span>
-                <span class="workflow-tool-desc">Rapid scaffolding — concept to testable output</span>
+                <span class="workflow-tool-desc">Rapid scaffolding from concept to testable output in one session</span>
               </div>
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">GitHub Copilot</span>
-                <span class="workflow-tool-desc">Inline completion and refactoring</span>
+                <span class="workflow-tool-desc">Inline completion and refactoring inside the editor</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Figma Make</span>
+                <span class="workflow-tool-desc">Component logic and design-to-code translation from Figma</span>
               </div>
             </div>
           </div>
@@ -602,15 +645,42 @@
             <div class="workflow-tools">
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">Figma</span>
-                <span class="workflow-tool-desc">Design systems, component libraries, production specs</span>
+                <span class="workflow-tool-desc">Design system architecture, component libraries, production specs</span>
               </div>
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">Framer</span>
-                <span class="workflow-tool-desc">Interactive prototypes and motion design</span>
+                <span class="workflow-tool-desc">Interactive prototypes and motion-rich design presentations</span>
               </div>
               <div class="workflow-tool-row">
                 <span class="workflow-tool-name">Sora</span>
-                <span class="workflow-tool-desc">Visual and motion asset generation at scale</span>
+                <span class="workflow-tool-desc">Visual and motion asset generation at a scale no traditional team could match</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Planning -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="3" width="12" height="11" rx="1" stroke="currentColor" stroke-width="1"/>
+                <line x1="5" y1="1" x2="5" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                <line x1="11" y1="1" x2="11" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                <line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="0.9"/>
+              </svg>
+              <span class="workflow-block-label-text">Planning</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Manus</span>
+                <span class="workflow-tool-desc">Turning blurry ideas into structured flows and navigable low-fi prototypes</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Claude</span>
+                <span class="workflow-tool-desc">Documentation, decision logs and structural summaries as systems grow</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">ChatGPT</span>
+                <span class="workflow-tool-desc">Roadmap brainstorming, prioritization frameworks, strategic framing</span>
               </div>
             </div>
           </div>
@@ -619,8 +689,8 @@
           <div class="process-block">
             <p class="process-block-label">Prompt Design · Ongoing experiment</p>
             <div class="process-block-body">
-              <p>Building a vocabulary of prompts for design — turning visual decisions into language. Typography, spacing, hierarchy, UX intent. All become instructions.</p>
-              <p>A working library of design decisions written as prompts, ready to copy, adapt and iterate directly in the browser. <a href="https://github.com/royvillasana/figma-to-ai-prompter" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline; text-underline-offset:3px;">github.com/royvillasana/figma-to-ai-prompter</a></p>
+              <p>Building a vocabulary of prompts for design. Typography, spacing, hierarchy, UX intent. Visual decisions turned into language, ready to iterate directly in the browser.</p>
+              <p>Models are assigned roles based on where they reason best. The goal is structural clarity, not model loyalty. A working library of these decisions, open and evolving: <a href="https://github.com/royvillasana/figma-to-ai-prompter" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline; text-underline-offset:3px;">github.com/royvillasana/figma-to-ai-prompter</a></p>
             </div>
           </div>
 
@@ -642,8 +712,4 @@
   <script>
     // Mirror project count to both header and work section label
     const origInit = window._init;
-    const observer = new MutationObserver(() => {
-      const count = document.getElementById('project-count');
-      const labelCount = document.getElementById('project-count-label');
-      if (count && labelCount) {
-        labelCount.textContent = count.t
+    const obs
