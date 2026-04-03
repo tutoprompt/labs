@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clauber Rosa — Product Architect</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+    /* ── Design Token Overrides ── */
+    :root {
+      --accent: rgba(200, 190, 165, 0.55);
+      --accent-line: rgba(200, 190, 165, 0.22);
+      --ink-rgb: 232,230,220;
+      --rule-l: rgba(232,230,220,0.07);
+    }
+
+    /* ── Prims separator ── */
+    .identity-prims {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0;
+      width: 100%;
+      margin: 14px 0 10px;
+    }
+
+    .identity-prim {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 4px 0;
+    }
+
+    .identity-prim + .identity-prim::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 18%; bottom: 18%;
+      width: 1px;
+      background: var(--rule-l);
+    }
+
+    .identity-prim svg { display: block; overflow: visible; }
+
+    /* ── Tagline stylization ── */
+    .identity-tagline {
+      font-family: 'Cormorant Garamond', var(--serif) !important;
+      font-size: clamp(16px, 1.65vw, 19px) !important;
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.72;
+      color: var(--ink2);
+      max-width: 440px;
+      letter-spacing: 0.01em;
+    }
+
+    .identity-tagline .tagline-w {
+      font-size: 1.18em;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Identity / Hero ── */
+    .identity {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 80px 48px 72px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      align-items: end;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .identity-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .identity-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .identity-eyebrow-line {
+      width: 20px;
+      height: 1px;
+      background: var(--ink4);
+    }
+
+    .identity-eyebrow-text {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--ink4);
+    }
+
+    .identity-name {
+      font-family: var(--serif);
+      font-size: clamp(42px, 5.5vw, 72px);
+      font-weight: 300;
+      line-height: 1.04;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+      margin-bottom: 6px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .identity-name em {
+      font-style: italic;
+      color: var(--ink2);
+    }
+
+    .identity-role {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      margin-top: 18px;
+    }
+
+    .identity-right {
+      padding-left: 56px;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      padding-bottom: 4px;
+    }
+
+    .identity-tagline {
+      font-family: var(--serif);
+      font-size: clamp(15px, 1.5vw, 17px);
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.68;
+      color: var(--ink2);
+      max-width: 440px;
+    }
+
+    .identity-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .identity-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .identity-meta-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      opacity: 0.3;
+    }
+
+    .identity-meta-text {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      color: var(--ink3);
+      letter-spacing: 0.04em;
+    }
+
+    .identity-meta-text a {
+      color: var(--ink3);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: color var(--ease), border-color var(--ease);
+    }
+
+    .identity-meta-text a:hover {
+      color: var(--ink2);
+      border-color: var(--border-hover);
+    }
+
+    /* ── Section Label ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+
+    .section-label-line {
+      width: 20px;
+      height: 1px;
+      background: var(--ink4);
+      flex-shrink: 0;
+    }
+
+    .section-label-text {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--ink4);
+    }
+
+    .section-label-count {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      color: var(--ink4);
+      opacity: 0.5;
+    }
+
+    /* ── Work Section ── */
+    .work-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 64px 48px 72px;
+    }
+
+    /* ── Profile Section ── */
+    .profile-section {
+      border-top: 1px solid var(--border);
+      padding: 72px 0 0;
+    }
+
+    .profile-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 48px 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+
+    .profile-left {}
+
+    .profile-heading {
+      font-family: var(--serif);
+      font-size: clamp(24px, 2.5vw, 34px);
+      font-weight: 300;
+      line-height: 1.2;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      margin-bottom: 32px;
+    }
+
+    .profile-heading em {
+      font-style: italic;
+      color: var(--ink2);
+    }
+
+    .profile-text {
+      font-family: var(--sans);
+      font-size: 13.5px;
+      font-weight: 300;
+      line-height: 1.9;
+      color: var(--ink3);
+    }
+
+    .profile-text p {
+      margin-bottom: 16px;
+    }
+
+    .profile-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    .profile-text strong {
+      font-weight: 400;
+      color: var(--ink2);
+    }
+
+    .profile-text a {
+      color: var(--ink3);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--border-hover);
+      transition: color 0.2s ease;
+    }
+
+    .profile-text a:hover { color: var(--ink2); }
+
+    .profile-right {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    /* ── Workflow intro note ── */
+    .workflow-intro-note {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      line-height: 1.72;
+      color: var(--ink4);
+      margin-top: -24px;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Workflow Grid ── */
+    .workflow-block {}
+
+    .workflow-block-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .workflow-block-label-text {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink4);
+    }
+
+    .workflow-block-label svg {
+      opacity: 0.3;
+    }
+
+    .workflow-tools {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .workflow-tool-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .workflow-tool-row:last-child {
+      border-bottom: none;
+    }
+
+    .workflow-tool-name {
+      font-family: var(--serif);
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--ink2);
+      min-width: 100px;
+      flex-shrink: 0;
+    }
+
+    .workflow-tool-desc {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 300;
+      color: var(--ink4);
+      line-height: 1.5;
+    }
+
+    /* ── Process Note (formerly Manifesto) ── */
+    .process-block {
+      border: 1px solid var(--border);
+      padding: 28px;
+    }
+
+    .process-block-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink4);
+      margin-bottom: 14px;
+    }
+
+    .process-block-body {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.78;
+      color: var(--ink3);
+    }
+
+    .process-block-body p {
+      margin-bottom: 12px;
+    }
+
+    .process-block-body p:last-child { margin-bottom: 0; }
+
+    /* ── Insight callout ── */
+    .insight {
+      margin-top: 40px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .insight-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink4);
+      margin-bottom: 14px;
+    }
+
+    .insight-quote {
+      font-family: var(--serif);
+      font-size: clamp(16px, 1.6vw, 20px);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--ink2);
+      line-height: 1.48;
+      border: none;
+      padding: 0;
+    }
+
+    /* ── Footer decoration ── */
+    .footer-sep {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 48px 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .footer-sep-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .footer-sep-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--ink4);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .identity {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        padding: 48px 24px 56px;
+      }
+
+      .identity-right {
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px solid var(--border);
+        padding-top: 32px;
+      }
+
+      .profile-inner {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        padding: 0 24px 64px;
+      }
+
+      .work-section {
+        padding: 48px 24px 56px;
+      }
+
+      .footer-sep {
+        padding: 0 24px 48px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .header-inner {
+        padding: 20px 24px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ HEADER ══════════════════════════════════════ -->
+  <header>
+    <div class="header-inner">
+      <span class="header-label">clauber rosa</span>
+      <span class="header-count" id="project-count"></span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ══ 1. IDENTITY ═══════════════════════════════ -->
+    <section class="identity" aria-label="Identity">
+
+      <div class="identity-left">
+        <div class="identity-eyebrow">
+          <span class="identity-eyebrow-line"></span>
+          <span class="identity-eyebrow-text">Product Architect</span>
+        </div>
+        <h1 class="identity-name">
+          clauber
+          <!-- ── Prims separator ── -->
+          <div class="identity-prims">
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <circle cx="18" cy="18" r="12" stroke="rgba(var(--ink-rgb),0.10)" stroke-width="0.7" fill="none"/>
+                <circle cx="18" cy="18" r="6.5" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.6" fill="none"/>
+                <circle cx="18" cy="18" r="3" fill="rgba(var(--ink-rgb),0.46)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <line x1="4" y1="14" x2="32" y2="14" stroke="rgba(var(--ink-rgb),0.12)" stroke-width="0.6" stroke-dasharray="5 4"/>
+                <line x1="4" y1="18" x2="32" y2="18" stroke="rgba(var(--ink-rgb),0.36)" stroke-width="0.8" stroke-dasharray="5 4"/>
+                <line x1="4" y1="22" x2="32" y2="22" stroke="rgba(var(--ink-rgb),0.12)" stroke-width="0.6" stroke-dasharray="5 4"/>
+                <circle cx="4"  cy="18" r="1.6" fill="rgba(var(--ink-rgb),0.32)"/>
+                <circle cx="32" cy="18" r="1.6" fill="rgba(var(--ink-rgb),0.18)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <circle cx="18" cy="18" r="14" stroke="rgba(var(--ink-rgb),0.08)" stroke-width="0.6" fill="none"/>
+                <circle cx="18" cy="18" r="9" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none" stroke-dasharray="12 16"/>
+                <circle cx="18" cy="9"  r="1.8" fill="rgba(var(--ink-rgb),0.46)"/>
+                <circle cx="18" cy="18" r="2.2" fill="rgba(var(--ink-rgb),0.40)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <polygon points="18,4 33,30 3,30" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none" stroke-linejoin="round"/>
+                <polygon points="18,24 9,11 27,11" stroke="rgba(var(--ink-rgb),0.09)" stroke-width="0.5" fill="none" stroke-linejoin="round"/>
+                <circle cx="18" cy="19" r="1.6" fill="rgba(var(--ink-rgb),0.36)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <rect x="5" y="5" width="26" height="26" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none"/>
+                <rect x="11" y="11" width="14" height="14" stroke="rgba(var(--ink-rgb),0.09)" stroke-width="0.5" fill="none"/>
+                <line x1="6" y1="18" x2="30" y2="18" stroke="rgba(var(--ink-rgb),0.26)" stroke-width="0.6"/>
+                <circle cx="5"  cy="5"  r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+                <circle cx="31" cy="5"  r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+                <circle cx="5"  cy="31" r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+                <circle cx="31" cy="31" r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+              </svg>
+            </div>
+            <div class="identity-prim">
+              <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+                <line x1="5"  y1="5"  x2="5"  y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="18" y1="5"  x2="18" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="31" y1="5"  x2="31" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="5"  y1="5"  x2="31" y2="5"  stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="5"  y1="18" x2="31" y2="18" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <line x1="5"  y1="31" x2="31" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+                <circle cx="5"  cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="18" cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="31" cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="5"  cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="18" cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="31" cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="5"  cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="18" cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+                <circle cx="31" cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+              </svg>
+            </div>
+          </div>
+          <em>rosa</em>
+        </h1>
+        <p class="identity-role">Product · Design · AI Workflow</p>
+      </div>
+
+      <div class="identity-right">
+        <p class="identity-tagline">
+          I build product from strategy to interface. System thinking, design execution and AI-driven <span class="tagline-w">w</span>orkflows <span class="tagline-w">w</span>orking together toward coherent digital experiences.
+        </p>
+
+        <div class="identity-meta">
+          <div class="identity-meta-row">
+            <svg class="identity-meta-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="7" r="3" stroke="currentColor" stroke-width="1"/>
+              <path d="M2 14C2 11.24 4.69 9 8 9C11.31 9 14 11.24 14 14" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+            <span class="identity-meta-text">Joinville, Santa Catarina, Brazil</span>
+          </div>
+          <div class="identity-meta-row">
+            <svg class="identity-meta-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1"/>
+              <path d="M2 6L8 9.5L14 6" stroke="currentColor" stroke-width="1"/>
+            </svg>
+            <span class="identity-meta-text"><a href="/cdn-cgi/l/email-protection#27444b465245425548544667404a464e4b0944484a"><span class="__cf_email__" data-cfemail="e98a85889c8b8c9b869a88a98e84888085c78a8684">[email&#160;protected]</span></a></span>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══ 2. EXPERIMENTS ══════════════════════════════ -->
+    <section class="work-section" aria-label="Experiments">
+
+      <div class="section-label">
+        <span class="section-label-line"></span>
+        <span class="section-label-text">Experiments</span>
+        <span class="section-label-count" id="project-count-label"></span>
+      </div>
+
+      <div class="grid" id="grid"></div>
+
+    </section>
+
+    <!-- ══ 3. PROFILE ════════════════════════════════ -->
+    <section class="profile-section" aria-label="Profile">
+
+      <div class="profile-inner">
+
+        <!-- Left: Background + Process note -->
+        <div class="profile-left">
+          <div class="section-label">
+            <span class="section-label-line"></span>
+            <span class="section-label-text">About</span>
+          </div>
+
+          <h2 class="profile-heading">
+            System thinking<br>
+            <em>meets execution.</em>
+          </h2>
+
+          <div class="profile-text">
+            <p>Over 20 years designing and building digital products, from early-stage concepts to scalable design systems. The through-line has always been the same: reduce friction between strategy and what ships.</p>
+
+            <p>For 13 years I ran teken, a digital product studio operating across SaaS, B2B, agribusiness and logistics. I built and maintained design systems, defined product vision across multiple client contexts, and made product decisions under real resource constraints.</p>
+
+            <p>Today my work sits at the intersection of product architecture, interface design and AI-augmented workflows. The designer who knows how to name what they see doesn't depend solely on the screen to build.</p>
+          </div>
+
+          <div class="insight">
+            <p class="insight-label">Process note</p>
+            <blockquote class="insight-quote">
+              I set Figma aside as the starting point. Not because it is bad, but to test how far I could go without it. The result: think, prompt, browser. Fewer intermediaries, more proximity to the final result.
+            </blockquote>
+          </div>
+        </div>
+
+        <!-- Right: Workflow + Tools -->
+        <div class="profile-right">
+          <div class="section-label">
+            <span class="section-label-line"></span>
+            <span class="section-label-text">How I Work</span>
+          </div>
+
+          <p class="workflow-intro-note">AI is not a shortcut in this process. It is infrastructure. Each model has a specific cognitive role. Each tool sits exactly where it reduces friction.</p>
+
+          <!-- Thinking -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2C5.24 2 3 4.24 3 7C3 8.87 4.02 10.5 5.5 11.4V13H10.5V11.4C11.98 10.5 13 8.87 13 7C13 4.24 10.76 2 8 2Z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>
+                <line x1="5.5" y1="13" x2="10.5" y2="13" stroke="currentColor" stroke-width="1"/>
+              </svg>
+              <span class="workflow-block-label-text">Thinking</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">ChatGPT</span>
+                <span class="workflow-tool-desc">Exploring ideas, mapping problems, generating initial frameworks</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Claude</span>
+                <span class="workflow-tool-desc">Structured reasoning, alternative perspectives, contrasting conclusions</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Research -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1"/>
+                <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+              <span class="workflow-block-label-text">Research</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Perplexity</span>
+                <span class="workflow-tool-desc">Market signals, competitive context and domain references with sources</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Gemini</span>
+                <span class="workflow-tool-desc">Cross-referencing findings, expanding scope when sources fall short</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Manus</span>
+                <span class="workflow-tool-desc">Structured survey flows and stakeholder input gathering</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Building -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <polyline points="4,10 1,8 4,6" stroke="currentColor" stroke-width="1" stroke-linejoin="round" fill="none"/>
+                <polyline points="12,6 15,8 12,10" stroke="currentColor" stroke-width="1" stroke-linejoin="round" fill="none"/>
+                <line x1="9.5" y1="3.5" x2="6.5" y2="12.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              </svg>
+              <span class="workflow-block-label-text">Building</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Claude</span>
+                <span class="workflow-tool-desc">Interface architecture, logic structure, HTML/CSS/JS outputs</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Lovable</span>
+                <span class="workflow-tool-desc">Rapid scaffolding from concept to testable output in one session</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">GitHub Copilot</span>
+                <span class="workflow-tool-desc">Inline completion and refactoring inside the editor</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Figma Make</span>
+                <span class="workflow-tool-desc">Component logic and design-to-code translation from Figma</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Visual Creation -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1"/>
+                <circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.5"/>
+                <path d="M2 11L6 8L9 10L12 6.5L14 9" stroke="currentColor" stroke-width="1" stroke-linejoin="round" fill="none"/>
+              </svg>
+              <span class="workflow-block-label-text">Visual Creation</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Figma</span>
+                <span class="workflow-tool-desc">Design system architecture, component libraries, production specs</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Framer</span>
+                <span class="workflow-tool-desc">Interactive prototypes and motion-rich design presentations</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Sora</span>
+                <span class="workflow-tool-desc">Visual and motion asset generation at a scale no traditional team could match</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Planning -->
+          <div class="workflow-block">
+            <div class="workflow-block-label">
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="3" width="12" height="11" rx="1" stroke="currentColor" stroke-width="1"/>
+                <line x1="5" y1="1" x2="5" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                <line x1="11" y1="1" x2="11" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                <line x1="2" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="0.9"/>
+              </svg>
+              <span class="workflow-block-label-text">Planning</span>
+            </div>
+            <div class="workflow-tools">
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Manus</span>
+                <span class="workflow-tool-desc">Turning blurry ideas into structured flows and navigable low-fi prototypes</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">Claude</span>
+                <span class="workflow-tool-desc">Documentation, decision logs and structural summaries as systems grow</span>
+              </div>
+              <div class="workflow-tool-row">
+                <span class="workflow-tool-name">ChatGPT</span>
+                <span class="workflow-tool-desc">Roadmap brainstorming, prioritization frameworks, strategic framing</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Process note box -->
+          <div class="process-block">
+            <p class="process-block-label">Prompt Design · Ongoing experiment</p>
+            <div class="process-block-body">
+              <p>Building a vocabulary of prompts for design. Typography, spacing, hierarchy, UX intent. Visual decisions turned into language, ready to iterate directly in the browser.</p>
+              <p>Models are assigned roles based on where they reason best. The goal is structural clarity, not model loyalty. A working library of these decisions, open and evolving: <a href="https://github.com/royvillasana/figma-to-ai-prompter" target="_blank" rel="noopener" style="color:inherit; text-decoration:underline; text-underline-offset:3px;">github.com/royvillasana/figma-to-ai-prompter</a></p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══ Footer decoration ════════════════════════ -->
+    <div class="footer-sep">
+      <span class="footer-sep-dot"></span>
+      <span class="footer-sep-line"></span>
+      <span class="footer-sep-dot"></span>
+    </div>
+
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    // Mirror project count to header and work section label
+    const projectCountEl = document.getElementById('project-count');
+    const projectCountLabelEl = document.getElementById('project-count-label');
+    const observer = new MutationObserver(() => {
+      const count = projectCountEl ? projectCountEl.textContent : '';
+      if (projectCountLabelEl) projectCountLabelEl.textContent = count ? `— ${count}` : '';
+    });
+    if (projectCountEl) {
+      observer.observe(projectCountEl, { childList: true, characterData: true, subtree: true });
+    }
+  </script>
+
+</body>
+</html>

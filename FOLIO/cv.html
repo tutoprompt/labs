@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clauber Rosa — Product Architect</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --paper:        #f4f5f7;
+  --white:        #ffffff;
+  --ink:          #1c1e21;
+  --ink-2:        #3a3d42;
+  --ink-3:        #6b7280;
+  --ink-4:        #9ca3af;
+  --ink-rgb:      28,30,33;
+  --accent:       #4a6fa5;
+  --accent-light: #e8eef6;
+  --rule:         #e2e4e8;
+  --rule-l:       rgba(28,30,33,0.07);
+  --left-w:       280px;
+}
+
+html, body {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: #d4d7de;
+  line-height: 1.6;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ══ PAGE ══════════════════════════════════════════ */
+.page {
+  width: 1060px;
+  background: var(--white);
+  margin: 36px auto;
+  display: grid;
+  grid-template-columns: var(--left-w) 1fr;
+  min-height: 1400px;
+  position: relative;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.10);
+}
+
+/* ══ HEADER — v2 DNA, refined ══════════════════════ */
+.header {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: var(--left-w) 1fr;
+  background: var(--white);
+  border-bottom: 1px solid var(--rule);
+  padding: 44px 56px 40px 44px;
+  gap: 32px;
+  align-items: center;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding-right: 8px;
+}
+
+.avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  border: 2px solid var(--rule);
+  filter: grayscale(15%);
+}
+
+.name {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.12;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.name-role {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 6px;
+}
+
+.header-right {
+  padding-left: 28px;
+  border-left: 2px solid var(--accent-light);
+}
+
+.tagline {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--ink-2);
+  line-height: 1.65;
+  margin-bottom: 18px;
+  max-width: 520px;
+}
+
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+}
+
+.contact span {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 300;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.contact-dot {
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+/* ══ SIDEBAR ═══════════════════════════════════════ */
+.sidebar {
+  grid-column: 1;
+  background: var(--paper);
+  padding: 36px 30px 48px 44px;
+  border-right: 1px solid var(--rule);
+}
+
+.s-section {
+  margin-bottom: 30px;
+}
+
+/* Section label with icon */
+.s-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.s-label svg { flex-shrink: 0; opacity: 0.75; }
+
+.skill-block { margin-bottom: 12px; }
+
+.skill-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 3px;
+  line-height: 1.35;
+}
+
+.skill-desc {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 300;
+  color: var(--ink-3);
+  line-height: 1.60;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--accent);
+  background: var(--accent-light);
+  border-radius: 3px;
+  padding: 3px 9px;
+  letter-spacing: 0.03em;
+}
+
+.edu-item { margin-bottom: 12px; }
+
+.edu-deg {
+  font-family: 'Playfair Display', serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.edu-inst {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+.edu-year {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--ink-4);
+}
+
+.lang-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 7px;
+}
+
+.lang-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.lang-lvl {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--ink-4);
+  letter-spacing: 0.06em;
+}
+
+/* ══ MAIN ═══════════════════════════════════════════ */
+.main {
+  grid-column: 2;
+  padding: 36px 52px 48px 36px;
+}
+
+.m-section { margin-bottom: 28px; }
+
+/* Main section label with icon */
+.m-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule-l);
+}
+
+.m-label svg { flex-shrink: 0; opacity: 0.45; }
+
+.profile-p {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-2);
+  line-height: 1.75;
+  margin-bottom: 10px;
+}
+
+.profile-p strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* Experience */
+.exp {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--rule-l);
+}
+
+.exp:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+.exp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+
+.exp-role {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.exp-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 300;
+  color: var(--ink-4);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.exp-co {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 300;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+  margin-bottom: 7px;
+}
+
+.exp-body {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--ink-3);
+  line-height: 1.70;
+  margin-bottom: 8px;
+}
+
+.impact {
+  font-family: 'Playfair Display', serif;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-2);
+  padding-left: 14px;
+  border-left: 2px solid var(--accent-light);
+  line-height: 1.6;
+}
+
+/* ══ PAGE 2 BAR ════════════════════════════════════ */
+.page2-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 52px 16px 44px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--white);
+}
+
+.page2-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ink-3);
+}
+
+.page2-pg {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--ink-4);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ══ EARLY CAREER ══════════════════════════════════ */
+.early-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 28px;
+}
+
+.early-item { display: block; }
+
+.ei-role {
+  font-family: 'Playfair Display', serif;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.ei-co {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--ink-3);
+}
+
+.ei-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--ink-4);
+}
+
+/* ══ WORKFLOW PAGE ═══════════════════════════════════ */
+.workflow-intro {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-3);
+  line-height: 1.65;
+  max-width: 560px;
+  margin-bottom: 28px;
+  padding-left: 16px;
+  border-left: 2px solid var(--accent-light);
+}
+
+/* 5-column workflow grid */
+.wf-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+
+.wf-col {
+  background: var(--white);
+  padding: 20px 18px 22px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wf-col-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule-l);
+  margin-bottom: 14px;
+}
+
+.wf-col-head svg { flex-shrink: 0; opacity: 0.50; }
+
+.wf-col-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.wf-tool {
+  margin-bottom: 12px;
+}
+
+.wf-tool:last-child { margin-bottom: 0; }
+
+.wf-tool-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.wf-tool-desc {
+  font-family: 'DM Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 300;
+  color: var(--ink-4);
+  line-height: 1.55;
+}
+
+.wf-note {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule-l);
+  font-family: 'Playfair Display', serif;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-4);
+  line-height: 1.65;
+  max-width: 680px;
+}
+
+/* Primitives in header-left bottom */
+.prims {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+}
+
+.prim {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 4px 0;
+}
+
+.prim + .prim::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 18%; bottom: 18%;
+  width: 1px;
+  background: var(--rule-l);
+}
+
+.prim svg { display: block; overflow: visible; }
+
+@media print {
+  body { background: white; }
+  .page { margin: 0; box-shadow: none; page-break-after: always; width: 100%; }
+  .page:last-child { page-break-after: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════ PAGE 1 ════════════ -->
+<div class="page">
+
+  <!-- HEADER — v2 structure, refined -->
+  <header class="header">
+
+    <div class="header-left">
+      <img
+        src="https://media.licdn.com/dms/image/v2/D4D03AQF_QPHZ_Y1Gyw/profile-displayphoto-scale_400_400/B4DZ0dv0NcKgAo-/0/1774320567801?e=1776902400&v=beta&t=aSbznFztlgvZkQs6WSLQCnGv1gJqbm8J8q0jQZQ9dJ4"
+        class="avatar"
+        alt="Clauber Rosa"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+      />
+      <!-- fallback initials -->
+      <div style="display:none; width:88px; height:88px; border-radius:50%; background:var(--accent-light); border:2px solid var(--rule); align-items:center; justify-content:center;">
+        <span style="font-family:'Playfair Display',serif; font-size:22px; font-weight:400; color:var(--accent);">CR</span>
+      </div>
+
+      <div>
+        <div class="name">
+          Clauber Rosa
+          <span class="name-role">Product Architect</span>
+        </div>
+      </div>
+
+      <!-- 6 geometric primitives — no labels -->
+      <div class="prims">
+        <div class="prim">
+          <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+            <circle cx="18" cy="18" r="12" stroke="rgba(var(--ink-rgb),0.10)" stroke-width="0.7" fill="none"/>
+            <circle cx="18" cy="18" r="6.5" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.6" fill="none"/>
+            <circle cx="18" cy="18" r="3" fill="rgba(var(--ink-rgb),0.46)"/>
+          </svg>
+        </div>
+        <div class="prim">
+          <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+            <line x1="4" y1="14" x2="32" y2="14" stroke="rgba(var(--ink-rgb),0.12)" stroke-width="0.6" stroke-dasharray="5 4"/>
+            <line x1="4" y1="18" x2="32" y2="18" stroke="rgba(var(--ink-rgb),0.36)" stroke-width="0.8" stroke-dasharray="5 4"/>
+            <line x1="4" y1="22" x2="32" y2="22" stroke="rgba(var(--ink-rgb),0.12)" stroke-width="0.6" stroke-dasharray="5 4"/>
+            <circle cx="4"  cy="18" r="1.6" fill="rgba(var(--ink-rgb),0.32)"/>
+            <circle cx="32" cy="18" r="1.6" fill="rgba(var(--ink-rgb),0.18)"/>
+          </svg>
+        </div>
+        <div class="prim">
+          <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+            <circle cx="18" cy="18" r="14" stroke="rgba(var(--ink-rgb),0.08)" stroke-width="0.6" fill="none"/>
+            <circle cx="18" cy="18" r="9" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none" stroke-dasharray="12 16"/>
+            <circle cx="18" cy="9"  r="1.8" fill="rgba(var(--ink-rgb),0.46)"/>
+            <circle cx="18" cy="18" r="2.2" fill="rgba(var(--ink-rgb),0.40)"/>
+          </svg>
+        </div>
+        <div class="prim">
+          <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+            <polygon points="18,4 33,30 3,30" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none" stroke-linejoin="round"/>
+            <polygon points="18,24 9,11 27,11" stroke="rgba(var(--ink-rgb),0.09)" stroke-width="0.5" fill="none" stroke-linejoin="round"/>
+            <circle cx="18" cy="19" r="1.6" fill="rgba(var(--ink-rgb),0.36)"/>
+          </svg>
+        </div>
+        <div class="prim">
+          <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+            <rect x="5" y="5" width="26" height="26" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.7" fill="none"/>
+            <rect x="11" y="11" width="14" height="14" stroke="rgba(var(--ink-rgb),0.09)" stroke-width="0.5" fill="none"/>
+            <line x1="6" y1="18" x2="30" y2="18" stroke="rgba(var(--ink-rgb),0.26)" stroke-width="0.6"/>
+            <circle cx="5"  cy="5"  r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+            <circle cx="31" cy="5"  r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+            <circle cx="5"  cy="31" r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+            <circle cx="31" cy="31" r="1.3" fill="rgba(var(--ink-rgb),0.26)"/>
+          </svg>
+        </div>
+        <div class="prim">
+          <svg width="26" height="26" viewBox="0 0 36 36" overflow="visible">
+            <line x1="5"  y1="5"  x2="5"  y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+            <line x1="18" y1="5"  x2="18" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+            <line x1="31" y1="5"  x2="31" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+            <line x1="5"  y1="5"  x2="31" y2="5"  stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+            <line x1="5"  y1="18" x2="31" y2="18" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+            <line x1="5"  y1="31" x2="31" y2="31" stroke="rgba(var(--ink-rgb),0.07)" stroke-width="0.5"/>
+            <circle cx="5"  cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="18" cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="31" cy="5"  r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="5"  cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="18" cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="31" cy="18" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="5"  cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="18" cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+            <circle cx="31" cy="31" r="2" fill="rgba(var(--ink-rgb),0.34)"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <p class="tagline">
+        When a product stops scaling, the problem is rarely the interface.
+        It's that no one structured how decisions flow inside the system.
+      </p>
+      <div class="contact">
+        <span><span class="contact-dot">·</span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="75161914001710073501101e101b5b161a185b1707">[email&#160;protected]</a></span>
+        <span><span class="contact-dot">·</span>www.linkedin.com/in/clauber-rosa</span>
+        <span><span class="contact-dot">·</span>tutoprompt.github.io/labs/</span>
+        <span><span class="contact-dot">·</span>last.fm/user/kaluber</span>
+        <span><span class="contact-dot">·</span>Joinville, SC — Brazil</span>
+      </div>
+    </div>
+
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1L14 4.5L8 8L2 4.5L8 1Z" stroke="rgba(var(--ink-rgb),1)" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M2 8L8 11.5L14 8" stroke="rgba(var(--ink-rgb),1)" stroke-width="1.1" stroke-linejoin="round"/>
+          <path d="M2 11.5L8 15L14 11.5" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="1.1" stroke-linejoin="round"/>
+        </svg>
+        Core Competencies
+      </div>
+      <div class="skill-block">
+        <div class="skill-name">Product Architecture</div>
+        <div class="skill-desc">Structuring decision flows and system logic that sustain growth without accumulating complexity.</div>
+      </div>
+      <div class="skill-block">
+        <div class="skill-name">Systems Thinking</div>
+        <div class="skill-desc">Mapping structural failures across UX, operations and technology. Rebuilding the connective tissue.</div>
+      </div>
+      <div class="skill-block">
+        <div class="skill-name">Design Systems</div>
+        <div class="skill-desc">Architectural foundations for product consistency and scalability across ecosystems.</div>
+      </div>
+      <div class="skill-block">
+        <div class="skill-name">AI Integration</div>
+        <div class="skill-desc">Embedded into product logic — not added as a feature. Specific, honest, measurable.</div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6.5" stroke="rgba(var(--ink-rgb),1)" stroke-width="1.1"/>
+          <path d="M1.5 8H14.5M8 1.5C8 1.5 5.5 4.5 5.5 8C5.5 11.5 8 14.5 8 14.5M8 1.5C8 1.5 10.5 4.5 10.5 8C10.5 11.5 8 14.5 8 14.5" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="0.9"/>
+        </svg>
+        Domain
+      </div>
+      <div class="tags">
+        <span class="tag">SaaS</span>
+        <span class="tag">B2B</span>
+        <span class="tag">Agribusiness</span>
+        <span class="tag">Logistics</span>
+        <span class="tag">Legal Tech</span>
+        <span class="tag">EdTech</span>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="6" width="12" height="1.2" fill="none" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="0.8"/>
+          <rect x="2" y="9" width="9" height="1.2" fill="none" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="0.8"/>
+          <rect x="2" y="3" width="7" height="1.2" fill="none" stroke="rgba(var(--ink-rgb),1)" stroke-width="0.8"/>
+          <circle cx="13" cy="12" r="2" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+        </svg>
+        Methods &amp; Tools
+      </div>
+      <div class="tags">
+        <span class="tag">Design Sprint</span>
+        <span class="tag">Journey Mapping</span>
+        <span class="tag">User Research</span>
+        <span class="tag">Prototyping</span>
+        <span class="tag">Figma</span>
+        <span class="tag">Lovable</span>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <path d="M2 3C2 2.45 2.45 2 3 2H13C13.55 2 14 2.45 14 3V9C14 9.55 13.55 10 13 10H9L6 14V10H3C2.45 10 2 9.55 2 9V3Z" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linejoin="round"/>
+        </svg>
+        Languages
+      </div>
+      <div class="lang-row">
+        <span class="lang-name">Portuguese</span>
+        <span class="lang-lvl">Native</span>
+      </div>
+      <div class="lang-row">
+        <span class="lang-name">English</span>
+        <span class="lang-lvl">Professional</span>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2L15 6L8 10L1 6L8 2Z" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linejoin="round"/>
+          <path d="M4 8V12C4 12 5.5 14 8 14C10.5 14 12 12 12 12V8" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1"/>
+          <line x1="15" y1="6" x2="15" y2="10" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1"/>
+        </svg>
+        Education
+      </div>
+      <div class="edu-item">
+        <div class="edu-deg">Technology in Marketing</div>
+        <div class="edu-inst">Anhanguera Educacional</div>
+        <div class="edu-year">2019 – 2021</div>
+      </div>
+      <div class="edu-item">
+        <div class="edu-deg">Advertising &amp; Propaganda</div>
+        <div class="edu-inst">IELUSC / BOM JESUS</div>
+        <div class="edu-year">2004 – 2009</div>
+      </div>
+      <div class="edu-item">
+        <div class="edu-deg">Data Processing</div>
+        <div class="edu-inst">Escola Técnica Tupy</div>
+        <div class="edu-year">1996 – 2000</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="m-section">
+      <div class="m-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="5" r="3" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+          <path d="M2 14C2 11.24 4.69 9 8 9C11.31 9 14 11.24 14 14" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        Profile
+      </div>
+      <p class="profile-p">
+        I work at the architecture layer — where <strong>UX, operations and AI need to connect into something that holds under growth.</strong> Not redesigning screens. Restructuring how the product thinks.
+      </p>
+      <p class="profile-p">
+        When I enter a project, something is usually breaking: teams deciding in silos, flows built on patches, AI added as a feature instead of embedded into the logic. I map where structure is failing and rebuild it so the product scales without accumulating complexity.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <div class="m-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="5" width="12" height="9" rx="1" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+          <path d="M5 5V4C5 3 5.5 2 8 2C10.5 2 11 3 11 4V5" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1"/>
+          <line x1="2" y1="9" x2="14" y2="9" stroke="rgba(var(--ink-rgb),0.3)" stroke-width="0.9"/>
+        </svg>
+        Experience
+      </div>
+
+      <div class="exp">
+        <div class="exp-top">
+          <span class="exp-role">Digital Transformation &amp; Product Lead</span>
+          <span class="exp-date">Jan – Aug 2022</span>
+        </div>
+        <div class="exp-co">Copacol — Agricultural Cooperative</div>
+        <p class="exp-body">An existing application had failed its purpose, forcing thousands of cooperative members into parallel paper-based workflows — generating data noise, redundancy and critical slowdowns in logistical and financial control. Led cross-functional immersion across logistics, sales and technology. Built and validated a navigable prototype of 150+ screens, tested in person with cooperative members.</p>
+        <div class="impact">Eliminated 100% of manual processes. Enabled real-time financial and logistical control — directly accelerating cash flow and inventory decisions.</div>
+      </div>
+
+      <div class="exp">
+        <div class="exp-top">
+          <span class="exp-role">Digital Transformation &amp; Product Lead — Internal</span>
+          <span class="exp-date">Apr – Sep 2023</span>
+        </div>
+        <div class="exp-co">Copacol — Agricultural Cooperative</div>
+        <p class="exp-body">Extended the digital transformation to the internal audience of thousands of employees. Leveraged the Design System already established as the architectural foundation for consistency and efficiency across the new internal product.</p>
+        <div class="impact">A well-structured product foundation creates institutional trust and opens new strategic opportunities beyond its original scope.</div>
+      </div>
+
+      <div class="exp">
+        <div class="exp-top">
+          <span class="exp-role">Product &amp; UX Architecture Lead</span>
+          <span class="exp-date">Apr 2023 – Feb 2025</span>
+        </div>
+        <div class="exp-co">Central do Frete — Freight Platform</div>
+        <p class="exp-body">A freight platform serving three distinct personas (carriers, shippers, affiliates) operated with fragmented, inconsistent experiences — generating high support costs and barriers to expansion. Unified three fragmented user flows into a single coherent architecture. Designed a Design System as the structural foundation. Restructured critical business flows: quotation, tracking, payment management.</p>
+        <div class="impact">Reduced operational friction and onboarding complexity. Enabled faster delivery without compromising structural coherence.</div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<!-- ════════════ PAGE 2 ════════════ -->
+<div class="page">
+
+  <div class="page2-bar">
+    <div class="page2-name">Clauber Rosa</div>
+    <div class="page2-pg">Product Architect — continued</div>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="3" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+          <path d="M8 2V4M8 12V14M2 8H4M12 8H14" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        Who I Work With
+      </div>
+      <div class="skill-desc" style="font-size:11px; color:var(--ink-2); line-height:1.65;">
+        CPOs and founders who recognize structural product problems — not just interface issues. Decision-makers building at the architecture layer of SaaS and B2B products.
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <path d="M3 13V7L8 3L13 7V13H10V10H6V13H3Z" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linejoin="round"/>
+        </svg>
+        Structural Strengths
+      </div>
+      <div class="skill-block">
+        <div class="skill-name">Long-term Product Thinking</div>
+        <div class="skill-desc">13 years of product decisions under real resource constraints at teken.</div>
+      </div>
+      <div class="skill-block">
+        <div class="skill-name">Multi-persona Architecture</div>
+        <div class="skill-desc">Structuring independent flows that share the same logic without conflict.</div>
+      </div>
+      <div class="skill-block">
+        <div class="skill-name">Cross-functional Leadership</div>
+        <div class="skill-desc">Orchestrating design, content and technology around product outcomes — not deliverables.</div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <line x1="3" y1="3" x2="13" y2="13" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linecap="round"/>
+          <line x1="13" y1="3" x2="3" y2="13" stroke="rgba(var(--ink-rgb),0.35)" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        Not This
+      </div>
+      <div class="skill-desc" style="font-size:10px; color:var(--ink-4); font-style:italic; line-height:1.65;">
+        Marketing consulting or paid traffic. Figma execution for its own sake. AI as buzz or exploratory enthusiasm. Interface redesigns without structural intent.
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <div class="m-section">
+      <div class="m-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="5" width="12" height="9" rx="1" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+          <path d="M5 5V4C5 3 5.5 2 8 2C10.5 2 11 3 11 4V5" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1"/>
+          <line x1="2" y1="9" x2="14" y2="9" stroke="rgba(var(--ink-rgb),0.3)" stroke-width="0.9"/>
+        </svg>
+        Experience — continued
+      </div>
+
+      <div class="exp">
+        <div class="exp-top">
+          <span class="exp-role">UX &amp; Product Architecture Consultant</span>
+          <span class="exp-date">Apr – Jul 2025</span>
+        </div>
+        <div class="exp-co">Oystr — Legal Tech</div>
+        <p class="exp-body">A digital certificate platform for law firms lacked structured access governance and digital signature capabilities — both critical for security in the legal environment. Redesigned the access governance system with a visual interface for managing user groups, portals and permission levels. Conceptualized an integrated digital signature module. Used AI tools to map user journeys, simulate interaction flows and accelerate concept validation.</p>
+        <div class="impact">Transformed the product from a certificate manager to a complete legal authentication solution. Reduced configuration friction and onboarding time for new users.</div>
+      </div>
+
+      <div class="exp">
+        <div class="exp-top">
+          <span class="exp-role">Chief Design &amp; Product Officer</span>
+          <span class="exp-date">Oct 2025 – Feb 2026</span>
+        </div>
+        <div class="exp-co">Efeito Empreendedor — Business Education</div>
+        <p class="exp-body">Led the design ecosystem of a business education brand with the challenge of scaling creative output without proportionally scaling the team. Integrated AI into the creative operation to multiply ad creative production from a structured brand identity. Used conversion metrics and heatmaps as design input. Applied Lovable for rapid interface prototyping, compressing the cycle between concept and testable output.</p>
+        <div class="impact">Significant increase in creative output volume without team expansion. Established a repeatable creative system aligned with conversion-focused execution.</div>
+      </div>
+
+      <div class="exp">
+        <div class="exp-top">
+          <span class="exp-role">Co-Founder &amp; Product Lead</span>
+          <span class="exp-date">Sep 2011 – Mar 2025</span>
+        </div>
+        <div class="exp-co">teken — Digital Product Studio · 13 years</div>
+        <p class="exp-body">Built and sustained a digital product company across 13+ years, making product decisions under real resource constraints. Defined product vision and roadmap across multiple client contexts. Built and maintained scalable design systems as the architectural foundation. Operated across SaaS, B2B, agribusiness and logistics.</p>
+        <div class="impact">Established replicable processes that reduced friction between strategy and execution. Built a product culture where decisions were grounded in system logic, not interface output.</div>
+      </div>
+
+      <div class="exp">
+        <div class="exp-top">
+          <span class="exp-role">Chief Design Officer &amp; Product Strategy</span>
+          <span class="exp-date">Jan – Dec 2021</span>
+        </div>
+        <div class="exp-co">ToDo Green — Delivery Super App</div>
+        <p class="exp-body">Architected a cohesive product experience for a super app serving three structurally distinct and often conflicting audiences — end customers, restaurants, and delivery drivers. Built independent but integrated product flows for each pillar, with a unified design system supporting contextual variations.</p>
+        <div class="impact">Delivered a structurally coherent experience across three distinct audiences. Established a scalable foundation for future expansion within the super app model.</div>
+      </div>
+
+    </div>
+
+    <div class="m-section">
+      <div class="m-label">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+          <path d="M8 5V8.5L10.5 10" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        Earlier Career
+      </div>
+      <div class="early-grid">
+        <div class="early-item">
+          <div class="ei-role">Art Director</div>
+          <div class="ei-co">kaluber (freelance)</div>
+          <div class="ei-date">Dec 2009 – Oct 2011</div>
+        </div>
+        <div class="early-item">
+          <div class="ei-role">Art Director</div>
+          <div class="ei-co">Soluções Comunicação e Marketing</div>
+          <div class="ei-date">Mar 2008 – Dec 2009</div>
+        </div>
+        <div class="early-item">
+          <div class="ei-role">Creative Coordinator</div>
+          <div class="ei-co">Expresso Digital Internet</div>
+          <div class="ei-date">Apr 2003 – Aug 2007</div>
+        </div>
+        <div class="early-item">
+          <div class="ei-role">Graphic Designer</div>
+          <div class="ei-co">MR Comunicação e Eventos</div>
+          <div class="ei-date">Sep 2001 – Mar 2003</div>
+        </div>
+        <div class="early-item">
+          <div class="ei-role">Web Designer</div>
+          <div class="ei-co">Quyron Marketing Integrado</div>
+          <div class="ei-date">1998 – 2001</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ════════════ PAGE 3 — CREATIVE STACK ════════════ -->
+<div class="page" style="min-height:auto;">
+
+  <div class="page2-bar">
+    <div class="page2-name">Clauber Rosa</div>
+    <div class="page2-pg">Creative Stack — How I Work</div>
+  </div>
+
+  <div style="grid-column:1/-1; padding:40px 52px 48px 44px;">
+
+    <!-- Section header -->
+    <div style="display:flex; align-items:center; gap:9px; margin-bottom:8px;">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="opacity:0.45;">
+        <circle cx="4" cy="8" r="2.2" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+        <circle cx="12" cy="4" r="2.2" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+        <circle cx="12" cy="12" r="2.2" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+        <line x1="6.2" y1="7" x2="9.8" y2="5" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="1"/>
+        <line x1="6.2" y1="9" x2="9.8" y2="11" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="1"/>
+      </svg>
+      <span style="font-family:'DM Mono',monospace; font-size:10px; font-weight:400; letter-spacing:0.22em; text-transform:uppercase; color:var(--ink-3);">Creative Stack</span>
+    </div>
+
+    <p class="workflow-intro">
+      AI is not a shortcut in my process — it's infrastructure. Each model is assigned a specific cognitive role. Each tool sits exactly where it reduces friction, not where it performs novelty.
+    </p>
+
+    <!-- 5-column grid -->
+    <div class="wf-grid">
+
+      <!-- THINKING -->
+      <div class="wf-col">
+        <div class="wf-col-head">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:0.55;">
+            <path d="M8 2C5.24 2 3 4.24 3 7C3 8.87 4.02 10.5 5.5 11.4V13H10.5V11.4C11.98 10.5 13 8.87 13 7C13 4.24 10.76 2 8 2Z" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linejoin="round"/>
+            <line x1="5.5" y1="13" x2="10.5" y2="13" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1"/>
+            <line x1="6.5" y1="14.5" x2="9.5" y2="14.5" stroke="rgba(var(--ink-rgb),0.3)" stroke-width="1"/>
+          </svg>
+          <span class="wf-col-title">Thinking</span>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">ChatGPT</div>
+          <div class="wf-tool-desc">Exploring ideas, mapping problems, generating initial frameworks</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Claude</div>
+          <div class="wf-tool-desc">Structured reasoning, alternative perspectives, contrasting conclusions</div>
+        </div>
+      </div>
+
+      <!-- RESEARCH -->
+      <div class="wf-col">
+        <div class="wf-col-head">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:0.55;">
+            <circle cx="7" cy="7" r="4.5" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+            <line x1="10.5" y1="10.5" x2="14" y2="14" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          <span class="wf-col-title">Research</span>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Perplexity</div>
+          <div class="wf-tool-desc">Research with sources — market signals, competitive context, domain references</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Manus</div>
+          <div class="wf-tool-desc">Structured survey flows and stakeholder input gathering</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Gemini</div>
+          <div class="wf-tool-desc">Cross-referencing findings, expanding scope when sources are insufficient</div>
+        </div>
+      </div>
+
+      <!-- BUILDING -->
+      <div class="wf-col">
+        <div class="wf-col-head">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:0.55;">
+            <polyline points="4,10 1,8 4,6" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linejoin="round" fill="none"/>
+            <polyline points="12,6 15,8 12,10" stroke="rgba(var(--ink-rgb),1)" stroke-width="1" stroke-linejoin="round" fill="none"/>
+            <line x1="9.5" y1="3.5" x2="6.5" y2="12.5" stroke="rgba(var(--ink-rgb),0.6)" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          <span class="wf-col-title">Building</span>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Claude</div>
+          <div class="wf-tool-desc">Building and coding interfaces, logic architecture, structured HTML/CSS/JS outputs</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">GitHub Copilot</div>
+          <div class="wf-tool-desc">Inline code completion and refactoring inside the editor</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Lovable</div>
+          <div class="wf-tool-desc">Rapid interface scaffolding — concept to testable output in one session</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Figma Make</div>
+          <div class="wf-tool-desc">Component logic and design-to-code translation directly from Figma</div>
+        </div>
+      </div>
+
+      <!-- VISUAL CREATION -->
+      <div class="wf-col">
+        <div class="wf-col-head">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:0.55;">
+            <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+            <circle cx="6" cy="6" r="1.5" fill="rgba(var(--ink-rgb),0.5)"/>
+            <path d="M2 11L6 8L9 10L12 6.5L14 9" stroke="rgba(var(--ink-rgb),0.8)" stroke-width="1" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <span class="wf-col-title">Visual Creation</span>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Figma</div>
+          <div class="wf-tool-desc">Design system architecture, component libraries, production specs</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Framer</div>
+          <div class="wf-tool-desc">Interactive prototypes and motion-rich design presentations</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Sora</div>
+          <div class="wf-tool-desc">Generating visual and motion assets at a scale no traditional team could match</div>
+        </div>
+      </div>
+
+      <!-- PLANNING -->
+      <div class="wf-col">
+        <div class="wf-col-head">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:0.55;">
+            <rect x="2" y="3" width="12" height="11" rx="1" stroke="rgba(var(--ink-rgb),1)" stroke-width="1"/>
+            <line x1="5" y1="1" x2="5" y2="5" stroke="rgba(var(--ink-rgb),0.7)" stroke-width="1" stroke-linecap="round"/>
+            <line x1="11" y1="1" x2="11" y2="5" stroke="rgba(var(--ink-rgb),0.7)" stroke-width="1" stroke-linecap="round"/>
+            <line x1="2" y1="7" x2="14" y2="7" stroke="rgba(var(--ink-rgb),0.3)" stroke-width="0.9"/>
+          </svg>
+          <span class="wf-col-title">Planning</span>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Manus</div>
+          <div class="wf-tool-desc">Turning blurry ideas into structured flows and navigable low-fi prototypes</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">Claude</div>
+          <div class="wf-tool-desc">Documentation, decision logs, structural summaries — systems organized as they grow</div>
+        </div>
+        <div class="wf-tool">
+          <div class="wf-tool-name">ChatGPT</div>
+          <div class="wf-tool-desc">Roadmap brainstorming, prioritization frameworks, strategic framing</div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="wf-note">
+      Models are assigned roles based on where they reason best. The goal is structural clarity — not model loyalty.
+    </p>
+
+  </div>
+
+</div>
+
+</body>
+</html>
