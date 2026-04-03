@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thought Flows</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a12;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    font-family: system-ui, sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  h1 {
+    color: rgba(255,255,255,.18);
+    font-size: clamp(.65rem, 1.5vw, .85rem);
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    margin-bottom: clamp(1.5rem, 4vh, 3rem);
+    font-weight: 300;
+  }
+
+  #stage {
+    width: min(92vw, 720px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(18px, 3.5vh, 36px);
+  }
+
+  .emotion {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+  }
+
+  .label {
+    font-size: clamp(.6rem, 1.3vw, .72rem);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    width: 72px;
+    flex-shrink: 0;
+    opacity: .55;
+    transition: opacity .3s;
+  }
+
+  .emotion.active .label { opacity: 1; }
+
+  .track {
+    flex: 1;
+    height: clamp(32px, 6vh, 52px);
+    position: relative;
+    cursor: grab;
+  }
+  .track:active { cursor: grabbing; }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 4px;
+  }
+
+  .progress-hint {
+    font-size: clamp(.55rem, 1.1vw, .65rem);
+    color: rgba(255,255,255,.2);
+    letter-spacing: .1em;
+    width: 32px;
+    flex-shrink: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    transition: color .3s;
+  }
+  .emotion.active .progress-hint { color: rgba(255,255,255,.6); }
+</style>
+</head>
+<body>
+
+<h1>Thought Flows</h1>
+
+<div id="stage"></div>
+
+<script>
+const EMOTIONS = [
+  { name: "Joy",     color: "#FFD700", freq: 2.1, phase: 0.0 },
+  { name: "Sadness", color: "#4A90D9", freq: 0.8, phase: 1.1 },
+  { name: "Anger",   color: "#E84040", freq: 3.4, phase: 0.4 },
+  { name: "Fear",    color: "#9B59B6", freq: 2.8, phase: 2.1 },
+  { name: "Disgust", color: "#2ECC71", freq: 1.5, phase: 0.7 },
+  { name: "Anxiety", color: "#F39C12", freq: 1.1, phase: 1.8 },
+];
+
+// --- State ---
+let progress   = Array(6).fill(50);   // 0–100 per emotion
+let ripples    = [];                   // { idx, t, strength }
+let activeIdx  = -1;
+let dragging   = null;                 // { idx, startX, startP }
+let raf;
+
+// --- Build DOM ---
+const stage = document.getElementById("stage");
+const canvases = [];
+
+EMOTIONS.forEach((e, i) => {
+  const row = document.createElement("div");
+  row.className = "emotion";
+  row.innerHTML = `
+    <span class="label" style="color:${e.color}">${e.name}</span>
+    <div class="track" data-i="${i}">
+      <canvas></canvas>
+    </div>
+    <span class="progress-hint">${progress[i]}</span>
+  `;
+  stage.appendChild(row);
+
+  const cv = row.querySelector("canvas");
+  canvases.push(cv);
+
+  const track = row.querySelector(".track");
+  addDrag(track, i, row, row.querySelector(".progress-hint"));
+});
+
+// --- Drag logic (mouse + touch) ---
+function addDrag(track, i, row, hint) {
+  function start(x) {
+    dragging = { idx: i, startX: x, startP: progress[i] };
+    activeIdx = i;
+    row.classList.add("active");
+  }
+  function move(x) {
+    if (!dragging || dragging.idx !== i) return;
+    const rect = track.getBoundingClientRect();
+    const dx = x - dragging.startX;
+    const dp = (dx / rect.width) * 100;
+    const newP = Math.max(0, Math.min(100, dragging.startP + dp));
+    if (Math.abs(newP - progress[i]) > 0.3) {
+      progress[i] = newP;
+      hint.textContent = Math.round(newP);
+      spawnRipple(i, 0.6 + Math.abs(dp) / rect.width * 2);
+    }
+  }
+  function end() {
+    if (dragging?.idx === i) {
+      dragging = null;
+      row.classList.remove("active");
+      activeIdx = -1;
+    }
+  }
+
+  track.addEventListener("mousedown",  e => start(e.clientX));
+  window.addEventListener("mousemove", e => move(e.clientX));
+  window.addEventListener("mouseup",   end);
+
+  track.addEventListener("touchstart", e => { e.preventDefault(); start(e.touches[0].clientX); }, { passive: false });
+  window.addEventListener("touchmove",  e => { if (dragging?.idx === i) { e.preventDefault(); move(e.touches[0].clientX); } }, { passive: false });
+  window.addEventListener("touchend",   end);
+}
+
+// --- Ripple ---
+function spawnRipple(sourceIdx, strength) {
+  ripples.push({ sourceIdx, t: 0, strength: Math.min(strength, 2.5) });
+}
+
+// --- Draw ---
+let then = 0;
+function draw(now) {
+  raf = requestAnimationFrame(draw);
+  const dt = Math.min((now - then) / 1000, 0.05);
+  then = now;
+
+  // age ripples
+  ripples = ripples.filter(r => {
+    r.t += dt * 1.8;
+    return r.t < 1;
+  });
+
+  EMOTIONS.forEach((e, i) => {
+    const cv = canvases[i];
+    const W = cv.offsetWidth, H = cv.offsetHeight;
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, W, H);
+
+    const t = now / 1000;
+    const p = progress[i] / 100;          // 0–1 cursor position
+
+    // ripple contribution for this line
+    let rippleAmp = 0, rippleCenter = p;
+    ripples.forEach(r => {
+      if (r.sourceIdx === i) return;       // source doesn't echo itself
+      const decay = Math.pow(1 - r.t, 2);
+      const dist  = Math.abs(i - r.sourceIdx) / 5;
+      rippleAmp  += r.strength * decay * (1 - dist * 0.6);
+      rippleCenter = p + (r.t - 0.5) * 0.3;
+    });
+
+    const baseAmp  = 0.18 + p * 0.22;     // amplitude grows with progress
+    const totalAmp = baseAmp + rippleAmp * 0.14;
+    const cy       = H / 2;
+
+    // gradient stroke
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0,   "transparent");
+    grad.addColorStop(0.1, e.color + "55");
+    grad.addColorStop(p,   e.color + "ff");
+    grad.addColorStop(Math.min(p + 0.01, 1), e.color + "88");
+    grad.addColorStop(1,   e.color + "22");
+
+    ctx.beginPath();
+    ctx.strokeStyle = grad;
+    ctx.lineWidth   = 1.8;
+    ctx.shadowColor = e.color;
+    ctx.shadowBlur  = 6 + rippleAmp * 8;
+
+    const steps = W;
+    for (let x = 0; x <= steps; x++) {
+      const nx = x / steps;              // 0–1
+      // base sine
+      const wave = Math.sin(nx * Math.PI * 2 * e.freq + t * (1.2 + e.freq * 0.3) + e.phase);
+      // envelope: full amplitude across the track, peaked near cursor
+      const env  = 1 - 0.4 * Math.abs(nx - p);
+      // ripple local disturbance
+      const rDist = Math.abs(nx - rippleCenter);
+      const rWave = rippleAmp * Math.exp(-rDist * rDist * 18) *
+                    Math.sin(rDist * 40 - t * 8) * 0.5;
+
+      const y = cy + (wave * env + rWave) * totalAmp * cy;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // cursor dot
+    const dotX = p * W;
+    const dotY = cy + Math.sin(p * Math.PI * 2 * e.freq + t * (1.2 + e.freq * 0.3) + e.phase) * totalAmp * cy;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, activeIdx === i ? 5 : 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = e.color;
+    ctx.shadowBlur = 12;
+    ctx.fill();
+  });
+}
+
+requestAnimationFrame(t => { then = t; requestAnimationFrame(draw); });
+</script>
+</body>
+</html>

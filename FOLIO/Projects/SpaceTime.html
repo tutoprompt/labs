@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulação de Malha Espaço-Tempo 3D</title>
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --grid-color: rgba(0, 150, 255, 0.3);
+            --point-color: rgba(0, 200, 255, 0.6);
+            --panel-bg: rgba(15, 25, 40, 0.95);
+            --text-color: #e0e6ed;
+            --accent-color: #00a2ff;
+            --panel-width: 300px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .main-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(135deg, #05070a 0%, #0a0f1a 100%);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .sidebar {
+            width: var(--panel-width);
+            background: var(--panel-bg);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px 20px;
+            overflow-y: auto;
+            box-shadow: -2px 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 162, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 162, 255, 0.5);
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-bottom: 2px solid rgba(0, 162, 255, 0.3);
+            padding-bottom: 12px;
+        }
+
+        .control-group {
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            margin-bottom: 10px;
+            opacity: 0.85;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .label-name {
+            flex: 1;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            color: var(--accent-color);
+            font-weight: 600;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, rgba(0, 162, 255, 0.1), rgba(0, 162, 255, 0.2));
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            margin-top: 8px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 162, 255, 0.6), inset 0 0 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 20px rgba(0, 162, 255, 0.8), inset 0 0 4px rgba(0, 0, 0, 0.3);
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 162, 255, 0.6), inset 0 0 4px rgba(0, 0, 0, 0.3);
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            box-shadow: 0 0 20px rgba(0, 162, 255, 0.8), inset 0 0 4px rgba(0, 0, 0, 0.3);
+            transform: scale(1.2);
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(0, 162, 255, 0.2), transparent);
+            margin: 25px 0;
+        }
+
+        .legend {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 11px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.4);
+            font-style: italic;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            line-height: 1.5;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 162, 255, 0.2);
+        }
+
+        .zoom-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 162, 255, 0.2);
+            font-family: 'Courier New', monospace;
+        }
+
+        .rotation-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 162, 255, 0.2);
+            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+        }
+
+        /* Responsividade para telas pequenas */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+            }
+
+            :root {
+                --panel-width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                max-height: 40vh;
+                padding: 15px;
+            }
+
+            .canvas-container {
+                height: 60vh;
+            }
+
+            .instructions {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="zoom-indicator">Zoom: <span id="zoom-value">1.0</span>x</div>
+            <div class="rotation-indicator">
+                Rot X: <span id="rotx-value">0.0</span>°<br>
+                Rot Y: <span id="roty-value">0.0</span>°
+            </div>
+            <div class="instructions">
+                🖱️ Mova o mouse para interagir<br>
+                🔄 Clique + arraste para rotacionar 3D<br>
+                🔍 Scroll para zoom
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h2>Controles</h2>
+            
+            <div class="control-group">
+                <label>
+                    <span class="label-name">Densidade</span>
+                    <span class="value-display" id="density-val">25</span>
+                </label>
+                <input type="range" id="density" min="10" max="50" value="25">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-name">Distorção</span>
+                    <span class="value-display" id="intensity-val">1.0</span>
+                </label>
+                <input type="range" id="intensity" min="0.1" max="3.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-name">Raio</span>
+                    <span class="value-display" id="radius-val">150</span>
+                </label>
+                <input type="range" id="radius" min="50" max="400" value="150">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-name">Elasticidade</span>
+                    <span class="value-display" id="elasticity-val">0.05</span>
+                </label>
+                <input type="range" id="elasticity" min="0.01" max="0.2" step="0.01" value="0.05">
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-name">Centrífuga</span>
+                    <span class="value-display" id="centrifugal-val">0.0</span>
+                </label>
+                <input type="range" id="centrifugal" min="0.0" max="2.0" step="0.1" value="0.0">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-name">Intensidade Neon</span>
+                    <span class="value-display" id="neon-val">1.0</span>
+                </label>
+                <input type="range" id="neon" min="0.0" max="2.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="legend">
+                <strong>Dica:</strong> Clique e arraste para rotacionar em 3D! O movimento horizontal rotaciona no eixo Y, e vertical no eixo X. Aumente a intensidade do neon para um efeito mais dramático.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // Elementos de controle
+        const controls = {
+            density: document.getElementById('density'),
+            intensity: document.getElementById('intensity'),
+            radius: document.getElementById('radius'),
+            elasticity: document.getElementById('elasticity'),
+            centrifugal: document.getElementById('centrifugal'),
+            neon: document.getElementById('neon')
+        };
+
+        const displays = {
+            density: document.getElementById('density-val'),
+            intensity: document.getElementById('intensity-val'),
+            radius: document.getElementById('radius-val'),
+            elasticity: document.getElementById('elasticity-val'),
+            centrifugal: document.getElementById('centrifugal-val'),
+            neon: document.getElementById('neon-val')
+        };
+
+        const zoomDisplay = document.getElementById('zoom-value');
+        const rotXDisplay = document.getElementById('rotx-value');
+        const rotYDisplay = document.getElementById('roty-value');
+
+        let width, height;
+        let points = [];
+        let mouse = { x: -1000, y: -1000, active: false, pulse: 0, pressed: false };
+        let zoom = 1.0;
+        let rotationX = 0;
+        let rotationY = 0;
+        let targetRotationX = 0;
+        let targetRotationY = 0;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        // Canvas para efeito de bloom/neon
+        const bloomCanvas = document.createElement('canvas');
+        const bloomCtx = bloomCanvas.getContext('2d');
+
+        function resize() {
+            const canvasContainer = document.querySelector('.canvas-container');
+            width = canvasContainer.clientWidth;
+            height = canvasContainer.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+            bloomCanvas.width = width;
+            bloomCanvas.height = height;
+            initMesh();
+        }
+
+        class Point {
+            constructor(x, y) {
+                this.baseX = x;
+                this.baseY = y;
+                this.x = x;
+                this.y = y;
+                this.z = 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.vz = 0;
+            }
+
+            update(params) {
+                // Atração de volta à posição original (elasticidade)
+                let dx = this.baseX - this.x;
+                let dy = this.baseY - this.y;
+                let dz = 0 - this.z;
+                this.vx += dx * params.elasticity;
+                this.vy += dy * params.elasticity;
+                this.vz += dz * params.elasticity;
+
+                // Interação com o mouse (distorção)
+                let mdx = mouse.x - this.x;
+                let mdy = mouse.y - this.y;
+                let distSq = mdx * mdx + mdy * mdy;
+                let dist = Math.sqrt(distSq);
+
+                if (dist < params.radius && dist > 0.1) {
+                    let force = (params.radius - dist) / params.radius;
+                    
+                    // Efeito de "afundamento" ou "atração"
+                    let pull = force * params.intensity * 10;
+                    
+                    // Se houver pulso (clique), a intensidade aumenta
+                    if (mouse.pulse > 0) {
+                        pull *= (1 + mouse.pulse * 5);
+                    }
+
+                    // Força de atração (direção do mouse)
+                    this.vx -= (mdx / dist) * pull;
+                    this.vy -= (mdy / dist) * pull;
+                    this.vz -= force * pull * 0.5; // Profundidade
+
+                    // Força centrífuga (rotação em torno do mouse)
+                    if (params.centrifugal > 0) {
+                        // Vetor perpendicular para criar rotação
+                        let perpX = -mdy / dist;
+                        let perpY = mdx / dist;
+                        
+                        // Intensidade da força centrífuga diminui com a distância
+                        let centrifugalForce = force * params.centrifugal * 15;
+                        
+                        this.vx += perpX * centrifugalForce;
+                        this.vy += perpY * centrifugalForce;
+                    }
+                }
+
+                // Atrito sutil
+                this.vx *= 0.92;
+                this.vy *= 0.92;
+                this.vz *= 0.92;
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.z += this.vz;
+
+                // Limitar profundidade
+                this.z = Math.max(-100, Math.min(100, this.z));
+            }
+        }
+
+        function initMesh() {
+            points = [];
+            const spacing = parseInt(controls.density.value);
+            const cols = Math.ceil(width / spacing) + 1;
+            const rows = Math.ceil(height / spacing) + 1;
+
+            for (let j = 0; j < rows; j++) {
+                points[j] = [];
+                for (let i = 0; i < cols; i++) {
+                    points[j][i] = new Point(i * spacing, j * spacing);
+                }
+            }
+        }
+
+        function project3D(x, y, z, centerX, centerY) {
+            // Aplicar rotações 3D
+            let rotX = rotationX;
+            let rotY = rotationY;
+
+            // Rotação em Y (horizontal)
+            let cosY = Math.cos(rotY);
+            let sinY = Math.sin(rotY);
+            let x1 = x * cosY - z * sinY;
+            let z1 = x * sinY + z * cosY;
+
+            // Rotação em X (vertical)
+            let cosX = Math.cos(rotX);
+            let sinX = Math.sin(rotX);
+            let y1 = y * cosX - z1 * sinX;
+            let z2 = y * sinX + z1 * cosX;
+
+            // Projeção perspectiva
+            let scale = 1 / (1 + z2 / 500);
+            let projX = centerX + x1 * scale * zoom;
+            let projY = centerY + y1 * scale * zoom;
+
+            return { x: projX, y: projY, z: z2, scale: scale };
+        }
+
+        function applyBloom(imageData, intensity) {
+            const data = imageData.data;
+            const len = data.length;
+            
+            // Aumentar brilho e saturação para efeito neon
+            for (let i = 0; i < len; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+
+                // Detectar pixels brilhantes (neon)
+                if (g > 150 || b > 150) {
+                    data[i] = Math.min(255, r + intensity * 30);
+                    data[i + 1] = Math.min(255, g + intensity * 50);
+                    data[i + 2] = Math.min(255, b + intensity * 50);
+                }
+            }
+        }
+
+        function draw() {
+            // Limpar canvas com fade para criar rastro
+            ctx.fillStyle = 'rgba(5, 7, 10, 0.15)';
+            ctx.fillRect(0, 0, width, height);
+            
+            const params = {
+                intensity: parseFloat(controls.intensity.value),
+                radius: parseFloat(controls.radius.value),
+                elasticity: parseFloat(controls.elasticity.value),
+                centrifugal: parseFloat(controls.centrifugal.value),
+                neon: parseFloat(controls.neon.value)
+            };
+
+            // Suavizar rotação
+            rotationX += (targetRotationX - rotationX) * 0.1;
+            rotationY += (targetRotationY - rotationY) * 0.1;
+
+            const rows = points.length;
+            const cols = points[0].length;
+
+            // Atualizar pontos
+            for (let j = 0; j < rows; j++) {
+                for (let i = 0; i < cols; i++) {
+                    points[j][i].update(params);
+                }
+            }
+
+            // Centro da tela
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // Desenhar conexões horizontais
+            ctx.strokeStyle = 'rgba(0, 150, 255, 0.25)';
+            ctx.lineWidth = 1.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            for (let j = 0; j < rows; j++) {
+                ctx.beginPath();
+                let firstPoint = true;
+                for (let i = 0; i < cols; i++) {
+                    const p = points[j][i];
+                    const proj = project3D(p.x, p.y, p.z, centerX, centerY);
+                    
+                    if (firstPoint) {
+                        ctx.moveTo(proj.x, proj.y);
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(proj.x, proj.y);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Desenhar conexões verticais
+            ctx.beginPath();
+            for (let i = 0; i < cols; i++) {
+                ctx.beginPath();
+                let firstPoint = true;
+                for (let j = 0; j < rows; j++) {
+                    const p = points[j][i];
+                    const proj = project3D(p.x, p.y, p.z, centerX, centerY);
+                    
+                    if (firstPoint) {
+                        ctx.moveTo(proj.x, proj.y);
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(proj.x, proj.y);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Desenhar pontos de interseção com brilho neon
+            for (let j = 0; j < rows; j += 2) {
+                for (let i = 0; i < cols; i += 2) {
+                    const p = points[j][i];
+                    const proj = project3D(p.x, p.y, p.z, centerX, centerY);
+                    const dist = Math.sqrt((p.x - p.baseX)**2 + (p.y - p.baseY)**2);
+                    const alpha = Math.min(0.8, 0.2 + dist / 50);
+                    
+                    // Brilho neon
+                    const glowSize = 3 * params.neon;
+                    const gradient = ctx.createRadialGradient(proj.x, proj.y, 0, proj.x, proj.y, glowSize);
+                    gradient.addColorStop(0, `rgba(100, 255, 255, ${alpha * params.neon})`);
+                    gradient.addColorStop(0.5, `rgba(0, 200, 255, ${alpha * 0.5})`);
+                    gradient.addColorStop(1, `rgba(0, 150, 255, 0)`);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(proj.x, proj.y, glowSize, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Ponto central
+                    ctx.fillStyle = `rgba(100, 255, 255, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(proj.x, proj.y, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Atualizar displays
+            zoomDisplay.textContent = zoom.toFixed(1);
+            rotXDisplay.textContent = (rotationX * 180 / Math.PI).toFixed(1);
+            rotYDisplay.textContent = (rotationY * 180 / Math.PI).toFixed(1);
+
+            // Diminuir pulso
+            if (mouse.pulse > 0) mouse.pulse *= 0.9;
+
+            requestAnimationFrame(draw);
+        }
+
+        // Event Listeners
+        window.addEventListener('resize', resize);
+        
+        window.addEventListener('mousemove', (e) => {
+            const canvasContainer = document.querySelector('.canvas-container');
+            const rect = canvasContainer.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            mouse.active = true;
+
+            // Se o mouse está pressionado, calcular rotação 3D
+            if (mouse.pressed) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                targetRotationY += deltaX * 0.01;
+                targetRotationX += deltaY * 0.01;
+            }
+
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            const canvasContainer = document.querySelector('.canvas-container');
+            const rect = canvasContainer.getBoundingClientRect();
+            
+            // Verificar se o clique foi na área do canvas
+            if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                mouse.pressed = true;
+                mouse.pulse = 1.0;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            mouse.pressed = false;
+        });
+
+        // Scroll para zoom
+        window.addEventListener('wheel', (e) => {
+            const canvasContainer = document.querySelector('.canvas-container');
+            const rect = canvasContainer.getBoundingClientRect();
+            
+            // Verificar se o scroll foi sobre o canvas
+            if (e.clientX >= rect.left && e.clientX <= rect.right &&
+                e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                e.preventDefault();
+                
+                const zoomSpeed = 0.1;
+                const direction = e.deltaY > 0 ? -1 : 1;
+                zoom += direction * zoomSpeed;
+                
+                // Limitar zoom entre 0.5x e 3x
+                zoom = Math.max(0.5, Math.min(3, zoom));
+            }
+        }, { passive: false });
+
+        // Atualizar displays e reinicializar se necessário
+        controls.density.addEventListener('input', () => {
+            displays.density.textContent = controls.density.value;
+            initMesh();
+        });
+
+        controls.intensity.addEventListener('input', () => {
+            displays.intensity.textContent = controls.intensity.value;
+        });
+
+        controls.radius.addEventListener('input', () => {
+            displays.radius.textContent = controls.radius.value;
+        });
+
+        controls.elasticity.addEventListener('input', () => {
+            displays.elasticity.textContent = controls.elasticity.value;
+        });
+
+        controls.centrifugal.addEventListener('input', () => {
+            displays.centrifugal.textContent = controls.centrifugal.value;
+        });
+
+        controls.neon.addEventListener('input', () => {
+            displays.neon.textContent = controls.neon.value;
+        });
+
+        // Inicialização
+        resize();
+        draw();
+    </script>
+</body>
+</html>

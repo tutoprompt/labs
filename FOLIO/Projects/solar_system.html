@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Solar 3D — Impacto Gravitacional</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  width:100%; height:100vh;
+  background:#000;
+  font-family:'Exo 2',sans-serif;
+  overflow:hidden;
+}
+
+/* ── PANELS ── */
+.panel {
+  position:absolute;
+  background:rgba(3,8,20,0.84);
+  border:1px solid rgba(80,160,255,0.15);
+  backdrop-filter:blur(16px);
+  border-radius:10px;
+  color:rgba(200,220,255,0.85);
+  z-index:10;
+}
+
+/* Info — top left */
+.info-panel { top:18px; left:18px; padding:18px 20px; min-width:230px; }
+
+.info-title {
+  font-size:11px; font-weight:700;
+  color:#7ec8e3; text-transform:uppercase; letter-spacing:2.5px;
+  margin-bottom:14px;
+}
+
+.info-item { display:flex; align-items:center; gap:10px; margin:9px 0; }
+
+.info-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.sol-dot   { background:#ffd700; box-shadow:0 0 8px #ffa500; }
+.terra-dot { background:#4da6ff; box-shadow:0 0 8px #4da6ff; }
+.ghost-dot { background:#ffffff; box-shadow:0 0 6px #ffffff; opacity:0.45; }
+.lua-dot   { background:#c8c8d0; box-shadow:0 0 5px #aaa; }
+.bari-dot  { background:#ffe066; box-shadow:0 0 8px #ffe066; }
+
+.info-label { font-size:12px; font-weight:600; }
+.info-desc  { font-size:10px; color:rgba(180,200,240,0.45); margin-left:19px; }
+
+/* Control — top center */
+.control-panel {
+  top:18px; left:50%; transform:translateX(-50%);
+  padding:12px 24px;
+  display:flex; gap:12px; align-items:center;
+}
+
+.control-label { font-size:10px; color:rgba(180,200,255,0.45); white-space:nowrap; }
+
+.control-button {
+  background:linear-gradient(135deg,#0a3a6e,#0a2a54);
+  color:#90c8ff;
+  border:1px solid rgba(100,180,255,0.28);
+  padding:9px 22px; border-radius:6px;
+  font-size:12px; font-weight:700;
+  cursor:pointer; text-transform:uppercase; letter-spacing:1px;
+  transition:all .25s; font-family:'Exo 2',sans-serif;
+}
+.control-button:hover {
+  background:linear-gradient(135deg,#0e4a8a,#0a3a6e);
+  box-shadow:0 0 18px rgba(77,166,255,0.5); color:#fff;
+}
+.control-button.active {
+  background:linear-gradient(135deg,#7a0000,#5a0000);
+  color:#ff9090; border-color:rgba(255,80,80,0.38);
+  box-shadow:0 0 18px rgba(255,60,60,0.4);
+}
+
+/* Sliders — below control */
+.sliders-panel {
+  top:80px; left:50%; transform:translateX(-50%);
+  padding:14px 24px; min-width:360px;
+  display:flex; flex-direction:column; gap:11px;
+}
+
+.slider-row { display:flex; align-items:center; gap:12px; }
+
+.slider-name {
+  font-size:10px; font-weight:700;
+  text-transform:uppercase; letter-spacing:1px;
+  color:rgba(180,210,255,0.55); width:120px; flex-shrink:0;
+}
+
+.slider-track {
+  flex:1; -webkit-appearance:none; appearance:none;
+  height:5px; border-radius:3px;
+  background:linear-gradient(to right, #1a5aaa 0%, #1a5aaa var(--pct,50%), rgba(60,100,180,0.2) var(--pct,50%), rgba(60,100,180,0.2) 100%);
+  outline:none; cursor:pointer;
+}
+.slider-track::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px;
+  border-radius:50%; background:#4da6ff;
+  box-shadow:0 0 10px rgba(77,166,255,0.8), 0 0 3px #fff;
+  cursor:pointer; transition:transform .15s;
+}
+.slider-track::-webkit-slider-thumb:hover { transform:scale(1.35); }
+
+.slider-track.accel {
+  background:linear-gradient(to right,#8a4a00 0%,#8a4a00 var(--pct,16%),rgba(120,80,20,0.2) var(--pct,16%),rgba(120,80,20,0.2) 100%);
+}
+.slider-track.accel::-webkit-slider-thumb {
+  background:#ff9944;
+  box-shadow:0 0 10px rgba(255,140,50,0.8), 0 0 3px #fff;
+}
+
+.slider-val {
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px; font-weight:700;
+  color:#7ec8ff; width:42px; text-align:right; flex-shrink:0;
+}
+.slider-val.accel { color:#ff9944; }
+
+.slider-divider { height:1px; background:rgba(80,140,255,0.1); }
+
+/* Stats — top right */
+.stats {
+  top:18px; right:18px; padding:14px 17px; min-width:205px;
+  font-family:'Share Tech Mono',monospace; font-size:11px;
+}
+
+.stats-title {
+  font-size:9px; font-weight:700; color:#7ec8e3;
+  text-transform:uppercase; letter-spacing:2px; margin-bottom:10px;
+}
+
+.stat-line {
+  display:flex; justify-content:space-between;
+  margin:4px 0; border-bottom:1px solid rgba(80,120,200,0.06); padding-bottom:3px;
+}
+
+.stat-label { color:rgba(180,200,240,0.42); }
+.stat-value { color:#7ec8ff; font-weight:700; }
+.stat-value.warn { color:#ff8888; animation:blink 0.9s infinite; }
+
+@keyframes blink { 50% { opacity:0.35; } }
+
+/* Impact analysis — bottom right */
+.impact-analysis {
+  bottom:18px; right:18px; padding:17px 19px;
+  min-width:295px; max-height:360px; overflow-y:auto;
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+}
+
+.impact-analysis::-webkit-scrollbar { width:3px; }
+.impact-analysis::-webkit-scrollbar-thumb { background:rgba(100,160,255,0.18); border-radius:2px; }
+
+.impact-title {
+  font-size:11px; font-weight:700; color:#7ec8e3;
+  text-transform:uppercase; letter-spacing:2px; margin-bottom:13px;
+}
+
+.impact-section { margin-bottom:11px; padding-bottom:9px; border-bottom:1px solid rgba(80,120,200,0.08); }
+.impact-section:last-child { border-bottom:none; }
+
+.impact-section-title {
+  font-weight:700; color:#ffe066; margin-bottom:5px;
+  font-size:9px; letter-spacing:1.5px; text-transform:uppercase;
+}
+
+.impact-item { display:flex; justify-content:space-between; margin:3px 0; }
+.impact-label { color:rgba(180,200,240,0.42); }
+.impact-value { color:#7ec8ff; font-weight:700; }
+
+.impact-warning {
+  background:rgba(255,40,40,0.07); border-left:3px solid #ff4444;
+  padding:9px 11px; margin-top:9px; border-radius:4px;
+  color:#ff9090; font-size:9px; line-height:1.65; display:none;
+}
+
+/* Ghost legend badge */
+.ghost-badge {
+  display:none; margin-top:9px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:5px; padding:7px 10px;
+  font-size:9px; color:rgba(220,230,255,0.55); line-height:1.6;
+}
+.ghost-badge.visible { display:block; }
+
+/* Controls legend — bottom left */
+.controls-info {
+  bottom:18px; left:18px; padding:13px 16px;
+  font-size:10px; line-height:1.9; color:rgba(180,200,255,0.37);
+}
+.controls-info strong { color:rgba(180,200,255,0.6); }
+
+/* Impact overlay */
+#impact-overlay {
+  position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(255,60,0,0.15) 0%,transparent 70%);
+  opacity:0; z-index:5; transition:opacity .4s;
+}
+#impact-overlay.active { opacity:1; animation:pulseRed 1.3s ease-in-out infinite; }
+@keyframes pulseRed { 0%,100%{opacity:.08} 50%{opacity:.42} }
+
+/* Title badge */
+.title-badge {
+  position:absolute; top:68px; left:50%; transform:translateX(-50%);
+  font-size:9px; letter-spacing:3px; text-transform:uppercase;
+  color:rgba(130,190,255,0.3); pointer-events:none; z-index:8;
+  white-space:nowrap;
+}
+</style>
+</head>
+<body>
+
+<div id="impact-overlay"></div>
+
+<!-- INFO PANEL -->
+<div class="panel info-panel">
+  <div class="info-title">🌌 Sistema Solar 3D</div>
+  <div class="info-item">
+    <span class="info-dot sol-dot"></span>
+    <div><div class="info-label">Sol</div><div class="info-desc">Ápice solar — trajetória linear</div></div>
+  </div>
+  <div class="info-item">
+    <span class="info-dot terra-dot"></span>
+    <div><div class="info-label">Terra (atual)</div><div class="info-desc" id="moon-status">Órbita inclinada + wobble gravitacional</div></div>
+  </div>
+  <div class="info-item" id="ghost-legend-item" style="opacity:0.35">
+    <span class="info-dot ghost-dot"></span>
+    <div><div class="info-label">Terra (fantasma)</div><div class="info-desc">Trajetória antes da remoção da Lua</div></div>
+  </div>
+  <div class="info-item">
+    <span class="info-dot lua-dot"></span>
+    <div><div class="info-label">Lua</div><div class="info-desc" id="moon-orbit-status">Orbitando a Terra</div></div>
+  </div>
+  <div class="info-item">
+    <span class="info-dot bari-dot"></span>
+    <div><div class="info-label">Baricentro</div><div class="info-desc">Centro de massa Terra-Lua</div></div>
+  </div>
+</div>
+
+<!-- CONTROL -->
+<div class="panel control-panel">
+  <span class="control-label">Gravitacional:</span>
+  <button class="control-button" id="toggle-moon-btn" onclick="toggleMoonGravity()">Desligar Lua</button>
+  <span class="control-label" style="margin-left:4px">Ghost:</span>
+  <button class="control-button" id="toggle-ghost-btn" onclick="toggleGhostVisibility()" style="padding:9px 14px">Ocultar</button>
+</div>
+
+<div class="title-badge" id="title-badge">Impacto Amplificado 50× · Aceleração 5×</div>
+
+<!-- SLIDERS -->
+<div class="panel sliders-panel">
+  <div class="slider-row">
+    <span class="slider-name">🔭 Amplificação</span>
+    <input type="range" class="slider-track" id="slider-amp"
+           min="1" max="200" step="1" value="50"
+           oninput="onSliderChange()">
+    <span class="slider-val" id="val-amp">50×</span>
+  </div>
+  <div class="slider-divider"></div>
+  <div class="slider-row">
+    <span class="slider-name">⚡ Aceleração</span>
+    <input type="range" class="slider-track accel" id="slider-acc"
+           min="1" max="30" step="0.5" value="5"
+           oninput="onSliderChange()">
+    <span class="slider-val accel" id="val-acc">5×</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="panel stats">
+  <div class="stats-title">Telemetria</div>
+  <div class="stat-line"><span class="stat-label">Tempo:</span><span class="stat-value" id="time-stat">0</span></div>
+  <div class="stat-line"><span class="stat-label">Pos Sol (Z):</span><span class="stat-value" id="sun-z">0</span></div>
+  <div class="stat-line"><span class="stat-label">Dist Terra-Sol:</span><span class="stat-value" id="earth-dist">0</span></div>
+  <div class="stat-line"><span class="stat-label">Dist Lua-Terra:</span><span class="stat-value" id="moon-dist">0</span></div>
+  <div class="stat-line"><span class="stat-label">Desvio do Ghost:</span><span class="stat-value" id="ghost-delta">0.0</span></div>
+  <div class="stat-line"><span class="stat-label">Estado Lua:</span><span class="stat-value" id="moon-state">Vinculada</span></div>
+  <div class="stat-line"><span class="stat-label">FPS:</span><span class="stat-value" id="fps-stat">60</span></div>
+</div>
+
+<!-- IMPACT ANALYSIS -->
+<div class="panel impact-analysis">
+  <div class="impact-title">Análise de Impacto</div>
+  <div class="impact-section">
+    <div class="impact-section-title">🌍 Terra</div>
+    <div class="impact-item"><span class="impact-label">Posição X:</span><span class="impact-value" id="earth-pos-x">0.0</span></div>
+    <div class="impact-item"><span class="impact-label">Posição Y:</span><span class="impact-value" id="earth-pos-y">0.0</span></div>
+    <div class="impact-item"><span class="impact-label">Vel. desvio:</span><span class="impact-value" id="earth-vel">0.0</span></div>
+    <div class="impact-item"><span class="impact-label">Wobble:</span><span class="impact-value" id="earth-wobble">0.0</span></div>
+  </div>
+  <div class="impact-section">
+    <div class="impact-section-title">👻 Ghost vs Atual</div>
+    <div class="impact-item"><span class="impact-label">ΔX:</span><span class="impact-value" id="delta-x">—</span></div>
+    <div class="impact-item"><span class="impact-label">ΔY:</span><span class="impact-value" id="delta-y">—</span></div>
+    <div class="impact-item"><span class="impact-label">Δ Total:</span><span class="impact-value" id="delta-total">—</span></div>
+  </div>
+  <div class="impact-section">
+    <div class="impact-section-title">🌙 Lua</div>
+    <div class="impact-item"><span class="impact-label">Status:</span><span class="impact-value" id="impact-status">Vinculada à Terra</span></div>
+    <div class="impact-item"><span class="impact-label">Vel. Total:</span><span class="impact-value" id="impact-vel-total">0.0</span></div>
+    <div class="impact-item"><span class="impact-label">Tempo Desvinc.:</span><span class="impact-value" id="impact-time">0</span></div>
+  </div>
+  <div class="impact-section">
+    <div class="impact-section-title">⭐ Baricentro</div>
+    <div class="impact-item"><span class="impact-label">Dist Terra-Bari:</span><span class="impact-value" id="barycenter-dist">0.0</span></div>
+    <div class="impact-item"><span class="impact-label">Influência Grav.:</span><span class="impact-value" id="grav-influence">100%</span></div>
+  </div>
+  <div id="impact-warning" class="impact-warning">
+    ⚠️ Lua desvinculada! Rastro fantasma (branco) = trajetória original.<br>Rastro laranja = nova trajetória sem Lua.
+  </div>
+  <div id="ghost-badge" class="ghost-badge">
+    👻 Ghost layer ativo — a trilha branca semitransparente mostra onde a Terra estaria com a Lua ainda presente.
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="panel controls-info">
+  <p><strong>Controles</strong></p>
+  <p>🖱 Arrastar → rotacionar</p>
+  <p>🔄 Scroll → zoom</p>
+  <p>⎵ Espaço → pausar / retomar</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// =============================================
+// SCENE
+// =============================================
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x00010a, 0.00016);
+
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 14000);
+camera.position.set(0, 160, 320);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.body.appendChild(renderer.domElement);
+
+// =============================================
+// LIGHTING
+// =============================================
+scene.add(new THREE.AmbientLight(0x080818, 1.3));
+
+const sunLight = new THREE.PointLight(0xfff4c2, 3.8, 1400);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+scene.add(sunLight);
+
+const fillLight = new THREE.DirectionalLight(0x203060, 0.3);
+fillLight.position.set(-1, 0.5, -1);
+scene.add(fillLight);
+
+// =============================================
+// STARS
+// =============================================
+(function buildStars() {
+  const count = 9000;
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const th = Math.random() * Math.PI * 2;
+    const ph = Math.acos(2 * Math.random() - 1);
+    const r  = 3500 * (0.5 + Math.random() * 0.5);
+    pos[i*3]   = r * Math.sin(ph) * Math.cos(th);
+    pos[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+    pos[i*3+2] = r * Math.cos(ph);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(geo,
+    new THREE.PointsMaterial({ color:0xffffff, size:0.95, sizeAttenuation:true, transparent:true, opacity:0.88 })
+  ));
+
+  // Milky-way haze ring
+  const haze = new THREE.Mesh(
+    new THREE.TorusGeometry(2600, 750, 2, 80),
+    new THREE.MeshBasicMaterial({ color:0x152040, side:THREE.DoubleSide, transparent:true, opacity:0.16 })
+  );
+  haze.rotation.x = Math.PI / 2.4;
+  scene.add(haze);
+})();
+
+// =============================================
+// CONFIG
+// =============================================
+const config = {
+  sunVelocity:           0.8,
+  earthOrbitSpeed:       0.01,
+  moonOrbitSpeed:        0.1,
+  earthOrbitRadius:      100,
+  moonOrbitRadius:       25,
+  earthOrbitInclination: Math.PI / 3,
+  sunRadius:   15,
+  earthRadius:  5,
+  moonRadius:   1.5,
+  trailSegments: 400,
+  sunMass:   1000, earthMass: 1, moonMass: 0.0123,
+  impactAmplification: 50,
+  impactAcceleration:   5
+};
+
+// =============================================
+// SUN
+// =============================================
+const sunMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(config.sunRadius, 64, 64),
+  new THREE.MeshStandardMaterial({ color:0xffe080, emissive:0xff9900, emissiveIntensity:2.0, roughness:0.55 })
+);
+scene.add(sunMesh);
+
+[{ r:1.35, c:0xff8800, o:0.18 }, { r:1.75, c:0xff5500, o:0.07 }, { r:2.2, c:0xff3300, o:0.03 }]
+  .forEach(g => {
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(config.sunRadius * g.r, 32, 32),
+      new THREE.MeshBasicMaterial({ color:g.c, transparent:true, opacity:g.o, depthWrite:false, blending:THREE.AdditiveBlending })
+    );
+    sunMesh.add(m);
+  });
+
+// =============================================
+// EARTH TEXTURES
+// =============================================
+function makeEarthTexture() {
+  const c = document.createElement('canvas'); c.width=512; c.height=256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle='#1a3d6e'; ctx.fillRect(0,0,512,256);
+  [
+    {x:80,y:90,rx:55,ry:38,c:'#2d6e3e'},{x:145,y:100,rx:40,ry:28,c:'#3a7a4a'},
+    {x:230,y:80,rx:62,ry:42,c:'#2e6640'},{x:310,y:95,rx:35,ry:30,c:'#4a7a35'},
+    {x:370,y:70,rx:28,ry:20,c:'#3a6e30'},{x:200,y:165,rx:30,ry:18,c:'#8a7030'},
+    {x:120,y:175,rx:22,ry:14,c:'#6a6028'},{x:410,y:150,rx:20,ry:14,c:'#3a6a30'},
+  ].forEach(b => {
+    for (let i=0;i<7;i++) {
+      ctx.beginPath();
+      ctx.ellipse(b.x+(Math.random()-.5)*b.rx, b.y+(Math.random()-.5)*b.ry,
+        b.rx*(.4+Math.random()*.5), b.ry*(.4+Math.random()*.5), Math.random()*Math.PI, 0, Math.PI*2);
+      ctx.fillStyle=b.c; ctx.fill();
+    }
+  });
+  [[256,8,45],[256,248,40]].forEach(([cx,cy,r])=>{
+    const g=ctx.createRadialGradient(cx,cy,2,cx,cy,r);
+    g.addColorStop(0,'rgba(220,235,255,.92)'); g.addColorStop(1,'rgba(180,210,255,0)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,512,256);
+  });
+  return new THREE.CanvasTexture(c);
+}
+
+function makeCloudTexture() {
+  const c=document.createElement('canvas'); c.width=512; c.height=256;
+  const ctx=c.getContext('2d'); ctx.clearRect(0,0,512,256);
+  for(let i=0;i<90;i++){
+    const x=Math.random()*512, y=Math.random()*256, r=18+Math.random()*42;
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,`rgba(255,255,255,${.28+Math.random()*.32})`);
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.ellipse(x,y,r,r*.45,Math.random()*Math.PI,0,Math.PI*2); ctx.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+function makeMoonTexture() {
+  const c=document.createElement('canvas'); c.width=256; c.height=128;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#aaaaaa'; ctx.fillRect(0,0,256,128);
+  for(let i=0;i<65;i++){
+    const x=Math.random()*256,y=Math.random()*128,r=2+Math.random()*10;
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,`rgba(55,55,55,${.2+Math.random()*.4})`);
+    g.addColorStop(1,'rgba(115,115,115,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+// =============================================
+// EARTH MESH
+// =============================================
+const earthMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(config.earthRadius, 64, 64),
+  new THREE.MeshStandardMaterial({ map:makeEarthTexture(), roughness:.7, metalness:.05 })
+);
+earthMesh.castShadow = earthMesh.receiveShadow = true;
+scene.add(earthMesh);
+
+const cloudsMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(config.earthRadius*1.035, 64, 64),
+  new THREE.MeshStandardMaterial({ map:makeCloudTexture(), transparent:true, opacity:.55, depthWrite:false })
+);
+earthMesh.add(cloudsMesh);
+
+earthMesh.add(new THREE.Mesh(
+  new THREE.SphereGeometry(config.earthRadius*1.15, 64, 64),
+  new THREE.MeshBasicMaterial({ color:0x4488ff, transparent:true, opacity:.09, side:THREE.FrontSide, depthWrite:false, blending:THREE.AdditiveBlending })
+));
+
+// =============================================
+// GHOST EARTH (reference sphere)
+// =============================================
+const ghostMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(config.earthRadius, 32, 32),
+  new THREE.MeshBasicMaterial({
+    color: 0xaaccff,
+    transparent: true, opacity: 0.18,
+    wireframe: false,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  })
+);
+ghostMesh.visible = false;
+scene.add(ghostMesh);
+
+// Ghost ring halo
+const ghostHalo = new THREE.Mesh(
+  new THREE.SphereGeometry(config.earthRadius * 1.2, 32, 32),
+  new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.055,
+    depthWrite: false, blending: THREE.AdditiveBlending
+  })
+);
+ghostMesh.add(ghostHalo);
+
+// =============================================
+// MOON
+// =============================================
+const moonMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(config.moonRadius, 32, 32),
+  new THREE.MeshStandardMaterial({ map:makeMoonTexture(), roughness:.9 })
+);
+moonMesh.castShadow = moonMesh.receiveShadow = true;
+scene.add(moonMesh);
+
+// =============================================
+// BARYCENTER
+// =============================================
+const barycenterMesh = new THREE.Mesh(
+  new THREE.SphereGeometry(1.2, 8, 8),
+  new THREE.MeshBasicMaterial({ color:0xffe066, transparent:true, opacity:.7, blending:THREE.AdditiveBlending })
+);
+scene.add(barycenterMesh);
+
+const bcRing = new THREE.Mesh(
+  new THREE.RingGeometry(1.8, 2.5, 32),
+  new THREE.MeshBasicMaterial({ color:0xffe066, side:THREE.DoubleSide, transparent:true, opacity:.22, blending:THREE.AdditiveBlending })
+);
+bcRing.rotation.x = Math.PI/2;
+barycenterMesh.add(bcRing);
+
+// =============================================
+// ORBIT LINES
+// =============================================
+function makeOrbitLine(radius, color, segs, incl) {
+  const pts=[];
+  for(let i=0;i<=segs;i++){
+    const a=(i/segs)*Math.PI*2;
+    pts.push(new THREE.Vector3(
+      Math.cos(a)*radius,
+      incl ? Math.sin(a)*radius*Math.sin(incl) : Math.sin(a)*radius,
+      incl ? Math.sin(a)*radius*Math.cos(incl) : 0
+    ));
+  }
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({ color, transparent:true, opacity:.18 })
+  );
+}
+
+scene.add(makeOrbitLine(config.earthOrbitRadius, 0x4da6ff, 128, config.earthOrbitInclination));
+const moonOrbitLine = makeOrbitLine(config.moonOrbitRadius, 0xaaaaaa, 64, 0);
+scene.add(moonOrbitLine);
+
+// Grid
+const grid = new THREE.GridHelper(700, 70, 0x0d1f3a, 0x080f1e);
+grid.material.transparent = true; grid.material.opacity = 0.4;
+scene.add(grid);
+
+// =============================================
+// STATE
+// =============================================
+let time=0, isRunning=true, lastFrameTime=performance.now(), fps=60, frameCount=0;
+let moonDetached=false, moonDetachTime=0;
+let moonVelocity=new THREE.Vector3();
+let earthVelocityAdjustment=new THREE.Vector3();
+let ghostVisible=true;
+
+const bodies = {
+  sun:       { position:new THREE.Vector3(), trail:[] },
+  earth:     { position:new THREE.Vector3(), trail:[] },
+  ghost:     { position:new THREE.Vector3(), trail:[] },  // reference without moon
+  moon:      { position:new THREE.Vector3(), trail:[] },
+  barycenter:{ position:new THREE.Vector3() }
+};
+
+// =============================================
+// TRAIL SYSTEM — multi-segment neon glow
+// =============================================
+const trailObjects = [];
+
+function clearTrails() {
+  trailObjects.forEach(o => scene.remove(o));
+  trailObjects.length = 0;
+}
+
+/**
+ * Build a neon trail: multiple overlapping lines with decreasing opacity
+ * to simulate glow + progressive fade from tip to tail
+ */
+function addNeonTrail(points, baseColor, baseOpacity, layers) {
+  if (points.length < 2) return;
+
+  const count = points.length;
+
+  // Build per-vertex color attribute with alpha fade (tip = bright, tail = 0)
+  layers.forEach(layer => {
+    const positions = [];
+    const colors    = [];
+    const c = new THREE.Color(layer.color);
+
+    for (let i = 0; i < count; i++) {
+      const t = i / (count - 1);            // 0 = tail, 1 = tip
+      const alpha = Math.pow(t, 0.7) * layer.opacity * baseOpacity;
+
+      positions.push(points[i].x, points[i].y, points[i].z);
+      // Encode brightness into rgb (LineBasicMaterial uses vertex colors)
+      colors.push(c.r * alpha * 3, c.g * alpha * 3, c.b * alpha * 3);
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color',    new THREE.Float32BufferAttribute(colors, 3));
+
+    const mat = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      linewidth: layer.width || 1
+    });
+
+    const line = new THREE.Line(geo, mat);
+    scene.add(line);
+    trailObjects.push(line);
+  });
+}
+
+function drawTrails() {
+  clearTrails();
+
+  // Sun trail — warm amber
+  addNeonTrail(bodies.sun.trail, 0xff8c00, 0.7, [
+    { color:0xffaa00, opacity:0.55, width:1 },
+    { color:0xff6600, opacity:0.25, width:1 }
+  ]);
+
+  if (!moonDetached) {
+    // Normal earth trail — cool blue neon
+    addNeonTrail(bodies.earth.trail, 0x4da6ff, 0.8, [
+      { color:0x88ccff, opacity:0.7,  width:1 },
+      { color:0x4488ff, opacity:0.35, width:1 },
+      { color:0x2255cc, opacity:0.15, width:1 }
+    ]);
+  } else {
+    // Deviated earth — warm orange/red neon
+    addNeonTrail(bodies.earth.trail, 0xff6600, 0.9, [
+      { color:0xff9944, opacity:0.80, width:1 },
+      { color:0xff4400, opacity:0.40, width:1 },
+      { color:0xff2200, opacity:0.18, width:1 }
+    ]);
+
+    // Ghost trail — cold white/cyan, dimmer
+    if (ghostVisible && bodies.ghost.trail.length > 1) {
+      addNeonTrail(bodies.ghost.trail, 0xffffff, 0.5, [
+        { color:0xddeeff, opacity:0.50, width:1 },
+        { color:0xaabbcc, opacity:0.22, width:1 }
+      ]);
+    }
+  }
+
+  // Moon trail
+  addNeonTrail(bodies.moon.trail, moonDetached ? 0xff4444 : 0xaaaaaa, 0.5, [
+    { color: moonDetached ? 0xff6666 : 0xcccccc, opacity:0.45, width:1 },
+    { color: moonDetached ? 0xcc2222 : 0x888888, opacity:0.18, width:1 }
+  ]);
+}
+
+// =============================================
+// MOVEMENT
+// =============================================
+function calcBarycenter() {
+  const total = config.earthMass + config.moonMass;
+  bodies.barycenter.position
+    .copy(bodies.earth.position).multiplyScalar(config.earthMass / total)
+    .addScaledVector(bodies.moon.position, config.moonMass / total);
+}
+
+// "Pure" earth position without moon deviation (used for ghost)
+function pureEarthPos(t) {
+  const angle = t * config.earthOrbitSpeed;
+  return new THREE.Vector3(
+    Math.cos(angle) * config.earthOrbitRadius,
+    Math.sin(angle) * config.earthOrbitRadius * Math.sin(config.earthOrbitInclination),
+    bodies.sun.position.z + Math.sin(angle) * config.earthOrbitRadius * Math.cos(config.earthOrbitInclination)
+  );
+}
+
+function updateSun() {
+  bodies.sun.position.z = time * config.sunVelocity;
+  sunMesh.position.copy(bodies.sun.position);
+  sunLight.position.copy(bodies.sun.position);
+  bodies.sun.trail.push(bodies.sun.position.clone());
+  if (bodies.sun.trail.length > config.trailSegments) bodies.sun.trail.shift();
+}
+
+function updateEarth() {
+  const angle = time * config.earthOrbitSpeed;
+  let x = Math.cos(angle) * config.earthOrbitRadius;
+  let y = Math.sin(angle) * config.earthOrbitRadius * Math.sin(config.earthOrbitInclination);
+  let z = bodies.sun.position.z + Math.sin(angle) * config.earthOrbitRadius * Math.cos(config.earthOrbitInclination);
+
+  if (moonDetached) {
+    const t = moonDetachTime * config.impactAcceleration;
+    x += earthVelocityAdjustment.x * t;
+    y += earthVelocityAdjustment.y * t;
+    z += earthVelocityAdjustment.z * t;
+
+    // Update ghost to show where earth WOULD be
+    const pure = pureEarthPos(time);
+    bodies.ghost.position.copy(pure);
+    ghostMesh.position.copy(pure);
+    ghostMesh.visible = ghostVisible;
+
+    bodies.ghost.trail.push(pure.clone());
+    if (bodies.ghost.trail.length > config.trailSegments) bodies.ghost.trail.shift();
+  }
+
+  bodies.earth.position.set(x, y, z);
+  earthMesh.position.copy(bodies.earth.position);
+  earthMesh.rotation.y += 0.003;
+  cloudsMesh.rotation.y += 0.0014;
+
+  bodies.earth.trail.push(bodies.earth.position.clone());
+  if (bodies.earth.trail.length > config.trailSegments) bodies.earth.trail.shift();
+
+  moonOrbitLine.position.copy(bodies.earth.position);
+}
+
+function updateMoon() {
+  if (moonDetached) {
+    bodies.moon.position.add(moonVelocity);
+    moonDetachTime++;
+  } else {
+    const moonAngle = time * config.moonOrbitSpeed;
+    bodies.moon.position.set(
+      bodies.earth.position.x + Math.cos(moonAngle) * config.moonOrbitRadius,
+      bodies.earth.position.y + Math.sin(moonAngle) * config.moonOrbitRadius,
+      bodies.earth.position.z
+    );
+  }
+  moonMesh.position.copy(bodies.moon.position);
+  moonMesh.rotation.y += 0.001;
+
+  bodies.moon.trail.push(bodies.moon.position.clone());
+  if (bodies.moon.trail.length > config.trailSegments) bodies.moon.trail.shift();
+
+  calcBarycenter();
+  barycenterMesh.position.copy(bodies.barycenter.position);
+  bcRing.rotation.z += 0.018;
+}
+
+// =============================================
+// SLIDER CONTROLS
+// =============================================
+function updateSliderFill(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min) * 100).toFixed(1) + '%';
+  el.style.setProperty('--pct', pct);
+}
+
+function onSliderChange() {
+  const ampEl = document.getElementById('slider-amp');
+  const accEl = document.getElementById('slider-acc');
+  const amp = parseFloat(ampEl.value);
+  const acc = parseFloat(accEl.value);
+
+  updateSliderFill(ampEl);
+  updateSliderFill(accEl);
+
+  config.impactAmplification = amp;
+  config.impactAcceleration  = acc;
+
+  document.getElementById('val-amp').textContent = amp + '×';
+  document.getElementById('val-acc').textContent = acc + '×';
+  document.getElementById('title-badge').textContent =
+    `Impacto Amplificado ${amp}× · Aceleração ${acc}×`;
+
+  // Recalculate live if moon already detached
+  if (moonDetached) recalcEarthAdjustment();
+}
+
+function recalcEarthAdjustment() {
+  const moonAngle  = time * config.moonOrbitSpeed;
+  const earthAngle = time * config.earthOrbitSpeed;
+  const mv = new THREE.Vector3(
+    -Math.sin(earthAngle)*config.earthOrbitRadius*config.earthOrbitSpeed + (-Math.sin(moonAngle)*config.moonOrbitRadius*config.moonOrbitSpeed),
+     Math.cos(earthAngle)*config.earthOrbitRadius*Math.sin(config.earthOrbitInclination)*config.earthOrbitSpeed + Math.cos(moonAngle)*config.moonOrbitRadius*config.moonOrbitSpeed,
+     Math.cos(earthAngle)*config.earthOrbitRadius*Math.cos(config.earthOrbitInclination)*config.earthOrbitSpeed + config.sunVelocity
+  );
+  earthVelocityAdjustment.copy(mv.clone().multiplyScalar(-config.moonMass/config.earthMass))
+    .multiplyScalar(0.001 * config.impactAmplification);
+}
+
+// Init slider fills
+window.addEventListener('load', () => {
+  updateSliderFill(document.getElementById('slider-amp'));
+  updateSliderFill(document.getElementById('slider-acc'));
+});
+
+// =============================================
+// TOGGLE MOON
+// =============================================
+function toggleMoonGravity() {
+  if (!moonDetached) {
+    moonDetached = true;
+    moonDetachTime = 0;
+    bodies.ghost.trail = [];
+
+    const moonAngle  = time * config.moonOrbitSpeed;
+    const earthAngle = time * config.earthOrbitSpeed;
+    moonVelocity.set(
+      -Math.sin(earthAngle)*config.earthOrbitRadius*config.earthOrbitSpeed + (-Math.sin(moonAngle)*config.moonOrbitRadius*config.moonOrbitSpeed),
+       Math.cos(earthAngle)*config.earthOrbitRadius*Math.sin(config.earthOrbitInclination)*config.earthOrbitSpeed + Math.cos(moonAngle)*config.moonOrbitRadius*config.moonOrbitSpeed,
+       Math.cos(earthAngle)*config.earthOrbitRadius*Math.cos(config.earthOrbitInclination)*config.earthOrbitSpeed + config.sunVelocity
+    );
+    earthVelocityAdjustment
+      .copy(moonVelocity.clone().multiplyScalar(-config.moonMass/config.earthMass))
+      .multiplyScalar(0.001 * config.impactAmplification);
+
+    document.getElementById('toggle-moon-btn').classList.add('active');
+    document.getElementById('toggle-moon-btn').textContent = 'Reconectar Lua';
+    document.getElementById('moon-orbit-status').textContent = 'Desvinculada (trajetória inercial)';
+    document.getElementById('impact-warning').style.display = 'block';
+    document.getElementById('ghost-badge').classList.add('visible');
+    document.getElementById('impact-overlay').classList.add('active');
+    document.getElementById('ghost-legend-item').style.opacity = '1';
+
+  } else {
+    moonDetached = false;
+    moonDetachTime = 0;
+    moonVelocity.set(0,0,0);
+    earthVelocityAdjustment.set(0,0,0);
+    ghostMesh.visible = false;
+    bodies.ghost.trail = [];
+
+    document.getElementById('toggle-moon-btn').classList.remove('active');
+    document.getElementById('toggle-moon-btn').textContent = 'Desligar Lua';
+    document.getElementById('moon-orbit-status').textContent = 'Orbitando a Terra';
+    document.getElementById('impact-warning').style.display = 'none';
+    document.getElementById('ghost-badge').classList.remove('visible');
+    document.getElementById('impact-overlay').classList.remove('active');
+    document.getElementById('ghost-legend-item').style.opacity = '0.35';
+  }
+}
+
+function toggleGhostVisibility() {
+  ghostVisible = !ghostVisible;
+  ghostMesh.visible = moonDetached && ghostVisible;
+  document.getElementById('toggle-ghost-btn').textContent = ghostVisible ? 'Ocultar' : 'Mostrar';
+}
+
+// =============================================
+// STATS
+// =============================================
+function updateStats() {
+  document.getElementById('time-stat').textContent   = Math.floor(time);
+  document.getElementById('sun-z').textContent       = Math.floor(bodies.sun.position.z);
+  document.getElementById('earth-dist').textContent  = Math.floor(bodies.earth.position.distanceTo(bodies.sun.position));
+  document.getElementById('moon-dist').textContent   = Math.floor(bodies.moon.position.distanceTo(bodies.earth.position));
+  document.getElementById('moon-state').textContent  = moonDetached ? 'Desvinculada' : 'Vinculada';
+
+  document.getElementById('earth-pos-x').textContent  = bodies.earth.position.x.toFixed(1);
+  document.getElementById('earth-pos-y').textContent  = bodies.earth.position.y.toFixed(1);
+  document.getElementById('earth-vel').textContent    = (earthVelocityAdjustment.length()*config.impactAcceleration).toFixed(4);
+  document.getElementById('earth-wobble').textContent = (moonDetached ? 0 : Math.sin(time*config.moonOrbitSpeed)*config.moonOrbitRadius).toFixed(2);
+  document.getElementById('impact-status').textContent    = moonDetached ? 'Desvinculada' : 'Vinculada à Terra';
+  document.getElementById('impact-vel-total').textContent = moonVelocity.length().toFixed(3);
+  document.getElementById('impact-time').textContent      = moonDetachTime;
+  document.getElementById('barycenter-dist').textContent  = bodies.earth.position.distanceTo(bodies.barycenter.position).toFixed(2);
+  document.getElementById('grav-influence').textContent   = (moonDetached ? 0 : 100).toFixed(1) + '%';
+  document.getElementById('fps-stat').textContent         = Math.floor(fps);
+
+  // Ghost delta
+  if (moonDetached && bodies.ghost.trail.length > 0) {
+    const dx = (bodies.earth.position.x - bodies.ghost.position.x).toFixed(1);
+    const dy = (bodies.earth.position.y - bodies.ghost.position.y).toFixed(1);
+    const dt = bodies.earth.position.distanceTo(bodies.ghost.position).toFixed(2);
+    document.getElementById('delta-x').textContent     = dx;
+    document.getElementById('delta-y').textContent     = dy;
+    document.getElementById('delta-total').textContent = dt;
+    document.getElementById('ghost-delta').textContent = dt;
+  } else {
+    document.getElementById('delta-x').textContent =
+    document.getElementById('delta-y').textContent =
+    document.getElementById('delta-total').textContent =
+    document.getElementById('ghost-delta').textContent = '—';
+  }
+
+  document.getElementById('moon-state').className = moonDetached ? 'stat-value warn' : 'stat-value';
+}
+
+// =============================================
+// CAMERA
+// =============================================
+let isDragging=false, prevMouse={x:0,y:0};
+const camRot={x:0.45,y:0};
+
+function applyCam() {
+  const d=camera.position.length();
+  camera.position.set(
+    d*Math.sin(camRot.y)*Math.cos(camRot.x),
+    d*Math.sin(camRot.x),
+    d*Math.cos(camRot.y)*Math.cos(camRot.x)
+  );
+  camera.lookAt(0,0,bodies.sun.position.z);
+}
+
+document.addEventListener('mousedown', e=>{
+  if (e.target.closest('.panel')) return;
+  isDragging=true; prevMouse={x:e.clientX,y:e.clientY};
+});
+document.addEventListener('mouseup',   ()=>isDragging=false);
+document.addEventListener('mousemove', e=>{
+  if(!isDragging) return;
+  camRot.y+=(e.clientX-prevMouse.x)*.005;
+  camRot.x+=(e.clientY-prevMouse.y)*.005;
+  camRot.x=Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, camRot.x));
+  prevMouse={x:e.clientX,y:e.clientY};
+  applyCam();
+});
+document.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const d=Math.max(50, camera.position.length()+e.deltaY*.5);
+  camera.position.copy(camera.position.clone().normalize().multiplyScalar(d));
+  camera.lookAt(0,0,bodies.sun.position.z);
+},{passive:false});
+document.addEventListener('keydown', e=>{ if(e.code==='Space'){e.preventDefault();isRunning=!isRunning;} });
+
+let lastTouch=null;
+document.addEventListener('touchstart',e=>{
+  if(e.target.closest('.panel')) return;
+  lastTouch=e.touches[0];
+});
+document.addEventListener('touchmove',e=>{
+  if(!lastTouch) return;
+  const t=e.touches[0];
+  camRot.y+=(t.clientX-lastTouch.clientX)*.006;
+  camRot.x+=(t.clientY-lastTouch.clientY)*.006;
+  camRot.x=Math.max(-Math.PI/2.2,Math.min(Math.PI/2.2,camRot.x));
+  lastTouch=t; applyCam(); e.preventDefault();
+},{passive:false});
+
+// =============================================
+// ANIMATE
+// =============================================
+function animate() {
+  requestAnimationFrame(animate);
+  if (isRunning) {
+    time++;
+    updateSun();
+    updateEarth();
+    updateMoon();
+    if (frameCount % 2 === 0) drawTrails();
+    camera.lookAt(0,0,bodies.sun.position.z);
+  }
+  updateStats();
+  const now=performance.now();
+  fps=.9*fps+.1*(1000/(now-lastFrameTime));
+  lastFrameTime=now; frameCount++;
+  renderer.render(scene,camera);
+}
+
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+animate();
+</script>
+</body>
+</html>
