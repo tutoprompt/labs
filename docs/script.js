@@ -1,49 +1,34 @@
+// ── Config ──────────────────────────────────────────────
+const GITHUB_USER = "tutoprompt";
+const GITHUB_REPO = "labs";
+const PROJECTS_PATH = "docs/Projects";
+const API_URL = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${PROJECTS_PATH}`;
+
+// ── DOM ─────────────────────────────────────────────────
 const grid = document.getElementById("grid");
 const counter = document.getElementById("project-count");
 
-console.log("Script initialized. Grid:", grid, "Counter:", counter);
-
+// ── Helpers ─────────────────────────────────────────────
 function slugToTitle(filename) {
-  if (typeof filename === "object" && filename !== null) {
-    if (filename.title) return filename.title;
-    if (filename.url) {
-      const parts = filename.url.split("/");
-      return slugToTitle(parts[parts.length - 1]);
-    }
-    return "Untitled Project";
-  }
-
   return filename
     .replace(/\.html$/i, "")
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function createCard(item, index) {
-  let path, title, htmlFilename;
-  
-  if (typeof item === "object" && item !== null) {
-    path = item.url;
-    if (!path.startsWith("Projects/")) {
-        path = `Projects/${path}`;
-    }
-    htmlFilename = item.url.split("/").pop();
-    title = item.title || slugToTitle(item.url);
-  } else {
-    path = `Projects/${item}`;
-    htmlFilename = item;
-    title = slugToTitle(item);
-  }
-
-  console.log(`Creating card ${index}:`, { title, path, htmlFilename });
+function createCard(name, index) {
+  const baseName = name.replace(/\.html$/i, "");
+  const title = slugToTitle(name);
+  const htmlPath = `Projects/${name}`;
+  const videoExts = ["mp4", "webm", "mov"];
 
   const card = document.createElement("article");
   card.className = "card";
 
+  // Preview
   const previewWrap = document.createElement("div");
   previewWrap.className = "card-preview";
-  
-  // Criar elemento de vídeo
+
   const video = document.createElement("video");
   video.className = "card-video";
   video.autoplay = true;
@@ -52,26 +37,20 @@ function createCard(item, index) {
   video.playsInline = true;
   video.preload = "metadata";
   video.controls = false;
-  
-  // Extrair nome base do arquivo (sem extensão)
-  const baseName = htmlFilename.replace(/\.html$/i, "");
-  
-  // Extensões de vídeo suportadas
-  const videoExtensions = ["mp4", "webm", "mov", "avi", "mkv"];
-  
-  // Criar sources para cada extensão
-  videoExtensions.forEach(ext => {
+
+  videoExts.forEach(ext => {
     const source = document.createElement("source");
     source.src = `Projects/${baseName}.${ext}`;
-    source.type = `video/${ext === "mkv" ? "x-matroska" : ext}`;
+    source.type = `video/${ext}`;
     video.appendChild(source);
   });
-  
+
   previewWrap.appendChild(video);
 
+  // Info
   const info = document.createElement("div");
   info.className = "card-info";
-  
+
   const idx = document.createElement("span");
   idx.className = "card-index";
   idx.textContent = String(index + 1).padStart(2, "0");
@@ -82,7 +61,7 @@ function createCard(item, index) {
 
   const link = document.createElement("a");
   link.className = "card-link";
-  link.href = path;
+  link.href = htmlPath;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.textContent = "Open";
@@ -97,31 +76,52 @@ function createCard(item, index) {
   return card;
 }
 
+// ── Init ────────────────────────────────────────────────
 async function init() {
-  console.log("Fetching Projects/index.json...");
   try {
-    const res = await fetch("Projects/index.json");
-    console.log("Response status:", res.status);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(API_URL, {
+      headers: { "Accept": "application/vnd.github.v3+json" }
+    });
+
+    if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+
     const files = await res.json();
-    console.log("Files loaded:", files);
-    
-    if (!Array.isArray(files) || files.length === 0) {
-      grid.innerHTML = "<p class=\"empty\">No projects found.</p>";
-      counter.textContent = "0";
+
+    // Filtra só arquivos .html, ignora index.html e index.json
+    const projects = files
+      .filter(f => f.type === "file" && /\.html$/i.test(f.name) && f.name.toLowerCase() !== "index.html")
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (projects.length === 0) {
+      grid.innerHTML = `<p class="empty">No projects found.</p>`;
+      if (counter) counter.textContent = "0";
       return;
     }
 
-    counter.textContent = files.length;
+    if (counter) counter.textContent = projects.length;
     grid.innerHTML = "";
-    
-    files.forEach((file, i) => {
-      grid.appendChild(createCard(file, i));
+
+    projects.forEach((file, i) => {
+      grid.appendChild(createCard(file.name, i));
     });
-    console.log("Grid populated with video previews.");
+
   } catch (err) {
     console.error("Failed to load projects:", err);
-    grid.innerHTML = `<p class=\"empty\">Error: ${err.message}</p>`;
+
+    // Fallback: tenta index.json local se a API falhar (ex: offline)
+    try {
+      const res = await fetch("Projects/index.json");
+      if (!res.ok) throw new Error("index.json also unavailable");
+      const files = await res.json();
+      if (counter) counter.textContent = files.length;
+      grid.innerHTML = "";
+      files.forEach((item, i) => {
+        const name = item.url ? item.url.split("/").pop() : item;
+        grid.appendChild(createCard(name, i));
+      });
+    } catch {
+      grid.innerHTML = `<p class="empty">Could not load projects. Check your connection.</p>`;
+    }
   }
 }
 
