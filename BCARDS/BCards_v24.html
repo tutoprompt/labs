@@ -1,0 +1,3888 @@
+<!DOCTYPE html>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ELEMENTAL CLASH — v17.0  SYNC STATE ARCHITECTURE + FLOW HARDENING          ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  NOVIDADES v16.0 — CARD FOCUS ANIMATION + STATE FIX                        ║
+║  ✨ NEW: Carta selecionada voa para o centro da tela (card-focus overlay)   ║
+║  ✨ NEW: Opções PPR aparecem ao redor com stagger fade+scale                ║
+║  ✨ NEW: Após escolha, carta confirma PPR e o deck inteiro flipa para baixo ║
+║  🐛 FIX: Estado inicial garantido (P1 up, P2 down) sem flash                ║
+║  🐛 FIX: Transição de turno estável — cartas não desaparecem                ║
+║  🐛 FIX: flipLock honrado em todo o ciclo de vida                           ║
+║  🐛 FIX: onReveal não chama renderDecks durante animação                    ║
+║  ─────────────────────────────────────────────────────────────────────────  ║
+║  NOVIDADES v15.0 — INTEGRITY AUDIT + FLOW FIXES                             ║
+║  🐛 FIX: overflow:hidden removido de .player-zone e #main (clipava cards)   ║
+║  🐛 FIX: sistema dual zone-active/zone-turn-active unificado                ║
+║  🐛 FIX: applyZoneEmphasis chamado automaticamente dentro de renderPhase    ║
+║  🐛 FIX: deckState pré-setado antes de render() em boot/nextRound/restart   ║
+║  🐛 FIX: setDeckFaceDown redundante após render() removido                  ║
+║  🐛 FIX: onConfirm P2 path simplificado                                     ║
+║  ✅ v14: flip animations, waking, stagger preservados                       ║
+║  ─────────────────────────────────────────────────────────────────────────  ║
+║  🎯 NOVO FLUXO: P1 ativo (face-up) → P2 oculto (face-down)                 ║
+║     P1 confirma → P1 flip down → P2 flip up → P2 ativo                    ║
+║     P2 confirma → P2 flip down → overlay REVELAR → ambos revelam          ║
+║  🐛 FIX: deckState{p1,p2} = fonte de verdade para visibilidade             ║
+║  🐛 FIX: flipLock{p1,p2} — renderPlayerGrid não toca DOM mid-animation    ║
+║  🐛 FIX: flipDeck/revealDeck com onComplete callback (sem setTimeout cego) ║
+║  🐛 FIX: onReveal usa _updateCardHpHearts() (in-place, sem rebuild DOM)    ║
+║  🐛 FIX: renderPhase não mais gerencia face-down/turned (removido)         ║
+║  🐛 FIX: boot instala P2 face-down antes do primeiro render               ║
+║  🐛 FIX: nextRound/restart restauram P1 up + P2 down via setDeckFace*     ║
+║  ✅ v13: overflow fix + stagger CSS preservados                            ║
+║  ✅ v12: Desktop scaling preservado                                        ║
+║  ✅ Arquitetura THEME/ENGINE/RENDERER/BATTLE_FX/UI preservada             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Elemental Clash v16</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+
+<style id="theme-layer">
+:root {
+  --ink:        #07060a;
+  --bg:         #0d0b10;
+  --surface:    #14111a;
+  --raised:     #1c1825;
+  --card-bg:    #211d2c;
+  --gold:       #c9963a;
+  --gold-lt:    #e8be6a;
+  --gold-dk:    #7a5818;
+  --gold-glow:  rgba(201,150,58,.4);
+  --silver:     #8a8fa8;
+  --text:       #e2d9c8;
+  --text-dim:   #6a6070;
+  --p1-col:     #c0392b;
+  --p1-lt:      #e74c3c;
+  --p1-glow:    rgba(192,57,43,.5);
+  --p2-col:     #1565c0;
+  --p2-lt:      #2196f3;
+  --p2-glow:    rgba(21,101,192,.5);
+  --fire:       #ff6030;  --fire-glow:  rgba(255,96,48,.5);
+  --water:      #22aaee;  --water-glow: rgba(34,170,238,.5);
+  --earth:      #7a9a42;  --earth-glow: rgba(122,154,66,.5);
+  --storm:      #9de0f0;  --storm-glow: rgba(157,224,240,.5);
+  --elec:       #f5d800;  --elec-glow:  rgba(245,216,0,.5);
+  --hp-hi:   #ff4d6d;
+  --hp-mid:  #f0a020;
+  --hp-lo:   #e83030;
+  --hp-empty: rgba(255,255,255,.12);
+  --r:        14px;
+  --r-sm:     8px;
+  --pace-speed: 1;
+}
+</style>
+
+<style id="layout-layer">
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; }
+
+body {
+  font-family: 'Crimson Pro', serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 80%, rgba(201,150,58,.04) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+}
+
+/* ── FAB Dock ── */
+#fab-dock {
+  position: fixed; bottom: 14px; left: 14px;
+  z-index: 9000; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s ease;
+}
+#fab-dock.fab-visible { opacity: 1; pointer-events: auto; }
+.fab-btn {
+  width:34px; height:34px; border-radius:8px;
+  background:var(--seg-bg,#1a1d21); border:1px solid rgba(255,255,255,.16);
+  color:#6b7280; font-size:15px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color .15s,color .15s,background .15s; line-height:1;
+}
+.fab-btn:hover { border-color:rgba(201,150,58,.6); color:var(--gold-lt); background:rgba(201,150,58,.08); }
+#gpc-inline {
+  position:relative; width:34px; height:34px; border-radius:8px;
+  background:#1a1d21; border:1px solid rgba(255,255,255,.16); color:#6b7280;
+  display:flex; align-items:center; justify-content:center; cursor:default;
+  transition:border-color .15s,background .15s,width .2s cubic-bezier(.4,0,.2,1);
+  overflow:hidden; white-space:nowrap;
+}
+#gpc-inline:hover { width:108px; border-color:rgba(201,150,58,.6); background:rgba(201,150,58,.08); }
+
+/* Pulso de velocidade — linha na base do botão que pisca na freq da velocidade atual */
+#gpc-pulse-bar {
+  position:absolute; bottom:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  transform-origin:left;
+  animation: gpcPulse var(--gpc-period, 1s) ease-in-out infinite;
+  opacity:0.7;
+  pointer-events:none;
+}
+@keyframes gpcPulse {
+  0%   { transform:scaleX(0); opacity:0; }
+  20%  { opacity:1; }
+  80%  { opacity:0.9; }
+  100% { transform:scaleX(1); opacity:0; }
+}
+
+/* Indicador de velocidade (mini bolinhas) visível mesmo sem hover */
+#gpc-speed-dots {
+  position:absolute; top:4px; right:4px;
+  display:flex; gap:2px; align-items:center; pointer-events:none;
+}
+.gpc-dot {
+  width:3px; height:3px; border-radius:50%;
+  background:var(--gold); opacity:0.2;
+  transition:opacity .2s, transform .2s;
+}
+.gpc-dot.lit { opacity:0.8; transform:scale(1.3); }
+
+#gpc-icon-label { font-size:15px; position:absolute; transition:opacity .15s; pointer-events:none; }
+#gpc-inline:hover #gpc-icon-label { opacity:0; }
+#gpc-controls { display:flex; align-items:center; gap:3px; opacity:0; transition:opacity .15s .05s; pointer-events:none; }
+#gpc-inline:hover #gpc-controls { opacity:1; pointer-events:auto; }
+#gpc-controls button { width:22px; height:22px; background:none; border:none; color:var(--gold-lt); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:color .1s; }
+#gpc-controls button:hover { color:#fff; }
+#gpc-speed-val { font-family:'Cinzel',serif; font-size:9px; color:var(--gold); min-width:30px; text-align:center; }
+
+/* ── Main layout ── */
+#main {
+  flex:1; display:flex; flex-direction:column;
+  overflow:visible; /* v15: allow scaled zones to bleed without clipping */
+  position:relative; z-index:1; height:100dvh;
+}
+
+/* Round counter — gravado sobre o divider central */
+#round-counter {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(7px, 1vw, 10px);
+  color: var(--gold-lt);
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, rgba(20,16,28,.95) 0%, rgba(14,11,20,.95) 100%);
+  border: 1px solid rgba(201,150,58,.35);
+  border-radius: 30px;
+  padding: clamp(3px,0.5vh,5px) clamp(14px,2vw,22px);
+  pointer-events: none;
+  white-space: nowrap;
+  user-select: none;
+  box-shadow:
+    0 0 0 1px rgba(201,150,58,.08),
+    0 2px 12px rgba(0,0,0,.6),
+    0 0 20px rgba(201,150,58,.12);
+  animation: roundPulse 3s ease-in-out infinite;
+}
+@keyframes roundPulse {
+  0%,100% { box-shadow: 0 0 0 1px rgba(201,150,58,.08), 0 2px 12px rgba(0,0,0,.6), 0 0 20px rgba(201,150,58,.12); }
+  50%     { box-shadow: 0 0 0 1px rgba(201,150,58,.18), 0 2px 16px rgba(0,0,0,.7), 0 0 32px rgba(201,150,58,.25); }
+}
+#round-counter::before {
+  content: '';
+  position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232,190,106,.5) 50%, transparent);
+  border-radius: 2px;
+}
+
+/* ── FIELD ZONES — P2 top, P1 bottom ── */
+.player-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: visible; /* FIX v15: was 'hidden' — clipped scaled content on zone-turn-active */
+  padding: clamp(6px,1.2vw,12px) clamp(6px,1.5vw,14px);
+  gap: clamp(4px,.8vw,8px);
+}
+
+#zone-p2 {
+  background: radial-gradient(ellipse 110% 140% at 50% -10%, rgba(21,101,192,.18) 0%, rgba(21,101,192,.06) 45%, transparent 70%);
+  transform: rotate(180deg); /* flip entire zone for P2 */
+}
+#zone-p1 {
+  background: radial-gradient(ellipse 110% 140% at 50% 110%, rgba(192,57,43,.18) 0%, rgba(192,57,43,.06) 45%, transparent 70%);
+}
+
+/* v15: zone-active replaced by zone-turn-active for single-class emphasis system */
+#zone-p2.zone-turn-active {
+  background: radial-gradient(ellipse 110% 140% at 50% -10%, rgba(21,101,192,.32) 0%, rgba(21,101,192,.12) 45%, transparent 70%);
+}
+#zone-p1.zone-turn-active {
+  background: radial-gradient(ellipse 110% 140% at 50% 110%, rgba(192,57,43,.32) 0%, rgba(192,57,43,.12) 45%, transparent 70%);
+}
+
+/* Inner wrapper inside flipped P2 zone — re-flip content so text is readable */
+#zone-p2 .zone-inner {
+  transform: rotate(180deg);
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(4px,.8vw,8px); width: 100%;
+}
+#zone-p1 .zone-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(4px,.8vw,8px); width: 100%;
+}
+
+/* ── Divider ── */
+#field-divider {
+  flex: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,150,58,.2) 30%, rgba(201,150,58,.4) 50%, rgba(201,150,58,.2) 70%, transparent);
+  position: relative;
+  z-index: 5;
+  margin: 0 clamp(20px,5vw,80px);
+}
+
+/* ── Player label ── */
+.zone-label {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px,1.1vw,10px);
+  letter-spacing: 2px; font-weight:600;
+  opacity: .6;
+}
+.zone-label.p1 { color:var(--p1-lt); }
+.zone-label.p2 { color:var(--p2-lt); }
+
+/* ── Turn badge — hidden, replaced by SVG hand indicator ── */
+.turn-badge {
+  display: none;
+  pointer-events: none;
+}
+
+/* ── Hand pointer indicator — FF7 glove style, fixed left edge ── */
+#turn-indicator {
+  position: fixed;
+  left: 0;
+  top: 75%; /* default: P1 bottom zone */
+  transform: translateY(-50%);
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .4s ease, top .55s cubic-bezier(.34,1.2,.64,1);
+}
+#turn-indicator.show { opacity: 1; }
+/* P2 turn: slide to top zone */
+#turn-indicator.p2-turn { top: 25%; }
+
+#turn-indicator-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* The glove hand SVG tab */
+#hand-glove-svg {
+  width: clamp(38px, 7vw, 54px);
+  height: auto;
+  display: block;
+  filter:
+    drop-shadow(0 0 8px rgba(201,150,58,.7))
+    drop-shadow(2px 2px 6px rgba(0,0,0,.8));
+  animation: glovePoint 1.1s ease-in-out infinite;
+}
+/* P2 turn: flip vertically so hand points upward */
+#turn-indicator.p2-turn #hand-glove-svg {
+  transform: scaleY(-1);
+  animation: glovePointUp 1.1s ease-in-out infinite;
+}
+
+@keyframes glovePoint {
+  0%,100% { transform: translateX(0) scaleY(1); }
+  50%     { transform: translateX(5px) scaleY(1); }
+}
+@keyframes glovePointUp {
+  0%,100% { transform: translateX(0) scaleY(-1); }
+  50%     { transform: translateX(5px) scaleY(-1); }
+}
+
+/* HP bar row */
+.player-hp-bar-wrap {
+  width: clamp(160px, 55%, 360px);
+  display:flex; align-items:center; gap:6px;
+  flex-shrink:0;
+}
+
+/* ── Full-width energy strip — cravada na borda da zona ── */
+/* P1: faixa na base da tela (borda inferior da zona P1) */
+/* P2: faixa no topo (borda superior da zona P2, após rotação) */
+.zone-energy-strip {
+  position: absolute;
+  left: 0; right: 0;
+  height: 5px;
+  z-index: 4;
+  pointer-events: none;
+}
+/* P1 zone: strip cola no fundo absoluto da zona */
+#zone-p1 .zone-energy-strip {
+  bottom: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(192,57,43,.3) 8%,
+    rgba(232,80,60,.75) 35%,
+    rgba(255,110,80,.95) 50%,
+    rgba(232,80,60,.75) 65%,
+    rgba(192,57,43,.3) 92%,
+    transparent 100%);
+  box-shadow:
+    0 0 16px rgba(220,60,40,.6),
+    0 0 40px rgba(220,60,40,.25),
+    0 -2px 12px rgba(220,60,40,.35);
+  animation: stripGlowP1 2.6s ease-in-out infinite;
+}
+@keyframes stripGlowP1 {
+  0%,100% { opacity: .7; }
+  50%     { opacity: 1; box-shadow: 0 0 22px rgba(220,60,40,.9), 0 0 60px rgba(220,60,40,.35), 0 -3px 18px rgba(220,60,40,.5); }
+}
+/* P2 zone: strip cola no fundo da zona (que está rotacionado, então fica no topo da tela) */
+#zone-p2 .zone-energy-strip {
+  bottom: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(21,101,192,.3) 8%,
+    rgba(33,150,243,.75) 35%,
+    rgba(80,180,255,.95) 50%,
+    rgba(33,150,243,.75) 65%,
+    rgba(21,101,192,.3) 92%,
+    transparent 100%);
+  box-shadow:
+    0 0 16px rgba(30,100,220,.6),
+    0 0 40px rgba(30,100,220,.25),
+    0 -2px 12px rgba(30,100,220,.35);
+  animation: stripGlowP2 2.6s ease-in-out infinite;
+}
+@keyframes stripGlowP2 {
+  0%,100% { opacity: .7; }
+  50%     { opacity: 1; box-shadow: 0 0 22px rgba(30,100,220,.9), 0 0 60px rgba(30,100,220,.35), 0 -3px 18px rgba(30,100,220,.5); }
+}
+
+/* Remove the old zone-energy-top/bottom classes — kept in HTML but zeroed out */
+.zone-energy-top,
+.zone-energy-bottom {
+  display: none !important;
+}
+
+.php-label { font-family:'Cinzel',serif; font-size:clamp(6px,.9vw,8px); letter-spacing:1px; white-space:nowrap; flex-shrink:0; }
+.p1-clr { color:var(--p1-lt); }
+.p2-clr { color:var(--p2-lt); }
+.php-num   { font-family:'Cinzel Decorative',serif; font-size:clamp(7px,1vw,9px); white-space:nowrap; flex-shrink:0; font-weight:700; }
+.php-bar {
+  flex: 1; height: 9px; border-radius: 6px;
+  background: rgba(0,0,0,.55);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.06);
+  overflow: visible; position: relative; isolation: isolate;
+}
+.php-fill {
+  height: 100%; border-radius: 6px; position: relative;
+  transition: width .7s cubic-bezier(.4,0,.2,1), background .5s;
+  overflow: hidden;
+}
+.php-fill::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.28) 40%, rgba(255,255,255,.55) 50%, rgba(255,255,255,.28) 60%, transparent 100%);
+  background-size: 200% 100%;
+  animation: energyShimmer 1.8s ease-in-out infinite;
+  border-radius: inherit;
+}
+@keyframes energyShimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+#p1-php-fill {
+  background: linear-gradient(90deg, #6a0000 0%, #c0392b 45%, #ff6050 85%, #ffaa80 100%);
+  box-shadow: 0 0 8px rgba(220,60,40,.8), 0 0 18px rgba(220,60,40,.4), inset 0 1px 0 rgba(255,180,160,.35);
+}
+#p2-php-fill {
+  background: linear-gradient(90deg, #001a5a 0%, #1565c0 45%, #2196f3 85%, #80d0ff 100%);
+  box-shadow: 0 0 8px rgba(30,100,220,.8), 0 0 18px rgba(30,100,220,.4), inset 0 1px 0 rgba(150,210,255,.35);
+}
+
+/* ── Cards grid ── */
+.cards-grid {
+  display:flex; flex-wrap:wrap;
+  gap: clamp(5px,1vw,10px);
+  align-items:center; justify-content:center;
+  position: relative;
+}
+
+/* ── Deck flip container — wraps all cards ── */
+.deck-wrap {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(5px,1vw,10px);
+  align-items: center;
+  justify-content: center;
+  perspective: 800px;
+  /* transition and transform controlled by the DECK TURN-AWAY SYSTEM below */
+}
+
+
+/* ── ELEMENT TOKENS ── */
+.fire { --elem-color:var(--fire); --elem-glow:var(--fire-glow); --card-bg-a:#2a1008; --card-bg-b:#120804; --shine-clr:rgba(255,96,48,.22); --mid-clr:rgba(255,80,20,.08); --stripe-a:#ff3000; --stripe-b:#ff8c30; }
+.water { --elem-color:var(--water); --elem-glow:var(--water-glow); --card-bg-a:#041c2c; --card-bg-b:#040e18; --shine-clr:rgba(34,170,238,.20); --mid-clr:rgba(20,140,200,.08); --stripe-a:#0077cc; --stripe-b:#22aaee; }
+.earth { --elem-color:var(--earth); --elem-glow:var(--earth-glow); --card-bg-a:#0e1808; --card-bg-b:#080e04; --shine-clr:rgba(122,154,66,.20); --mid-clr:rgba(100,130,50,.08); --stripe-a:#4a6a1a; --stripe-b:#7aaa32; }
+.storm { --elem-color:var(--storm); --elem-glow:var(--storm-glow); --card-bg-a:#081820; --card-bg-b:#040c14; --shine-clr:rgba(157,224,240,.18); --mid-clr:rgba(120,200,220,.07); --stripe-a:#4ab0cc; --stripe-b:#9de0f0; }
+.electric { --elem-color:var(--elec); --elem-glow:var(--elec-glow); --card-bg-a:#1c1800; --card-bg-b:#0e0c00; --shine-clr:rgba(245,216,0,.20); --mid-clr:rgba(220,190,0,.07); --stripe-a:#b09000; --stripe-b:#f5d800; }
+
+/* ── Card base ── */
+/* v19: zero 3D flip on card element — no preserve-3d, no backface-visibility.
+   Face state is purely opacity on .card-inner vs .card-back via data-face attr. */
+.card {
+  width: clamp(72px,13vw,112px);
+  height: clamp(100px,18vw,156px);
+  border-radius: var(--r);
+  background: linear-gradient(155deg, var(--card-bg-a, #211d2c) 0%, var(--card-bg-b, #0d0b10) 100%);
+  border: 1.5px solid rgba(255,255,255,.07);
+  box-shadow: 0 4px 0 rgba(0,0,0,.55), 0 6px 18px rgba(0,0,0,.5);
+  display: flex; flex-direction: column;
+  padding: 0;
+  cursor: pointer; user-select: none;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Card back — hidden by default, shown when data-face="down" */
+.card-back {
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(201,150,58,.06) 0,
+    rgba(201,150,58,.06) 5px,
+    rgba(13,11,16,.8) 5px,
+    rgba(13,11,16,.8) 10px
+  );
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(22px,4vw,34px);
+  border: 1.5px solid rgba(201,150,58,.2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity var(--flip-dur) var(--flip-ease) calc(var(--flip-i,0) * var(--flip-stagger));
+}
+.card-back::before {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 1px solid rgba(201,150,58,.15);
+  border-radius: calc(var(--r) - 4px);
+}
+
+/* ── face-down: show back, hide front ── */
+.card[data-face="down"] .card-back  { opacity: 1; }
+.card[data-face="down"] .card-inner { opacity: 0; }
+.card[data-face="down"]::after      { opacity: 0; }
+.card[data-face="down"] .card-glow  { opacity: 0 !important; }
+
+.card::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit; pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 50% at 50% 0%, var(--shine-clr, rgba(255,255,255,.08)) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 35% at 50% 60%, var(--mid-clr, rgba(255,255,255,.03)) 0%, transparent 70%);
+  z-index: 0;
+}
+.card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  border-radius: var(--r) var(--r) 0 0;
+  background: linear-gradient(90deg, var(--stripe-a, var(--elem-color)), var(--stripe-b, var(--elem-color)), var(--stripe-a, var(--elem-color)));
+  box-shadow: 0 0 8px var(--elem-glow, rgba(255,255,255,.2));
+  z-index: 1;
+}
+
+.card-inner {
+  position: relative; z-index: 2;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  padding: clamp(5px,.9vw,8px) clamp(3px,.6vw,6px) clamp(3px,.6vw,5px);
+  gap: 1px;
+  border-radius: inherit;
+  overflow: hidden;
+  transition: opacity var(--flip-dur) var(--flip-ease) calc(var(--flip-i,0) * var(--flip-stagger));
+}
+
+/* Press effect */
+.card.selectable:active:not(.dead) {
+  transform: translateY(3px) scale(.97) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4) !important;
+  transition: transform .06s ease-out !important;
+}
+
+.card.selectable {
+  cursor: pointer;
+  border-color: rgba(255,255,255,.1);
+  box-shadow: 0 4px 0 rgba(0,0,0,.5), 0 6px 14px rgba(0,0,0,.5);
+}
+.card.selectable:hover:not(.dead) {
+  transform: translateY(-5px) scale(1.05);
+  border-color: var(--elem-color);
+  box-shadow: 0 9px 0 rgba(0,0,0,.4), 0 14px 28px rgba(0,0,0,.6), 0 0 24px var(--elem-glow, rgba(201,150,58,.3));
+}
+
+@keyframes bounceSelect {
+  0%   { transform: translateY(-3px) scale(1.02); }
+  40%  { transform: translateY(-9px) scale(1.06); }
+  65%  { transform: translateY(-1px) scale(1.01); }
+  80%  { transform: translateY(-5px) scale(1.04); }
+  100% { transform: translateY(-3px) scale(1.02); }
+}
+
+.card.selected {
+  border-color: var(--elem-color) !important;
+  box-shadow:
+    0 6px 0 #7a5000,
+    0 0 0 2px var(--elem-color),
+    0 0 30px var(--elem-glow),
+    0 10px 22px rgba(0,0,0,.7) !important;
+  animation: bounceSelect .4s cubic-bezier(.34,1.56,.64,1) forwards !important;
+}
+.card.used    { border-color:rgba(201,150,58,.5)!important; box-shadow:0 0 12px rgba(201,150,58,.3)!important; opacity:.75; }
+.card.dead    { opacity:.2; filter:grayscale(1) blur(1px); cursor:default; pointer-events:none; }
+.card.disabled { opacity:.4; cursor:default; pointer-events:none; }
+
+/* ── Card glow ── */
+.card-glow {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, var(--elem-glow, rgba(201,150,58,.2)) 0%, transparent 60%);
+  opacity: 0; transition: opacity .3s;
+}
+.card.selectable:hover .card-glow,
+.card.selected .card-glow { opacity: 1; }
+
+/* ── Card stats ── */
+.card-stats {
+  width: 100%; display: flex; justify-content: space-between;
+  flex-shrink: 0; padding: 0;
+}
+.cs-atk, .cs-def {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px, 1.05vw, 9.5px);
+  font-weight: 700; line-height: 1;
+  padding: 1px 2px; border-radius: 3px;
+}
+.cs-atk { color: #ff8050; background: rgba(255,80,30,.14); }
+.cs-def { color: #70b8e0; background: rgba(50,130,200,.14); }
+
+/* ── Card icon ── */
+.card-icon-area {
+  font-size: clamp(28px, 5.2vw, 44px);
+  line-height: 1; text-align: center;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative;
+}
+.card-icon-emoji {
+  display: inline-block;
+  filter: drop-shadow(0 2px 10px var(--elem-glow, rgba(255,255,255,.3)));
+  animation: iconIdle 3.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+.card.selectable .card-icon-emoji { animation: iconIdleActive 2.4s ease-in-out infinite; }
+.card.selected .card-icon-emoji {
+  animation: iconIdleSelected 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px var(--elem-glow)) drop-shadow(0 2px 6px rgba(0,0,0,.5));
+}
+@keyframes iconIdle { 0%,100%{transform:translateY(0) scale(1) rotate(0deg)} 30%{transform:translateY(-2px) scale(1.03) rotate(.6deg)} 60%{transform:translateY(1px) scale(.98) rotate(-.4deg)} 80%{transform:translateY(-1px) scale(1.01) rotate(.3deg)} }
+@keyframes iconIdleActive { 0%,100%{transform:translateY(0) scale(1) rotate(0deg)} 25%{transform:translateY(-3px) scale(1.05) rotate(.8deg)} 55%{transform:translateY(1px) scale(.97) rotate(-.6deg)} 80%{transform:translateY(-2px) scale(1.03) rotate(.4deg)} }
+@keyframes iconIdleSelected { 0%,100%{transform:translateY(-1px) scale(1.04) rotate(0deg)} 30%{transform:translateY(-5px) scale(1.08) rotate(1deg)} 60%{transform:translateY(0px) scale(1.02) rotate(-1deg)} }
+
+/* ── Card name ── */
+.card-name {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7.5px, 1.2vw, 10px);
+  font-weight: 700; letter-spacing: .5px;
+  text-align: center; color: #d0c8b8;
+  flex-shrink: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,.7);
+}
+
+/* ── HP Hearts ── */
+.card-hp-hearts {
+  display: flex; justify-content: center;
+  gap: clamp(1px, 0.3vw, 2px);
+  flex-wrap: wrap; flex-shrink: 0;
+  padding-top: 1px;
+}
+.hp-heart { font-size: clamp(6px, 1vw, 8.5px); line-height: 1; display: inline-block; transition: transform .2s, opacity .2s; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.hp-heart.full  { opacity: .9; }
+.hp-heart.empty { opacity: .14; filter: grayscale(1); }
+
+/* ── PPR Tray (inside selected card) ── */
+.card-ppr-tray {
+  display: none;
+  justify-content: center;
+  gap: clamp(3px, .6vw, 5px);
+  padding-top: 2px;
+  flex-shrink: 0;
+  width: 100%;
+}
+.card.selected .card-ppr-tray { display: flex; }
+.ppr-pill {
+  width: clamp(22px, 4vw, 34px);
+  height: clamp(22px, 4vw, 34px);
+  border-radius: clamp(8px, 1.5vw, 12px);
+  background: rgba(255,255,255,.08);
+  border: 2px solid rgba(255,255,255,.18);
+  color: var(--text);
+  font-size: clamp(11px, 2vw, 17px);
+  cursor: pointer;
+  display: flex; align-items:center; justify-content:center;
+  box-shadow: 0 3px 0 rgba(0,0,0,.4), 0 4px 8px rgba(0,0,0,.3);
+  transition: transform .1s, box-shadow .1s, background .15s, border-color .15s;
+  position: relative;
+}
+.ppr-pill:hover { background:rgba(201,150,58,.25); border-color:var(--gold); transform:translateY(-2px); box-shadow:0 5px 0 rgba(0,0,0,.4),0 6px 12px rgba(0,0,0,.3); }
+.ppr-pill:active { transform:translateY(2px) !important; box-shadow:0 1px 0 rgba(0,0,0,.4) !important; }
+.ppr-pill.chosen {
+  background: rgba(201,150,58,.4); border-color: var(--gold);
+  box-shadow: 0 3px 0 #7a5000, 0 0 12px var(--gold-glow), 0 4px 8px rgba(0,0,0,.4);
+  transform: translateY(-1px);
+  animation: pillChosen .3s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes pillChosen { 0%{transform:translateY(-1px) scale(1)} 50%{transform:translateY(-4px) scale(1.15)} 100%{transform:translateY(-1px) scale(1.05)} }
+
+/* ── JOGAR button — embedded inside selected card, below deck ── */
+#play-btn-p1, #play-btn-p2 {
+  display: none;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(10px, 1.8vw, 14px);
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  padding: 8px 20px;
+  border-radius: 50px;
+  background: linear-gradient(160deg, #ff9500, #ffca00, #ff8c00);
+  border: 2.5px solid #ffdf00;
+  color: #1a0800;
+  text-shadow: 0 1px 0 rgba(255,255,255,.45);
+  box-shadow: 0 4px 0 #9a5000, 0 6px 20px rgba(0,0,0,.55), 0 0 24px rgba(255,170,0,.4);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s, opacity .2s;
+}
+#play-btn-p1.btn-ready, #play-btn-p2.btn-ready {
+  display: block;
+  animation: playBtnBounce .75s ease-in-out infinite;
+}
+#play-btn-p1.btn-wait, #play-btn-p2.btn-wait {
+  display: block;
+  background: linear-gradient(160deg, rgba(80,70,50,.35), rgba(60,50,30,.35));
+  border-color: rgba(201,150,58,.2);
+  color: rgba(201,150,58,.35);
+  text-shadow: none;
+  box-shadow: 0 2px 0 rgba(0,0,0,.4);
+  cursor: default;
+  pointer-events: none;
+  animation: none;
+  filter: none;
+  opacity: 1;
+}
+@keyframes playBtnBounce {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 6px 0 #9a5000, 0 8px 26px rgba(0,0,0,.5), 0 0 40px rgba(255,170,0,.6); }
+}
+#play-btn-p1:active, #play-btn-p2:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 1px 0 #9a5000, 0 3px 10px rgba(0,0,0,.5) !important;
+  animation: none !important;
+}
+
+/* ── BATTLE FX ── */
+.card-battle-fx {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3; overflow: hidden;
+}
+.card-battle-fx.fx-attack::before {
+  content: ''; position: absolute; top: -30%; left: -20%; width: 60%; height: 160%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,.04) 35%, rgba(255,255,255,.55) 48%, rgba(255,255,255,.65) 50%, rgba(255,255,255,.55) 52%, rgba(255,255,255,.04) 65%, transparent 100%);
+  animation: fxAttackSlash .45s cubic-bezier(.2,0,.4,1) forwards;
+}
+.card-battle-fx.fx-attack::after {
+  content: ''; position: absolute; top: -30%; left: 10%; width: 40%; height: 160%;
+  background: linear-gradient(108deg, transparent 0%, rgba(255,255,255,.02) 30%, rgba(255,255,255,.3) 48%, rgba(255,255,255,.35) 50%, rgba(255,255,255,.3) 52%, rgba(255,255,255,.02) 70%, transparent 100%);
+  animation: fxAttackSlash .45s .06s cubic-bezier(.2,0,.4,1) forwards;
+}
+@keyframes fxAttackSlash { 0%{transform:translateX(-120%) skewX(-8deg);opacity:0} 15%{opacity:1} 85%{opacity:.8} 100%{transform:translateX(220%) skewX(-8deg);opacity:0} }
+.card.fx-attacker { animation: fxAttackerBurst .5s ease-out forwards; }
+@keyframes fxAttackerBurst { 0%{box-shadow:0 4px 0 rgba(0,0,0,.5),0 6px 14px rgba(0,0,0,.5)} 25%{box-shadow:0 0 0 3px var(--elem-color),0 0 40px var(--elem-glow),0 0 80px var(--elem-glow);transform:scale(1.06)} 60%{transform:scale(1.02)} 100%{box-shadow:0 4px 0 rgba(0,0,0,.5),0 6px 14px rgba(0,0,0,.5);transform:scale(1)} }
+.card.fx-damage { animation: fxDamageShake .5s ease-out forwards; }
+@keyframes fxDamageShake { 0%{transform:translateX(0)} 10%{transform:translateX(-6px) scale(.98);filter:brightness(2.5) saturate(0) sepia(1) hue-rotate(-20deg)} 25%{transform:translateX(5px);filter:brightness(2) saturate(.3)} 40%{transform:translateX(-4px)} 55%{transform:translateX(3px)} 70%{transform:translateX(-2px)} 85%{transform:translateX(1px)} 100%{transform:translateX(0);filter:brightness(1)} }
+.card-battle-fx.fx-damage-hit { background:rgba(255,50,30,.0); animation:fxDmgFlash .45s ease-out forwards; }
+@keyframes fxDmgFlash { 0%{background:rgba(255,50,30,.0)} 15%{background:rgba(255,50,30,.75);box-shadow:inset 0 0 30px rgba(255,0,0,.6)} 50%{background:rgba(255,50,30,.25)} 100%{background:rgba(255,50,30,.0)} }
+.card.fx-tie { animation:fxTiePulse .6s ease-out forwards; }
+@keyframes fxTiePulse { 0%{filter:brightness(1)} 30%{filter:brightness(1.6) saturate(.2);transform:scale(1.03)} 60%{filter:brightness(.85) saturate(.5)} 100%{filter:brightness(1);transform:scale(1)} }
+.card.fx-destroyed { animation:fxDestroyed .7s ease-in forwards; }
+@keyframes fxDestroyed { 0%{filter:brightness(1);transform:scale(1)} 20%{filter:brightness(3) saturate(0);transform:scale(1.08)} 50%{transform:scale(.9);opacity:.5;filter:grayscale(1) brightness(.6)} 100%{transform:scale(.8);opacity:.15;filter:grayscale(1) blur(2px)} }
+.card-battle-fx.fx-win-beam::before {
+  content:''; position:absolute; bottom:0; left:20%; right:20%; height:0;
+  background:linear-gradient(to top, var(--elem-glow), transparent);
+  animation:fxWinBeam .9s ease-out forwards;
+}
+@keyframes fxWinBeam { 0%{height:0;opacity:.8} 60%{height:120%;opacity:.6} 100%{height:130%;opacity:0} }
+.card-battle-fx.fx-shockwave::before {
+  content:''; position:absolute; top:50%; left:50%; width:20px; height:20px; margin:-10px 0 0 -10px;
+  border-radius:50%; border:3px solid var(--elem-color,rgba(255,220,100,.9));
+  animation:fxShockwave .5s ease-out forwards; z-index:10;
+}
+@keyframes fxShockwave { 0%{transform:scale(.2);opacity:1} 60%{transform:scale(3.5);opacity:.6} 100%{transform:scale(5);opacity:0} }
+
+/* Strike animations — card lunges toward opponent (they are vertically stacked) */
+.card.fx-strike-p1 { animation:strikeP1 .55s cubic-bezier(.2,0,.4,1) forwards; z-index:50; }
+@keyframes strikeP1 {
+  0%{transform:translateY(0) scale(1);filter:brightness(1)}
+  15%{transform:translateY(-8px) scale(1.04);filter:brightness(1.3)}
+  38%{transform:translateY(-28px) scale(1.08) rotate(-2deg);filter:brightness(1.6) drop-shadow(0 0 12px var(--elem-glow))}
+  55%{transform:translateY(-32px) scale(1.1) rotate(-3deg)}
+  70%{transform:translateY(-10px) scale(1.03) rotate(-1deg);filter:brightness(1.1)}
+  88%{transform:translateY(4px) scale(.98)}
+  100%{transform:translateY(0) scale(1);filter:brightness(1)}
+}
+.card.fx-strike-p2 { animation:strikeP2 .55s cubic-bezier(.2,0,.4,1) forwards; z-index:50; }
+@keyframes strikeP2 {
+  0%{transform:translateY(0) scale(1);filter:brightness(1)}
+  15%{transform:translateY(8px) scale(1.04);filter:brightness(1.3)}
+  38%{transform:translateY(28px) scale(1.08) rotate(2deg);filter:brightness(1.6) drop-shadow(0 0 12px var(--elem-glow))}
+  55%{transform:translateY(32px) scale(1.1) rotate(3deg)}
+  70%{transform:translateY(10px) scale(1.03) rotate(1deg);filter:brightness(1.1)}
+  88%{transform:translateY(-4px) scale(.98)}
+  100%{transform:translateY(0) scale(1);filter:brightness(1)}
+}
+
+/* ── Damage particles ── */
+.dmg-particle {
+  position: fixed; pointer-events: none; z-index: 600;
+  font-family: 'Nunito', sans-serif; font-weight: 900;
+  font-size: clamp(20px, 4vw, 32px);
+  text-shadow: 0 0 8px currentColor, 0 2px 0 rgba(0,0,0,.9), 2px 2px 0 rgba(0,0,0,.6);
+  transform-origin: center center;
+  animation: personaDmg 1.9s cubic-bezier(.22,1,.36,1) forwards;
+  margin-left: -20px; margin-top: -20px;
+}
+.dmg-particle.dmg-big {
+  font-size: clamp(28px, 5.5vw, 44px);
+  animation: personaDmgBig 2.2s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes personaDmg {
+  0%{opacity:0;transform:scale(.3) translateY(10px) rotate(-8deg)}
+  12%{opacity:1;transform:scale(1.35) translateY(-12px) rotate(4deg)}
+  22%{transform:scale(.95) translateY(-8px) rotate(-2deg)}
+  32%{transform:scale(1.08) translateY(-14px) rotate(1deg)}
+  48%{opacity:1;transform:scale(1) translateY(-18px) rotate(0deg)}
+  75%{opacity:.9;transform:scale(1) translateY(-38px) rotate(0deg)}
+  100%{opacity:0;transform:scale(.7) translateY(-65px) rotate(0deg)}
+}
+@keyframes personaDmgBig {
+  0%{opacity:0;transform:scale(.2) translateY(14px) rotate(-12deg)}
+  10%{opacity:1;transform:scale(1.5) translateY(-16px) rotate(6deg)}
+  20%{transform:scale(.88) translateY(-10px) rotate(-3deg)}
+  30%{transform:scale(1.15) translateY(-18px) rotate(2deg)}
+  45%{opacity:1;transform:scale(1.05) translateY(-22px) rotate(0deg)}
+  72%{opacity:.85;transform:scale(1) translateY(-52px)}
+  100%{opacity:0;transform:scale(.6) translateY(-80px)}
+}
+.burst-dot {
+  position: fixed; pointer-events: none; z-index: 599;
+  width: 6px; height: 6px; border-radius: 50%;
+  animation: burstDot .7s ease-out forwards;
+}
+@keyframes burstDot { 0%{opacity:1;transform:scale(1) translate(0,0)} 100%{opacity:0;transform:scale(.3) translate(var(--dx),var(--dy))} }
+
+/* ═══════════════════════════════════════════════════════════════
+   v19 CARD FLIP SYSTEM — per-card data-face + opacity
+   ───────────────────────────────────────────────────────────────
+   Model: each .card carries data-face="up|down"
+   Face state = opacity on .card-inner (front) and .card-back
+   No rotateY on card element. No preserve-3d. No backface-visibility.
+   No flipLock. No rAF. Zero inheritance conflicts.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --flip-dur:      420ms;
+  --flip-ease:     cubic-bezier(.4, 0, .2, 1);
+  --flip-stagger:  55ms;
+  --deck-scale-inactive: 0.82;
+  --deck-opacity-inactive: 0.55;
+  --deck-scale-dur: 300ms;
+  --deck-scale-ease: cubic-bezier(.4, 0, .2, 1);
+
+  /* ── ZONE EMPHASIS SYSTEM ─────────────────────────────────── */
+  --zone-active-scale:   1.04;
+  --zone-inactive-scale: 0.88;
+  --zone-scale-dur:      400ms;
+  --zone-scale-ease:     cubic-bezier(.34, 1.56, .64, 1);
+  --zone-inactive-opacity: 0.55;
+}
+
+/* ── Deck wrapper scale — driven by data-deck-state ── */
+.deck-wrap {
+  transform-origin: center center;
+  transition:
+    transform var(--deck-scale-dur) var(--deck-scale-ease),
+    opacity   var(--deck-scale-dur) var(--deck-scale-ease);
+}
+.deck-wrap[data-deck-state="inactive"] {
+  transform: scale(var(--deck-scale-inactive));
+  opacity: var(--deck-opacity-inactive);
+  pointer-events: none;
+}
+.deck-wrap[data-deck-state="active"] {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* ── Deck wake animation — when inactive→active ── */
+@keyframes deckWakeUp {
+  0%   { transform: scale(var(--deck-scale-inactive)); opacity: var(--deck-opacity-inactive); }
+  55%  { transform: scale(1.03); opacity: 1; }
+  80%  { transform: scale(.985); }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.deck-wrap[data-deck-state="waking"] {
+  animation: deckWakeUp 420ms cubic-bezier(.34,1.56,.64,1) forwards;
+  pointer-events: none; /* block clicks during wake */
+}
+
+/* ── Card base transition (hover/press effects) ── */
+.card {
+  transition:
+    transform .18s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .18s,
+    border-color .18s;
+}
+
+/* face-down: pointer events off, cursor reset */
+.card[data-face="down"] {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+/* face-up while unflipping — no extra rules needed,
+   .card-inner opacity transition handles the reveal */
+
+/* ─────────────────────────────────────────────────────────────
+   ZONE EMPHASIS SYSTEM — spatial turn communication
+   Classes toggled by applyZoneEmphasis(activePlayer)
+   ───────────────────────────────────────────────────────────── */
+
+/* Base transition on all player zones */
+.player-zone {
+  transition:
+    transform  var(--zone-scale-dur) var(--zone-scale-ease),
+    opacity    var(--zone-scale-dur) cubic-bezier(.4, 0, .2, 1),
+    filter     var(--zone-scale-dur) ease,
+    background .4s ease;
+  transform-origin: center center;
+}
+
+/* Active player: scale up, full opacity, no filter */
+.player-zone.zone-turn-active {
+  transform: scale(var(--zone-active-scale));
+  opacity: 1;
+  filter: none;
+}
+
+/* Inactive player: strong visual suppression — zoom out, desaturate, blur */
+.player-zone.zone-turn-inactive {
+  transform: scale(var(--zone-inactive-scale));
+  opacity: var(--zone-inactive-opacity);
+  filter: saturate(0.18) brightness(0.6) blur(1.5px);
+}
+
+/* P2 is rotated 180° in DOM — counteract scale-origin drift */
+#zone-p2.zone-turn-active  { transform: rotate(180deg) scale(var(--zone-active-scale)); }
+#zone-p2.zone-turn-inactive { transform: rotate(180deg) scale(var(--zone-inactive-scale)); filter: saturate(0.18) brightness(0.6) blur(1.5px); }
+
+/* ── REVEAL overlay ── */
+#reveal-focus {
+  position:fixed; inset:0; z-index:250;
+  background:rgba(0,0,0,.82); backdrop-filter:blur(4px) saturate(.4);
+  pointer-events:none; align-items:center; justify-content:center;
+  display:flex; opacity:0; transition:opacity .5s ease;
+  flex-direction: column; gap: 18px;
+}
+#reveal-focus.show   { opacity:1; pointer-events:all; }
+#reveal-focus.hiding { opacity:0; pointer-events:none; }
+
+#reveal-label {
+  font-family: 'Cinzel Decorative', serif;
+  font-weight: 900;
+  font-size: clamp(12px, 2.2vw, 20px);
+  color: rgba(232,190,106,.7);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 0 0 30px rgba(201,150,58,.5);
+  animation: revealLabelPulse 1.8s ease-in-out infinite;
+}
+@keyframes revealLabelPulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+#btn-reveal {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(16px, 2.8vw, 24px);
+  letter-spacing: 2px;
+  padding: 16px 44px;
+  border-radius: 50px;
+  border: 3px solid #ffdf00;
+  background: linear-gradient(160deg, #ff8c00, #ffba00, #ff8c00);
+  color: #1a0a00;
+  cursor: pointer;
+  position: relative; z-index:251;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255,255,255,.4);
+  box-shadow: 0 8px 0 #b85e00, 0 10px 28px rgba(0,0,0,.6), 0 0 50px rgba(255,180,0,.5), 0 0 100px rgba(255,180,0,.25);
+  animation: revealBounce 0.9s ease-in-out infinite;
+  transition: transform .1s, box-shadow .1s;
+}
+#btn-reveal:active {
+  transform: translateY(6px) !important;
+  box-shadow: 0 2px 0 #b85e00, 0 4px 14px rgba(0,0,0,.5) !important;
+  animation: none !important;
+}
+@keyframes revealBounce {
+  0%,100%{transform:translateY(0) scale(1)}
+  50%{transform:translateY(-7px) scale(1.04)}
+}
+
+/* ── Hint text in reveal ── */
+#reveal-sub {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(9px, 1.4vw, 12px);
+  color: rgba(255,255,255,.3);
+  letter-spacing: 2px;
+}
+
+/* ── Result toast — centrado entre os dois decks ── */
+#result-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(.88);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .35s ease, transform .35s cubic-bezier(.34,1.4,.64,1);
+}
+#result-toast.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#toast-inner {
+  position: relative;
+  background: linear-gradient(160deg, rgba(14,11,20,.97) 0%, rgba(10,8,16,.97) 100%);
+  border: 1px solid rgba(201,150,58,.45);
+  border-radius: 18px;
+  padding: 16px 28px 14px;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(201,150,58,.12),
+    0 10px 40px rgba(0,0,0,.75),
+    0 0 40px rgba(201,150,58,.18),
+    0 0 80px rgba(201,150,58,.07);
+  min-width: clamp(180px, 36vw, 300px);
+  max-width: clamp(260px, 55vw, 400px);
+  overflow: hidden;
+  backdrop-filter: blur(8px) saturate(1.2);
+}
+
+/* Linha de brilho superior */
+#toast-inner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,150,58,.7) 40%, rgba(232,190,106,.9) 50%, rgba(201,150,58,.7) 60%, transparent);
+  border-radius: 2px;
+}
+
+/* Divisor entre toast-main e toast-sub */
+#toast-inner::after {
+  content: '';
+  position: absolute;
+  left: 20%; right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,150,58,.15) 50%, transparent);
+  top: calc(16px + 1.5em + 10px);
+}
+
+#toast-main {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(13px, 2.2vw, 18px);
+  color: var(--gold-lt);
+  letter-spacing: .8px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 18px rgba(201,150,58,.5);
+}
+#toast-sub {
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(10px, 1.5vw, 13px);
+  color: var(--text-dim);
+  letter-spacing: .3px;
+  margin-top: 2px;
+}
+
+/* Barra de progresso do toast */
+#toast-progress-wrap {
+  margin-top: 12px;
+  height: 2px;
+  background: rgba(255,255,255,.07);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#toast-progress-bar {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, var(--gold-dk), var(--gold-lt), var(--gold-dk));
+  border-radius: 2px;
+  transform-origin: left;
+  transform: scaleX(1);
+  transition: none;
+}
+#toast-progress-bar.draining {
+  transition: transform linear;
+}
+
+/* Desktop: toast ligeiramente maior */
+@media (min-width: 1024px) {
+  #toast-inner {
+    padding: 20px 36px 16px;
+    border-radius: 20px;
+    min-width: clamp(240px, 28vw, 380px);
+  }
+  #toast-main {
+    font-size: clamp(16px, 1.6vw, 22px);
+    margin-bottom: 8px;
+  }
+  #toast-sub {
+    font-size: clamp(12px, 1.1vw, 15px);
+  }
+  #toast-progress-wrap {
+    margin-top: 14px;
+    height: 3px;
+  }
+}
+
+/* ── Game Over ── */
+#gameover-screen {
+  position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,.88);
+  backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center;
+}
+#gameover-screen.show { display:flex; }
+#gameover-box {
+  background:var(--surface); border:2px solid rgba(201,150,58,.5);
+  border-radius:20px; padding:32px 40px; text-align:center;
+  box-shadow:0 0 60px rgba(201,150,58,.25),0 20px 60px rgba(0,0,0,.8);
+  display:flex; flex-direction:column; gap:16px; align-items:center;
+}
+#go-crown { font-size:44px; animation:crownBounce 1s ease-in-out infinite; }
+@keyframes crownBounce { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-8px) rotate(5deg)} }
+#go-title    { font-family:'Nunito',sans-serif; font-weight:900; font-size:clamp(18px,3.5vw,28px); color:var(--gold-lt); }
+#go-subtitle { font-family:'Crimson Pro',serif; font-size:clamp(10px,1.6vw,13px); color:var(--text-dim); }
+.btn-confirm {
+  font-family:'Nunito',sans-serif; font-weight:900;
+  font-size:clamp(11px,1.8vw,15px); letter-spacing:1px;
+  padding:12px 28px; border-radius:50px;
+  border:3px solid var(--gold);
+  background:linear-gradient(160deg,rgba(201,150,58,.25),rgba(201,150,58,.12));
+  color:var(--gold-lt); cursor:pointer;
+  box-shadow:0 4px 0 #7a5000,0 6px 20px rgba(0,0,0,.4);
+  transition:transform .1s,box-shadow .1s;
+}
+.btn-confirm:hover { transform:translateY(-3px); box-shadow:0 7px 0 #7a5000,0 0 24px rgba(201,150,58,.4); }
+.btn-confirm:active { transform:translateY(3px)!important; box-shadow:0 1px 0 #7a5000!important; }
+
+/* ── Hint label ── */
+.zone-hint {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px, 1.05vw, 9px);
+  letter-spacing: 2.5px;
+  color: rgba(232,190,106,.5);
+  white-space: nowrap;
+  pointer-events: none;
+  min-height: 20px;
+  margin: clamp(4px, 1vh, 10px) 0;
+  padding: clamp(4px,.8vh,8px) clamp(14px,2.5vw,28px);
+  background: rgba(201,150,58,.05);
+  border-radius: 30px;
+  border: 1px solid transparent;
+  transition: color .3s, letter-spacing .3s, background .3s, border-color .3s, opacity .3s;
+}
+.zone-hint:empty {
+  background: transparent;
+  border-color: transparent;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+}
+.zone-hint.ppr-prompt {
+  color: rgba(232,190,106,.85);
+  letter-spacing: 3px;
+  animation: hintPulse 1.1s ease-in-out infinite;
+  background: rgba(201,150,58,.08);
+  border-color: rgba(201,150,58,.2);
+}
+.zone-hint.ready-prompt {
+  color: rgba(100,220,120,.85);
+  letter-spacing: 3px;
+  background: rgba(80,200,100,.06);
+  border-color: rgba(100,220,120,.2);
+}
+@keyframes hintPulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP SCALING — min-width: 1024px
+   All sizing re-tuned for large screens. Mobile values untouched.
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+
+  /* ── Player zones: use available vertical space better ── */
+  .player-zone {
+    padding: clamp(16px, 2.2vh, 32px) clamp(24px, 3vw, 60px);
+    gap: clamp(10px, 1.4vh, 20px);
+  }
+
+  /* ── Cards: bigger on desktop ── */
+  .card {
+    width:  clamp(112px, 10vw, 148px);
+    height: clamp(156px, 14vw, 206px);
+    border-radius: 16px;
+  }
+
+  /* ── Deck gap and perspective ── */
+  .deck-wrap {
+    gap: clamp(10px, 1.2vw, 18px);
+    perspective: 1200px;
+  }
+
+  /* ── Card typography ── */
+  .card-name {
+    font-size: clamp(9px, 0.9vw, 13px);
+  }
+  .cs-atk, .cs-def {
+    font-size: clamp(9px, 0.85vw, 12px);
+  }
+  .card-icon-area {
+    font-size: clamp(36px, 4.2vw, 58px);
+  }
+  .hp-heart {
+    font-size: clamp(8px, 0.85vw, 12px);
+  }
+
+  /* ── PPR tray pills ── */
+  .ppr-pill {
+    width:  clamp(34px, 3.2vw, 46px);
+    height: clamp(34px, 3.2vw, 46px);
+    font-size: clamp(16px, 1.6vw, 22px);
+    border-radius: clamp(10px, 1vw, 14px);
+  }
+
+  /* ── HP bar ── */
+  .player-hp-bar-wrap {
+    width: clamp(260px, 38%, 520px);
+    gap: 10px;
+  }
+  .php-bar     { height: 13px; border-radius: 8px; }
+  .php-label   { font-size: clamp(8px, 0.85vw, 11px); letter-spacing: 1.5px; }
+  .php-num     { font-size: clamp(9px, 0.9vw, 13px); }
+
+  /* ── Turn badge ── */
+  .turn-badge {
+    display: none; /* sempre oculto — substituído pelo turn-indicator SVG */
+  }
+
+  /* ── Turn indicator desktop ── */
+  #hand-glove-svg {
+    width: clamp(44px, 6vw, 64px);
+  }
+
+  /* ── Zone hint ── */
+  .zone-hint {
+    font-size: clamp(9px, 0.9vw, 12px);
+    letter-spacing: 3px;
+    min-height: 22px;
+    margin: clamp(6px, 1.2vh, 14px) 0;
+    padding: clamp(5px, 1vh, 10px) clamp(18px, 3vw, 36px);
+  }
+
+  /* ── Round counter ── */
+  #round-counter {
+    font-size: clamp(9px, 0.85vw, 11px);
+    letter-spacing: 3px;
+  }
+
+  /* ── JOGAR button ── */
+  #play-btn-p1, #play-btn-p2 {
+    font-size: clamp(13px, 1.2vw, 18px);
+    padding: 12px 32px;
+    border-radius: 60px;
+    border-width: 3px;
+  }
+
+  /* ── REVELAR button ── */
+  #btn-reveal {
+    font-size: clamp(20px, 2vw, 30px);
+    padding: 20px 60px;
+    border-radius: 60px;
+    border-width: 3.5px;
+  }
+  #reveal-label {
+    font-size: clamp(14px, 1.6vw, 24px);
+    letter-spacing: 5px;
+  }
+  #reveal-sub {
+    font-size: clamp(11px, 1vw, 15px);
+    letter-spacing: 2.5px;
+  }
+
+  /* ── Divider ── */
+  #field-divider {
+    margin: 0 clamp(40px, 8vw, 140px);
+  }
+
+  /* ── Damage particles ── */
+  .dmg-particle {
+    font-size: clamp(28px, 3vw, 44px);
+  }
+  .dmg-particle.dmg-big {
+    font-size: clamp(36px, 4vw, 56px);
+  }
+
+  /* ── FAB dock ── */
+  #fab-dock {
+    bottom: 20px;
+    left: 20px;
+    gap: 8px;
+  }
+  .fab-btn, #gpc-inline {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 17px;
+  }
+
+  /* ── Game Over box ── */
+  #gameover-box {
+    padding: 44px 60px;
+    gap: 20px;
+  }
+  #go-crown  { font-size: 58px; }
+  #go-title  { font-size: clamp(22px, 2.4vw, 36px); }
+  #go-subtitle { font-size: clamp(12px, 1.1vw, 16px); }
+  .btn-confirm {
+    font-size: clamp(13px, 1.2vw, 18px);
+    padding: 16px 36px;
+    border-width: 3px;
+  }
+
+  /* ── Zone scale — still contrasted on large screens ── */
+  :root {
+    --zone-active-scale:   1.025;
+    --zone-inactive-scale: 0.90;
+    --zone-inactive-opacity: 0.50;
+  }
+}
+
+/* ── XL screens (1440px+): push card size to max ── */
+@media (min-width: 1440px) {
+  .card {
+    width:  clamp(136px, 9vw, 160px);
+    height: clamp(190px, 12.5vw, 224px);
+  }
+  .card-icon-area { font-size: clamp(44px, 4vw, 64px); }
+  .deck-wrap { gap: clamp(14px, 1.2vw, 22px); }
+  .player-hp-bar-wrap { width: clamp(300px, 36%, 600px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARD FOCUS OVERLAY — carta grande + PPR iluminado
+   ═══════════════════════════════════════════════════════════════ */
+
+#card-focus-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: radial-gradient(ellipse 80% 70% at 50% 45%, rgba(30,18,55,.65) 0%, rgba(4,3,10,.94) 100%);
+  backdrop-filter: blur(10px) saturate(.25);
+  display: flex; flex-direction: row;
+  align-items: center; justify-content: center;
+  gap: clamp(28px, 6vw, 90px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .35s ease;
+}
+#card-focus-overlay.show { opacity: 1; pointer-events: all; }
+
+/* ── Carta (desktop: lateral esquerda) ── */
+#focus-card-clone {
+  width:  clamp(160px, 26vw, 260px);
+  height: clamp(224px, 36vw, 364px);
+  border-radius: 22px;
+  background: linear-gradient(155deg, var(--focus-bg-a, #211d2c) 0%, var(--focus-bg-b, #0d0b10) 100%);
+  border: 2px solid var(--focus-elem-color, rgba(255,255,255,.25));
+  box-shadow:
+    0 14px 0 rgba(0,0,0,.65),
+    0 24px 70px rgba(0,0,0,.85),
+    0 0 70px var(--focus-elem-glow, rgba(201,150,58,.4)),
+    0 0 140px var(--focus-elem-glow, rgba(201,150,58,.12));
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  position: relative;
+  flex-shrink: 0;
+  animation: focusCardIn .44s cubic-bezier(.34,1.35,.64,1) forwards;
+}
+@keyframes focusCardIn {
+  0%   { transform: scale(.38) translateY(55px) rotate(-5deg); opacity: 0; }
+  65%  { opacity: 1; }
+  100% { transform: scale(1) translateY(0) rotate(0deg); opacity: 1; }
+}
+#focus-card-clone.dismiss {
+  animation: focusCardOut .28s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes focusCardOut {
+  0%   { transform: scale(1)  translateY(0);    opacity: 1; }
+  100% { transform: scale(.5) translateY(20px); opacity: 0; }
+}
+
+/* Stripe topo */
+#focus-card-clone::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 7px;
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(90deg,
+    var(--focus-stripe-a, var(--focus-elem-color)),
+    var(--focus-stripe-b, var(--focus-elem-color)),
+    var(--focus-stripe-a, var(--focus-elem-color)));
+  box-shadow: 0 0 18px var(--focus-elem-glow, rgba(255,255,255,.25));
+}
+
+/* Conteúdo da carta */
+.focus-stats  { display:flex; justify-content:space-between; width:82%; }
+.focus-atk    { font-family:'Cinzel',serif; font-size:clamp(10px,1.6vw,15px); color:#ff8050; background:rgba(255,80,30,.14); padding:2px 6px; border-radius:4px; font-weight:700; }
+.focus-def    { font-family:'Cinzel',serif; font-size:clamp(10px,1.6vw,15px); color:#70b8e0; background:rgba(50,130,200,.14); padding:2px 6px; border-radius:4px; font-weight:700; }
+.focus-icon   { font-size: clamp(60px, 10vw, 96px); line-height:1; filter: drop-shadow(0 4px 22px var(--focus-elem-glow, rgba(255,255,255,.5))); animation: focusIconPulse 1.8s ease-in-out infinite; }
+@keyframes focusIconPulse { 0%,100%{transform:scale(1) translateY(0)} 50%{transform:scale(1.11) translateY(-7px)} }
+.focus-name   { font-family:'Cinzel',serif; font-size:clamp(11px,1.6vw,17px); font-weight:700; color:#d0c8b8; letter-spacing:1.5px; }
+.focus-hearts { display:flex; gap:3px; flex-wrap:wrap; justify-content:center; }
+
+/* ── PPR — coluna vertical à direita (desktop) ── */
+#focus-ppr-row {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.8vh, 32px);
+  align-items: center;
+}
+
+/* Label sutil acima */
+#focus-ppr-row::before {
+  content: 'Escolha';
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px, .9vw, 10px);
+  letter-spacing: 3px;
+  color: rgba(201,150,58,.38);
+  text-transform: uppercase;
+}
+
+/* ── Botão PPR: bolinha iluminada ── */
+.focus-ppr-btn {
+  width:  clamp(72px, 10vw, 108px);
+  height: clamp(72px, 10vw, 108px);
+  border-radius: 50%;                      /* círculo perfeito */
+  background: radial-gradient(ellipse 80% 80% at 40% 30%,
+    rgba(255,255,255,.1) 0%,
+    rgba(255,255,255,.03) 55%,
+    transparent 100%),
+    rgba(12,9,20,.8);
+  border: 1.5px solid rgba(255,255,255,.14);
+  color: var(--text);
+  font-size: clamp(26px, 4.5vw, 42px);
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  box-shadow:
+    0 6px 0 rgba(0,0,0,.7),
+    0 10px 28px rgba(0,0,0,.6),
+    0 0 18px var(--ppr-glow, rgba(201,150,58,.12)),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  transition:
+    transform .2s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .2s ease,
+    background .2s ease,
+    border-color .2s ease;
+  opacity: 0;
+  position: relative;
+  overflow: hidden;
+  /* stagger from JS via --ppr-i */
+  animation: focusPillIn .38s cubic-bezier(.34,1.56,.64,1)
+    calc(var(--ppr-i,0) * 90ms + 180ms) forwards;
+  /* idle bob — each button has its own delay via --ppr-i */
+  animation-name: focusPillIn, pprBob;
+  animation-duration: .38s, 2.4s;
+  animation-timing-function: cubic-bezier(.34,1.56,.64,1), ease-in-out;
+  animation-delay: calc(var(--ppr-i,0) * 90ms + 180ms), calc(var(--bob-delay, 0.5s) + 0.7s);
+  animation-fill-mode: forwards, none;
+  animation-iteration-count: 1, infinite;
+}
+
+/* Bob animado individual por botão */
+@keyframes pprBob {
+  0%,100% { transform: translateY(0) scale(1); }
+  40%     { transform: translateY(-5px) scale(1.03); }
+  70%     { transform: translateY(2px) scale(.98); }
+}
+
+/* Brilho interno */
+.focus-ppr-btn::before {
+  content: '';
+  position: absolute; top: -30%; left: -30%;
+  width: 80%; height: 80%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.15) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity .25s;
+  opacity: .7;
+}
+
+@keyframes focusPillIn {
+  0%   { opacity:0; transform: scale(.4) translateY(24px); }
+  100% { opacity:1; transform: scale(1)  translateY(0); }
+}
+
+.focus-ppr-btn:hover {
+  background: radial-gradient(ellipse 80% 80% at 40% 30%,
+    rgba(255,255,255,.18) 0%,
+    rgba(201,150,58,.15) 60%,
+    transparent 100%),
+    rgba(18,14,30,.9);
+  border-color: var(--gold);
+  transform: translateY(-6px) scale(1.12) !important;
+  box-shadow:
+    0 12px 0 rgba(0,0,0,.65),
+    0 18px 40px rgba(0,0,0,.7),
+    0 0 40px var(--gold-glow),
+    inset 0 1px 0 rgba(255,255,255,.14);
+}
+.focus-ppr-btn:active {
+  transform: translateY(3px) scale(.94) !important;
+  box-shadow: 0 2px 0 rgba(0,0,0,.7) !important;
+}
+.focus-ppr-btn.chosen {
+  background: radial-gradient(ellipse 80% 80% at 40% 30%,
+    rgba(255,255,255,.22) 0%,
+    rgba(201,150,58,.35) 55%,
+    transparent 100%),
+    rgba(22,17,10,.95);
+  border-color: var(--gold-lt);
+  box-shadow:
+    0 5px 0 #6a4500,
+    0 0 40px var(--gold-glow),
+    0 0 80px rgba(201,150,58,.2),
+    inset 0 1px 0 rgba(255,255,255,.2);
+  transform: scale(1.14) translateY(-4px) !important;
+  animation: pillChosenFocus .38s cubic-bezier(.34,1.56,.64,1) forwards !important;
+}
+@keyframes pillChosenFocus {
+  0%  { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.22) translateY(-7px); }
+  100%{ transform: scale(1.14) translateY(-4px); }
+}
+
+.focus-ppr-label {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(6px, .85vw, 9px);
+  letter-spacing: 1px;
+  color: rgba(232,217,200,.55);
+}
+
+/* Cancel */
+#focus-cancel-hint {
+  position: absolute;
+  bottom: clamp(14px, 2.5vh, 26px);
+  left: 50%; transform: translateX(-50%);
+  font-family: 'Crimson Pro', serif;
+  font-size: clamp(10px, 1.3vw, 13px);
+  color: rgba(255,255,255,.18);
+  letter-spacing: 2px;
+  opacity: 0;
+  animation: focusPillIn .3s ease calc(560ms) forwards;
+  cursor: pointer;
+  transition: color .15s;
+  white-space: nowrap;
+}
+#focus-cancel-hint:hover { color: rgba(255,255,255,.48); }
+
+/* ── MOBILE: carta no centro superior, PPR em linha abaixo ── */
+@media (max-width: 680px) {
+  #card-focus-overlay {
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(20px, 5vw, 36px);
+    padding-bottom: clamp(40px, 8vh, 60px);
+  }
+  #focus-card-clone {
+    width:  clamp(140px, 52vw, 200px);
+    height: clamp(196px, 73vw, 280px);
+  }
+  #focus-ppr-row {
+    flex-direction: row;
+    gap: clamp(18px, 7vw, 40px);
+    justify-content: center;
+  }
+  #focus-ppr-row::before { display: none; }
+  .focus-ppr-btn {
+    width:  clamp(68px, 22vw, 96px);
+    height: clamp(68px, 22vw, 96px);
+    font-size: clamp(24px, 8vw, 38px);
+    /* Mobile: bob vem de baixo pra cima */
+    animation-name: focusPillIn, pprBobMobile;
+  }
+  @keyframes pprBobMobile {
+    0%,100% { transform: translateY(0) scale(1); }
+    35%     { transform: translateY(-7px) scale(1.05); }
+    65%     { transform: translateY(3px) scale(.97); }
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   BIG STATUS PANEL — lateral esquerda, palco das mãos
+   ══════════════════════════════════════════════════ */
+#big-status {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 72px;
+  height: 100vh;
+  z-index: 25;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+#big-status::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(7,6,10,.82) 0%, rgba(7,6,10,.45) 65%, transparent 100%);
+  pointer-events: none;
+}
+#bs-hand-stage {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bs-hand {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(.7) translateX(-8px);
+  transition: opacity .35s ease, transform .4s cubic-bezier(.34,1.4,.64,1);
+  pointer-events: none;
+}
+.bs-hand.bs-active {
+  opacity: 1;
+  transform: scale(1) translateX(0);
+}
+.bs-hand.bs-exit {
+  opacity: 0;
+  transform: scale(.6) translateX(-12px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+.bs-hand svg {
+  width: 54px;
+  height: 54px;
+  filter: drop-shadow(0 0 7px rgba(201,150,58,.65)) drop-shadow(1px 2px 5px rgba(0,0,0,.85));
+}
+.bs-hand[data-state="p1turn"] svg    { filter: drop-shadow(0 0 9px rgba(220,100,60,.8))  drop-shadow(1px 2px 5px rgba(0,0,0,.9)); }
+.bs-hand[data-state="p2turn"] svg    { filter: drop-shadow(0 0 9px rgba(80,140,220,.8))  drop-shadow(1px 2px 5px rgba(0,0,0,.9)); }
+.bs-hand[data-state="attack"] svg    { filter: drop-shadow(0 0 11px rgba(255,60,60,.9))  drop-shadow(1px 2px 5px rgba(0,0,0,.9)); }
+.bs-hand[data-state="p1win"] svg     { filter: drop-shadow(0 0 11px rgba(255,200,50,.95)) drop-shadow(1px 2px 5px rgba(0,0,0,.9)); }
+.bs-hand[data-state="p2win"] svg     { filter: drop-shadow(0 0 11px rgba(80,160,255,.95)) drop-shadow(1px 2px 5px rgba(0,0,0,.9)); }
+.bs-hand[data-state="tie"] svg       { filter: drop-shadow(0 0 8px rgba(180,140,60,.75))  drop-shadow(1px 2px 5px rgba(0,0,0,.9)); }
+.bs-hand[data-state="gameover"] svg  { filter: drop-shadow(0 0 13px rgba(255,60,60,1.0))  drop-shadow(1px 2px 5px rgba(0,0,0,.9)); }
+
+@keyframes bsHandPulse {
+  0%,100% { transform: scale(1) translateX(0); }
+  50%     { transform: scale(1.07) translateX(3px); }
+}
+@keyframes bsHandShake {
+  0%     { transform: scale(1) translateX(0) rotate(0deg); }
+  15%    { transform: scale(1.1) translateX(5px) rotate(-5deg); }
+  35%    { transform: scale(1.12) translateX(3px) rotate(4deg); }
+  55%    { transform: scale(1.08) translateX(6px) rotate(-3deg); }
+  75%    { transform: scale(1.04) translateX(4px) rotate(2deg); }
+  100%   { transform: scale(1) translateX(0) rotate(0deg); }
+}
+@keyframes bsHandBeat {
+  0%,100% { transform: scale(1) translateX(0); }
+  30%     { transform: scale(1.17) translateX(3px); }
+  60%     { transform: scale(.93) translateX(0); }
+}
+@keyframes bsHandFloat {
+  0%,100% { transform: scale(1) translateX(0) translateY(0); }
+  50%     { transform: scale(1.04) translateX(2px) translateY(-3px); }
+}
+
+.bs-hand.bs-active[data-state="p1turn"],
+.bs-hand.bs-active[data-state="p2turn"] {
+  animation: bsHandPulse 1.4s ease-in-out infinite;
+}
+.bs-hand.bs-active[data-state="attack"] {
+  animation: bsHandShake .6s ease forwards;
+}
+.bs-hand.bs-active[data-state="p1win"],
+.bs-hand.bs-active[data-state="p2win"] {
+  animation: bsHandBeat .75s ease-in-out 3;
+}
+.bs-hand.bs-active[data-state="tie"] {
+  animation: bsHandFloat 1.5s ease-in-out infinite;
+}
+.bs-hand.bs-active[data-state="gameover"] {
+  animation: bsHandShake .5s ease-in-out 2;
+}
+
+#bs-line {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(180deg, rgba(201,150,58,.45) 0%, transparent 100%);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+#bs-label {
+  font-family: 'Cinzel', serif;
+  font-size: 6.5px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: rgba(201,150,58,.55);
+  text-align: center;
+  line-height: 1.3;
+  padding: 3px 4px 0;
+  max-width: 68px;
+  opacity: 0;
+  transition: opacity .4s ease;
+  flex-shrink: 0;
+  word-break: break-all;
+}
+#bs-label.bs-show { opacity: 1; }
+
+@media (max-width: 340px) { #big-status { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="main">
+
+  <!-- P2 zone (top, rotated 180°) -->
+  <div class="player-zone" id="zone-p2">
+    <div class="zone-inner">
+      <div class="zone-energy-top" id="zone-energy-top-p2"></div>
+      <div class="player-hp-bar-wrap">
+        <span class="php-label p2-clr" id="deck-p2-label">J2</span>
+        <div class="php-bar"><div class="php-fill" id="p2-php-fill"></div></div>
+        <span class="php-num p2-clr" id="p2-php-num">—</span>
+      </div>
+      <div class="turn-badge" id="tb-p2">Sua vez!</div>
+      <div class="deck-wrap" id="deck-p2"></div>
+      <span class="zone-hint" id="hint-p2"></span>
+      <button id="play-btn-p2" onclick="UI.onConfirm('p2')">JOGAR! 🎮</button>
+      <div class="zone-energy-bottom" id="zone-energy-bottom-p2"></div>
+    </div>
+    <!-- Energy strip cravada na borda da zona -->
+    <div class="zone-energy-strip"></div>
+  </div>
+
+  <!-- Divider -->
+  <div id="field-divider"></div>
+
+  <!-- Round counter -->
+  <div id="round-counter">RODADA <span id="round-num">1</span></div>
+
+  <!-- P1 zone (bottom) -->
+  <div class="player-zone" id="zone-p1">
+    <div class="zone-inner">
+      <div class="zone-energy-top" id="zone-energy-top-p1"></div>
+      <button id="play-btn-p1" onclick="UI.onConfirm('p1')">JOGAR! 🎮</button>
+      <span class="zone-hint" id="hint-p1"></span>
+      <div class="deck-wrap" id="deck-p1"></div>
+      <div class="turn-badge" id="tb-p1">Sua vez!</div>
+      <div class="player-hp-bar-wrap">
+        <span class="php-label p1-clr" id="deck-p1-label">J1</span>
+        <div class="php-bar"><div class="php-fill" id="p1-php-fill"></div></div>
+        <span class="php-num p1-clr" id="p1-php-num">—</span>
+      </div>
+      <div class="zone-energy-bottom" id="zone-energy-bottom-p1"></div>
+    </div>
+    <!-- Energy strip cravada na borda inferior da tela -->
+    <div class="zone-energy-strip"></div>
+  </div>
+
+</div>
+
+<!-- Turn Indicator — FF7 glove hand SVG, fixed left edge -->
+<div id="turn-indicator">
+  <div id="turn-indicator-inner">
+    <svg id="hand-glove-svg" viewBox="0 0 54 72" xmlns="http://www.w3.org/2000/svg" fill="none">
+      <defs>
+        <linearGradient id="gloveGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%"   stop-color="#e8be6a"/>
+          <stop offset="40%"  stop-color="#c9963a"/>
+          <stop offset="100%" stop-color="#7a5818"/>
+        </linearGradient>
+        <linearGradient id="gloveShine" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="rgba(255,255,255,.28)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </linearGradient>
+        <filter id="gloveGlow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Wrist / cuff base -->
+      <rect x="6" y="48" width="34" height="20" rx="5" ry="5"
+            fill="url(#gloveGrad)" stroke="rgba(201,150,58,.6)" stroke-width="1.2"/>
+      <!-- Cuff highlight line -->
+      <rect x="6" y="53" width="34" height="3" rx="1.5"
+            fill="none" stroke="rgba(255,215,120,.35)" stroke-width="1"/>
+      <!-- Cuff shine -->
+      <rect x="8" y="49" width="30" height="8" rx="3"
+            fill="url(#gloveShine)" opacity=".4"/>
+
+      <!-- Palm -->
+      <path d="M10 22 Q8 14 12 10 Q16 6 20 10 L20 48 L10 48 Z"
+            fill="url(#gloveGrad)" stroke="rgba(201,150,58,.5)" stroke-width="1"/>
+
+      <!-- Index finger — pointing right -->
+      <path d="M20 14 Q20 6 25 5 Q33 4 36 10 L36 24 Q33 26 28 26 L20 26 Z"
+            fill="url(#gloveGrad)" stroke="rgba(201,150,58,.6)" stroke-width="1.2"/>
+      <!-- Finger tip highlight -->
+      <ellipse cx="29" cy="8" rx="5" ry="3" fill="rgba(255,230,160,.22)"/>
+      <!-- Finger knuckle line -->
+      <line x1="22" y1="20" x2="35" y2="20" stroke="rgba(100,60,10,.35)" stroke-width="1" stroke-linecap="round"/>
+
+      <!-- Middle finger — tucked (closed fist suggestion) -->
+      <path d="M10 26 Q8 22 12 20 L20 20 L20 34 L10 34 Z"
+            fill="url(#gloveGrad)" stroke="rgba(201,150,58,.4)" stroke-width="1" opacity=".85"/>
+
+      <!-- Ring & pinky — rounded closed form -->
+      <path d="M10 34 Q8 30 10 28 L20 28 L20 48 L10 48 Z"
+            fill="url(#gloveGrad)" stroke="rgba(201,150,58,.35)" stroke-width="1" opacity=".75"/>
+
+      <!-- Overall shine overlay -->
+      <path d="M12 10 Q16 6 20 8 L20 48 L12 48 Q8 40 10 24 Z"
+            fill="url(#gloveShine)" opacity=".18"/>
+
+      <!-- Outer stroke / silhouette -->
+      <path d="M20 10 Q20 4 26 3.5 Q34 3 37 10 L37 25 Q33 28 28 28 L20 28 L20 48 L6 48 L6 52 Q6 68 10 68 L36 68 Q42 68 42 62 L42 48 L37 48 L37 25"
+            fill="none" stroke="url(#gloveGrad)" stroke-width="1.8" stroke-linejoin="round" filter="url(#gloveGlow)" opacity=".7"/>
+    </svg>
+  </div>
+</div>
+
+<!-- BIG STATUS PANEL — lateral esquerda, reflexo visual das ações -->
+<div id="big-status">
+  <div id="bs-hand-stage">
+
+    <!-- IDLE/boot — mao TL paths 4,5 -->
+    <div class="bs-hand bs-active" id="bsh-idle" data-state="idle">
+      <svg viewBox="0 0 115 212" xmlns="http://www.w3.org/2000/svg" fill="none" color="#c9963a" style="color:#c9963a">
+        <path d="M57.8026 0.26162C55.1086 1.07903 50.3692 3.81974 47.3759 6.32003C45.3803 7.90676 43.9336 8.77225 43.3349 8.628C42.8859 8.48375 41.1897 8.77225 39.6431 9.20499C37.1986 9.87814 36.2008 10.5513 32.9581 13.6767C28.4182 18.0522 25.375 23.3413 22.9803 30.8422C20.5857 38.4392 20.2365 41.0838 20.2365 51.7581C20.2365 62.7209 20.6356 65.0289 23.7287 72.5298C25.2752 76.3283 25.4249 77.0015 25.1255 79.7903C24.8262 82.531 24.9759 83.2041 26.1732 85.8487C29.5157 93.013 39.4935 98.4944 50.469 99.2156C61.2948 99.9369 69.6761 95.5613 71.4222 88.349C71.9211 86.1852 72.1706 85.8487 73.767 85.3678C78.8557 83.7811 86.6383 78.8767 90.2303 74.982C94.7203 70.1256 96.5661 64.8846 95.3189 60.2206C95.0196 59.0186 93.1737 55.3643 91.228 52.1428L87.686 46.2286L88.5341 43.9206C89.6815 40.7953 89.3323 36.8525 87.3866 31.4192C85.0917 25.0242 82.298 22.1392 76.3612 20.0236C71.3723 18.1964 71.3723 18.1964 71.6717 13.869C72.1207 7.85867 69.8757 3.29083 65.3857 1.07903C63.5897 0.165459 59.4988 -0.267288 57.8026 0.26162Z" fill="currentColor"/>
+        <path d="M11.456 105.851C7.16562 107.005 3.47385 109.794 1.47831 113.4C-1.16579 118.112 -0.367575 121.43 4.72107 126.767C8.96161 131.239 9.46049 132.537 8.51261 137.345C6.26762 149.27 5.96829 153.116 7.01595 158.934C7.56473 161.819 10.0093 168.262 10.9572 169.224C11.1567 169.416 10.4583 171.291 9.41061 173.311C7.71439 176.484 7.46495 177.446 7.46495 180.187C7.46495 189.803 15.2476 199.42 25.9238 203.026C30.8129 204.661 36.4503 204.853 40.3416 203.459C44.0832 202.16 47.9746 198.602 49.3714 195.333C50.3193 193.217 50.8182 192.688 52.1652 192.255C54.51 191.582 59.6485 188.697 62.5919 186.437C70.4743 180.427 77.2592 176.725 86.0396 173.696C97.065 169.849 103.301 166.772 107.143 163.214C109.687 160.906 110.735 159.127 111.034 156.482C111.184 155.376 111.932 153.309 112.73 151.818C116.621 144.558 115.175 138.499 108.639 134.412C106.943 133.402 105.446 132.537 105.297 132.537C105.097 132.537 104.598 131.431 104.099 130.085C101.555 123.209 93.6227 119.555 81.4499 119.555C74.4654 119.555 68.1296 120.42 54.3603 123.209C46.2285 124.844 41.8881 125.469 38.6454 125.517L34.1554 125.565L33.9059 120.035C33.6066 113.833 32.9581 112.342 29.5656 109.409C25.1255 105.707 17.5924 104.216 11.456 105.851Z" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- P1 TURN — mao TM open hand paths 6,7 -->
+    <div class="bs-hand" id="bsh-p1turn" data-state="p1turn">
+      <svg viewBox="115 0 115 212" xmlns="http://www.w3.org/2000/svg" fill="none" color="#dc643c" style="color:#dc643c">
+        <path d="M164.914 0.309677C157.929 1.36749 151.244 6.17576 147.802 12.5707C146.455 15.1672 145.507 16.2731 144.21 16.9463C141.765 18.1964 137.625 22.2353 136.028 24.928C133.983 28.2938 133.135 32.0923 133.234 37.4775C133.384 45.9401 135.43 54.2103 138.872 60.1725C140.967 63.6825 146.904 69.3563 152.242 72.8182L155.984 75.2705L155.934 78.2997C155.884 84.1657 159.276 89.4548 165.712 93.4938C178.733 101.668 197.74 101.139 206.87 92.3879C210.063 89.2625 211.26 85.9929 210.911 81.1365L210.662 77.9631L214.304 74.3088C218.694 69.789 222.336 63.1056 224.331 55.8451C225.379 51.8542 225.628 49.9309 225.628 44.5457C225.678 38.7758 225.528 37.6218 224.381 34.3041C222.685 29.4958 219.941 25.9858 215.75 23.2932C213.256 21.7064 212.059 20.6005 210.861 18.5811C208.916 15.3115 205.523 12.0418 202.23 10.3109C200.883 9.58962 197.291 8.33948 194.298 7.52207C190.706 6.51234 187.912 5.40644 186.216 4.30054C181.078 0.982841 171.998 -0.748138 164.914 0.309677Z" fill="currentColor"/>
+        <path d="M160.823 106.091C152.791 108.111 144.609 113.929 141.566 119.795C137.624 127.344 138.073 135.806 142.713 141.865C143.811 143.307 144.16 144.317 144.16 145.952C144.21 148.885 144.908 151.962 146.255 154.751C146.854 156.049 147.253 157.107 147.103 157.203C147.004 157.299 145.607 158.213 144.06 159.175C136.876 163.694 133.783 172.878 136.677 181.1C138.772 187.111 145.407 194.035 152.292 197.4C154.686 198.554 156.582 199.035 160.124 199.468C163.816 199.853 165.762 200.381 168.855 201.776C175.839 204.949 179.98 205.334 185.767 203.218C187.613 202.497 189.459 202.257 192.801 202.305C198.239 202.353 199.287 202.112 203.727 199.997C208.217 197.833 214.603 191.775 217.247 187.159C222.036 178.84 223.583 168.118 221.088 160.425C217.696 150.039 208.816 138.595 198.688 131.479C194.996 128.883 194.547 128.402 194.547 127.055C194.547 124.699 193.151 120.132 191.654 117.439C189.808 114.121 185.218 109.89 181.427 108.063C175.49 105.178 167.508 104.409 160.823 106.091Z" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- P2 TURN — mao TL espelhada horizontalmente -->
+    <div class="bs-hand" id="bsh-p2turn" data-state="p2turn">
+      <svg viewBox="0 0 115 212" xmlns="http://www.w3.org/2000/svg" fill="none" color="#508cdc" style="color:#508cdc; transform:scaleX(-1)">
+        <path d="M57.8026 0.26162C55.1086 1.07903 50.3692 3.81974 47.3759 6.32003C45.3803 7.90676 43.9336 8.77225 43.3349 8.628C42.8859 8.48375 41.1897 8.77225 39.6431 9.20499C37.1986 9.87814 36.2008 10.5513 32.9581 13.6767C28.4182 18.0522 25.375 23.3413 22.9803 30.8422C20.5857 38.4392 20.2365 41.0838 20.2365 51.7581C20.2365 62.7209 20.6356 65.0289 23.7287 72.5298C25.2752 76.3283 25.4249 77.0015 25.1255 79.7903C24.8262 82.531 24.9759 83.2041 26.1732 85.8487C29.5157 93.013 39.4935 98.4944 50.469 99.2156C61.2948 99.9369 69.6761 95.5613 71.4222 88.349C71.9211 86.1852 72.1706 85.8487 73.767 85.3678C78.8557 83.7811 86.6383 78.8767 90.2303 74.982C94.7203 70.1256 96.5661 64.8846 95.3189 60.2206C95.0196 59.0186 93.1737 55.3643 91.228 52.1428L87.686 46.2286L88.5341 43.9206C89.6815 40.7953 89.3323 36.8525 87.3866 31.4192C85.0917 25.0242 82.298 22.1392 76.3612 20.0236C71.3723 18.1964 71.3723 18.1964 71.6717 13.869C72.1207 7.85867 69.8757 3.29083 65.3857 1.07903C63.5897 0.165459 59.4988 -0.267288 57.8026 0.26162Z" fill="currentColor"/>
+        <path d="M11.456 105.851C7.16562 107.005 3.47385 109.794 1.47831 113.4C-1.16579 118.112 -0.367575 121.43 4.72107 126.767C8.96161 131.239 9.46049 132.537 8.51261 137.345C6.26762 149.27 5.96829 153.116 7.01595 158.934C7.56473 161.819 10.0093 168.262 10.9572 169.224C11.1567 169.416 10.4583 171.291 9.41061 173.311C7.71439 176.484 7.46495 177.446 7.46495 180.187C7.46495 189.803 15.2476 199.42 25.9238 203.026C30.8129 204.661 36.4503 204.853 40.3416 203.459C44.0832 202.16 47.9746 198.602 49.3714 195.333C50.3193 193.217 50.8182 192.688 52.1652 192.255C54.51 191.582 59.6485 188.697 62.5919 186.437C70.4743 180.427 77.2592 176.725 86.0396 173.696C97.065 169.849 103.301 166.772 107.143 163.214C109.687 160.906 110.735 159.127 111.034 156.482C111.184 155.376 111.932 153.309 112.73 151.818C116.621 144.558 115.175 138.499 108.639 134.412C106.943 133.402 105.446 132.537 105.297 132.537C105.097 132.537 104.598 131.431 104.099 130.085C101.555 123.209 93.6227 119.555 81.4499 119.555C74.4654 119.555 68.1296 120.42 54.3603 123.209C46.2285 124.844 41.8881 125.469 38.6454 125.517L34.1554 125.565L33.9059 120.035C33.6066 113.833 32.9581 112.342 29.5656 109.409C25.1255 105.707 17.5924 104.216 11.456 105.851Z" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- ATTACK — punho fechado TR paths 0-3 -->
+    <div class="bs-hand" id="bsh-attack" data-state="attack">
+      <svg viewBox="250 0 133 105" xmlns="http://www.w3.org/2000/svg" fill="none" color="#ff3c3c" style="color:#ff3c3c">
+        <path d="M305.55 0.309715C297.468 1.94452 289.935 6.46428 284.297 13.0035C282.801 14.7345 281.354 16.177 281.054 16.177C280.755 16.177 279.059 15.5038 277.313 14.6383C269.78 10.984 260.6 13.6286 256.659 20.5525C255.462 22.6681 255.262 23.6778 255.262 26.4666C255.262 30.2652 256.16 32.4289 259.403 36.6121C262.047 40.0259 262.596 41.9492 262.196 46.9017C262.047 49.1616 261.747 54.2584 261.598 58.2492C261.298 65.077 261.199 65.5578 259.902 67.6253C253.117 77.9631 261.498 92.3398 276.814 96.6672C279.608 97.4366 286.492 97.6289 288.837 97.0038C289.685 96.7634 291.132 97.0038 293.327 97.8693C296.071 98.879 297.418 99.0714 302.307 99.0714C309.541 99.1195 311.536 98.3501 316.226 93.638C318.471 91.4262 320.167 90.1761 321.514 89.7433C330.095 87.1469 337.329 79.3094 341.021 68.6832C343.615 61.2784 344.762 58.7301 347.356 54.9315C354.241 44.8823 355.688 41.4203 355.688 35.3138C355.688 31.7557 354.69 28.5823 352.595 25.6012C351.447 24.0144 351.348 23.5817 351.797 21.8026C352.395 19.3023 351.996 14.9749 350.899 12.3784C349.252 8.3395 343.665 5.11797 338.426 5.11797C336.88 5.11797 335.683 4.73331 334.136 3.72357C330.644 1.51177 328.698 1.12711 323.061 1.46369C319.07 1.75218 317.573 1.65602 315.777 1.03094C313.033 0.0692902 308.244 -0.267281 305.55 0.309715Z" fill="currentColor"/>
+        <path d="M285.245 43.4398C284.147 43.6802 282.202 47.7191 281.104 51.9504C280.206 55.6047 279.857 60.5091 280.556 60.8938C280.755 61.038 281.803 58.8743 282.8 56.0855C283.848 53.2967 285.295 49.5463 286.043 47.7191C287.241 44.9784 287.34 44.3534 286.792 43.8725C286.392 43.5359 285.694 43.3436 285.245 43.4398Z" fill="currentColor"/>
+        <path d="M293.028 48.9693C291.93 50.1233 290.583 51.8062 289.985 52.7197C288.189 55.5085 285.794 61.8073 285.944 63.2017C286.093 64.3076 286.842 63.4422 291.182 57.1433C293.976 53.1044 296.32 49.4982 296.37 49.2097C296.72 46.3728 295.572 46.2767 293.028 48.9693Z" fill="currentColor"/>
+        <path d="M297.767 58.4416C294.076 62.0478 290.384 68.2504 292.28 67.5292C292.529 67.433 295.223 65.077 298.266 62.2401C303.953 56.9991 304.702 55.6047 301.908 55.6047C300.96 55.6047 299.813 56.4221 297.767 58.4416Z" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- P1 WIN — punho vitoria rotacionado -->
+    <div class="bs-hand" id="bsh-p1win" data-state="p1win">
+      <svg viewBox="250 0 133 105" xmlns="http://www.w3.org/2000/svg" fill="none" color="#f5c832" style="color:#f5c832; transform:rotate(-20deg) translateX(4px)">
+        <path d="M305.55 0.309715C297.468 1.94452 289.935 6.46428 284.297 13.0035C282.801 14.7345 281.354 16.177 281.054 16.177C280.755 16.177 279.059 15.5038 277.313 14.6383C269.78 10.984 260.6 13.6286 256.659 20.5525C255.462 22.6681 255.262 23.6778 255.262 26.4666C255.262 30.2652 256.16 32.4289 259.403 36.6121C262.047 40.0259 262.596 41.9492 262.196 46.9017C262.047 49.1616 261.747 54.2584 261.598 58.2492C261.298 65.077 261.199 65.5578 259.902 67.6253C253.117 77.9631 261.498 92.3398 276.814 96.6672C279.608 97.4366 286.492 97.6289 288.837 97.0038C289.685 96.7634 291.132 97.0038 293.327 97.8693C296.071 98.879 297.418 99.0714 302.307 99.0714C309.541 99.1195 311.536 98.3501 316.226 93.638C318.471 91.4262 320.167 90.1761 321.514 89.7433C330.095 87.1469 337.329 79.3094 341.021 68.6832C343.615 61.2784 344.762 58.7301 347.356 54.9315C354.241 44.8823 355.688 41.4203 355.688 35.3138C355.688 31.7557 354.69 28.5823 352.595 25.6012C351.447 24.0144 351.348 23.5817 351.797 21.8026C352.395 19.3023 351.996 14.9749 350.899 12.3784C349.252 8.3395 343.665 5.11797 338.426 5.11797C336.88 5.11797 335.683 4.73331 334.136 3.72357C330.644 1.51177 328.698 1.12711 323.061 1.46369C319.07 1.75218 317.573 1.65602 315.777 1.03094C313.033 0.0692902 308.244 -0.267281 305.55 0.309715Z" fill="currentColor"/>
+        <path d="M285.245 43.4398C284.147 43.6802 282.202 47.7191 281.104 51.9504C280.206 55.6047 279.857 60.5091 280.556 60.8938C280.755 61.038 281.803 58.8743 282.8 56.0855C283.848 53.2967 285.295 49.5463 286.043 47.7191C287.241 44.9784 287.34 44.3534 286.792 43.8725C286.392 43.5359 285.694 43.3436 285.245 43.4398Z" fill="currentColor"/>
+        <path d="M293.028 48.9693C291.93 50.1233 290.583 51.8062 289.985 52.7197C288.189 55.5085 285.794 61.8073 285.944 63.2017C286.093 64.3076 286.842 63.4422 291.182 57.1433C293.976 53.1044 296.32 49.4982 296.37 49.2097C296.72 46.3728 295.572 46.2767 293.028 48.9693Z" fill="currentColor"/>
+        <path d="M297.767 58.4416C294.076 62.0478 290.384 68.2504 292.28 67.5292C292.529 67.433 295.223 65.077 298.266 62.2401C303.953 56.9991 304.702 55.6047 301.908 55.6047C300.96 55.6047 299.813 56.4221 297.767 58.4416Z" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- P2 WIN — mao pointing MR path 9 -->
+    <div class="bs-hand" id="bsh-p2win" data-state="p2win">
+      <svg viewBox="260 209 115 100" xmlns="http://www.w3.org/2000/svg" fill="none" color="#50a0ff" style="color:#50a0ff">
+        <path d="M297.119 210.238C294.025 211.152 289.685 215.191 288.837 217.932C287.64 221.826 287.69 225.769 289.037 231.827C289.735 235.001 290.334 238.126 290.334 238.799C290.334 240.242 289.436 241.877 285.694 247.214C283.25 250.724 282.651 251.301 281.454 251.301C279.009 251.301 275.517 252.551 273.372 254.186C269.829 256.878 267.584 261.735 266.437 269.14C264.591 280.583 271.576 295.489 280.605 299.48C282.601 300.345 283.998 300.586 287.59 300.634C291.531 300.634 292.479 300.826 295.073 302.076C297.717 303.326 298.615 303.471 302.656 303.471C306.548 303.471 307.446 303.663 308.643 304.528C313.183 307.75 318.621 309.24 324.208 308.856C331.392 308.375 336.181 305.634 338.776 300.537C340.222 297.701 340.472 296.787 340.472 293.421C340.522 290.104 340.721 289.19 341.819 287.363C342.567 286.161 343.415 284.574 343.665 283.853C344.513 281.785 344.313 276.112 343.415 273.9C342.617 272.025 342.667 271.832 343.515 269.909C344.962 266.88 344.862 259.09 343.365 255.965C339.873 248.704 331.642 244.089 321.614 243.848C319.219 243.8 317.124 243.656 317.024 243.512C316.875 243.367 317.373 241.684 318.072 239.713C319.668 235.386 320.217 228.654 319.269 224.807C317.473 217.355 312.933 212.402 306.198 210.335C302.656 209.325 300.411 209.277 297.119 210.238Z" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- TIE — mao aberta + coracao -->
+    <div class="bs-hand" id="bsh-tie" data-state="tie">
+      <svg viewBox="115 0 115 212" xmlns="http://www.w3.org/2000/svg" fill="none" color="#b48c3c" style="color:#b48c3c">
+        <path d="M164.914 0.309677C157.929 1.36749 151.244 6.17576 147.802 12.5707C146.455 15.1672 145.507 16.2731 144.21 16.9463C141.765 18.1964 137.625 22.2353 136.028 24.928C133.983 28.2938 133.135 32.0923 133.234 37.4775C133.384 45.9401 135.43 54.2103 138.872 60.1725C140.967 63.6825 146.904 69.3563 152.242 72.8182L155.984 75.2705L155.934 78.2997C155.884 84.1657 159.276 89.4548 165.712 93.4938C178.733 101.668 197.74 101.139 206.87 92.3879C210.063 89.2625 211.26 85.9929 210.911 81.1365L210.662 77.9631L214.304 74.3088C218.694 69.789 222.336 63.1056 224.331 55.8451C225.379 51.8542 225.628 49.9309 225.628 44.5457C225.678 38.7758 225.528 37.6218 224.381 34.3041C222.685 29.4958 219.941 25.9858 215.75 23.2932C213.256 21.7064 212.059 20.6005 210.861 18.5811C208.916 15.3115 205.523 12.0418 202.23 10.3109C200.883 9.58962 197.291 8.33948 194.298 7.52207C190.706 6.51234 187.912 5.40644 186.216 4.30054C181.078 0.982841 171.998 -0.748138 164.914 0.309677Z" fill="currentColor" opacity="0.65"/>
+        <path d="M160.823 106.091C152.791 108.111 144.609 113.929 141.566 119.795C137.624 127.344 138.073 135.806 142.713 141.865C143.811 143.307 144.16 144.317 144.16 145.952C144.21 148.885 144.908 151.962 146.255 154.751C146.854 156.049 147.253 157.107 147.103 157.203C147.004 157.299 145.607 158.213 144.06 159.175C136.876 163.694 133.783 172.878 136.677 181.1C138.772 187.111 145.407 194.035 152.292 197.4C154.686 198.554 156.582 199.035 160.124 199.468C163.816 199.853 165.762 200.381 168.855 201.776C175.839 204.949 179.98 205.334 185.767 203.218C187.613 202.497 189.459 202.257 192.801 202.305C198.239 202.353 199.287 202.112 203.727 199.997C208.217 197.833 214.603 191.775 217.247 187.159C222.036 178.84 223.583 168.118 221.088 160.425C217.696 150.039 208.816 138.595 198.688 131.479C194.996 128.883 194.547 128.402 194.547 127.055C194.547 124.699 193.151 120.132 191.654 117.439C189.808 114.121 185.218 109.89 181.427 108.063C175.49 105.178 167.508 104.409 160.823 106.091Z" fill="currentColor" opacity="0.65"/>
+        <!-- Coracao na palma -->
+        <path d="M183 65 C183 57 170 53 170 64 C170 53 157 57 157 65 C157 73 170 82 170 82 C170 82 183 73 183 65Z" fill="rgba(220,70,90,0.92)" stroke="rgba(255,110,130,0.6)" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+  </div>
+  <div id="bs-line"></div>
+  <div id="bs-label"></div>
+</div>
+
+
+<!-- Card Focus Overlay — v16 -->
+<div id="card-focus-overlay">
+  <div id="focus-card-clone"></div>
+  <div id="focus-ppr-row"></div>
+  <div id="focus-cancel-hint" onclick="UI.onFocusCancel()">✕ cancelar</div>
+</div>
+
+<!-- Reveal overlay -->
+<div id="reveal-focus">
+  <div id="reveal-label">⚔ AMBOS JOGARAM!</div>
+  <div id="reveal-sub">pronto para revelar</div>
+  <button id="btn-reveal" onclick="UI.onReveal()">🎲 REVELAR!</button>
+</div>
+
+<!-- Result toast -->
+<div id="result-toast">
+  <div id="toast-inner">
+    <div id="toast-main">—</div>
+    <div id="toast-sub">—</div>
+    <div id="toast-progress-wrap">
+      <div id="toast-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Over -->
+<div id="gameover-screen">
+  <div id="gameover-box">
+    <div id="go-crown">👑</div>
+    <div id="go-title">—</div>
+    <div id="go-subtitle">—</div>
+    <button class="btn-confirm" onclick="UI.onRestart()">Jogar Novamente! 🎮</button>
+  </div>
+</div>
+
+<!-- FAB Dock -->
+<div id="fab-dock">
+  <div id="gpc-inline">
+    <div id="gpc-pulse-bar"></div>
+    <div id="gpc-speed-dots">
+      <div class="gpc-dot" data-di="0"></div>
+      <div class="gpc-dot" data-di="1"></div>
+      <div class="gpc-dot" data-di="2"></div>
+      <div class="gpc-dot" data-di="3"></div>
+    </div>
+    <span id="gpc-icon-label">⚡</span>
+    <div id="gpc-controls">
+      <button onclick="GPC.step(-1)">‹</button>
+      <span id="gpc-speed-val">—</span>
+      <button onclick="GPC.step(+1)">›</button>
+    </div>
+  </div>
+  <button class="fab-btn" id="seg-fab" title="Segmentation (Ctrl+Shift+S)">⬡</button>
+  <button class="fab-btn" id="flow-fab" title="Flow Timeline Editor" onclick="FLOW_WIDGET.toggle()">⏱</button>
+</div>
+<div id="seg-overlay-root"></div>
+
+<!-- ① THEME CONFIG -->
+<script id="theme-config">
+'use strict';
+
+// ══════════════════════════════════════════════════════════════════════
+// DECK CONFIGURATION — expandable para crianças mais velhas
+// ──────────────────────────────────────────────────────────────────────
+// DECK_MODE: 'starter' = 3 cartas balanceadas  |  'full' = 5 cartas
+// STARTER_IDS: seleciona quais cartas aparecem no modo starter
+//   🔥 Inferno  — ataque puro    (ATK 9 / DEF 2) — risco alto, recompensa alta
+//   🌍 Terra    — defesa sólida  (ATK 5 / DEF 6) — segura, conservadora
+//   💧 Maré     — equilibrada   (ATK 6 / DEF 5) — versátil, meio-termo
+// Para ativar 5 cartas: mude DECK_MODE para 'full'
+// ══════════════════════════════════════════════════════════════════════
+const DECK_CONFIG = {
+  DECK_MODE: 'starter', // ← mude para 'full' para ativar todas as 5 cartas
+  STARTER_IDS: ['fire', 'earth', 'water'],
+  ALL_CARDS: [
+    { id:'fire',  name:'Inferno',    icon:'🔥', cls:'fire',    atk:9, def:2, maxHp:5 },
+    { id:'water', name:'Maré',       icon:'💧', cls:'water',   atk:6, def:5, maxHp:5 },
+    { id:'earth', name:'Terra',      icon:'🌍', cls:'earth',   atk:5, def:6, maxHp:5 },
+    { id:'storm', name:'Tempestade', icon:'🌪', cls:'storm',   atk:7, def:4, maxHp:5 },
+    { id:'elec',  name:'Relâmpago',  icon:'⚡', cls:'electric',atk:8, def:2, maxHp:5 },
+  ],
+  getActiveDeck() {
+    if (this.DECK_MODE === 'full') return this.ALL_CARDS;
+    return this.ALL_CARDS.filter(c => this.STARTER_IDS.includes(c.id));
+  },
+};
+
+const THEME = Object.freeze({
+  get CARDS() { return DECK_CONFIG.getActiveDeck(); },
+  PPR: {
+    pedra:   { beats:'tesoura', icon:'🪨', label:'PEDRA'   },
+    papel:   { beats:'pedra',   icon:'📄', label:'PAPEL'   },
+    tesoura: { beats:'papel',   icon:'✂️', label:'TESOURA' },
+  },
+  STRINGS: {
+    player1: 'Você',
+    player2: 'Adversário',
+    pickCard: 'Escolha uma carta',
+    pickPPR:  '🪨 📄 ou ✂️',
+    ready:    '✅ Pronto!',
+    roundWinP1: 'Você vence!',
+    roundWinP2: 'Adversário vence!',
+    roundTie: 'Empate!',
+    gameTitleP1: 'VOCÊ VENCE!',
+    gameTitleP2: 'ADVERSÁRIO VENCE!',
+    gameTitleTie:'EMPATE!',
+    gameSubBoth: 'Ambos eliminados',
+    gameSubWin:  r => `Vitória em ${r} rodadas`,
+    crownIcon: '👑',
+    cardBackIcon: '🎴',
+  },
+  hpColor(hp, max) {
+    const r = hp / max;
+    return r > .6 ? '#3ec96a' : r > .3 ? '#f0a020' : '#e83030';
+  },
+});
+</script>
+
+<!-- ② ENGINE LAYER -->
+<script id="engine-layer">
+'use strict';
+const ENGINE = (() => {
+  const mkDeck   = () => THEME.CARDS.map(d => ({ ...d, hp: d.maxHp }));
+  const cdef     = id  => THEME.CARDS.find(c => c.id === id);
+  const phpe     = (player, id) => state[player].hp.find(c => c.id === id);
+  const totalHp  = player => state[player].hp.reduce((s, c) => s + c.hp, 0);
+  const pprBeats = (a, b) => THEME.PPR[a].beats === b;
+  const calcDmg  = (atk, def) => Math.max(1, Math.ceil(Math.max(1, atk - def) * 1.30));
+  let state = null;
+
+  function init() {
+    state = {
+      round: 1, phase: 'p1select',
+      deck:  mkDeck(),
+      p1: { hp: mkDeck().map(d => ({ id:d.id, hp:d.maxHp })), sel:null, ppr:null },
+      p2: { hp: mkDeck().map(d => ({ id:d.id, hp:d.maxHp })), sel:null, ppr:null },
+      revealed: false,
+      pending: { player:null, cardId:null, ppr:null },
+    };
+  }
+
+  function selectCard(player, cardId) {
+    if (!state || state.phase !== `${player}select`) return { ok:false };
+    const ph = phpe(player, cardId);
+    if (!ph || ph.hp <= 0) return { ok:false };
+    state.pending.player = player;
+    state.pending.cardId = cardId;
+    state.pending.ppr    = null;
+    return { ok:true };
+  }
+
+  function choosePPR(player, cardId, choice) {
+    if (!state) return { ok:false };
+    if (state.pending.player !== player || state.pending.cardId !== cardId) return { ok:false };
+    if (!THEME.PPR[choice]) return { ok:false };
+    state.pending.ppr = choice;
+    return { ok:true };
+  }
+
+  function confirmTurn(player) {
+    const { player:pp, cardId, ppr } = state.pending;
+    if (pp !== player || !cardId || !ppr) return { ok:false };
+    state[player].sel = cardId;
+    state[player].ppr = ppr;
+    state.pending = { player:null, cardId:null, ppr:null };
+    const nextPhase = player === 'p1' ? 'p2select' : 'reveal';
+    state.phase = nextPhase;
+    state.revealed = false;
+    return { ok:true, nextPhase };
+  }
+
+  function resolveRound() {
+    const id1=state.p1.sel, id2=state.p2.sel;
+    const c1=cdef(id1), c2=cdef(id2);
+    const ph1=phpe('p1',id1), ph2=phpe('p2',id2);
+    const r1=state.p1.ppr, r2=state.p2.ppr;
+    let outcome='tie', dmgTo1=0, dmgTo2=0;
+    if (r1===r2)          { dmgTo1=2; dmgTo2=2; }
+    else if(pprBeats(r1,r2)){ outcome='p1'; dmgTo2=calcDmg(c1.atk,c2.def); }
+    else                  { outcome='p2'; dmgTo1=calcDmg(c2.atk,c1.def); }
+    ph1.hp=Math.max(0,ph1.hp-dmgTo1);
+    ph2.hp=Math.max(0,ph2.hp-dmgTo2);
+    const c1Destroyed=ph1.hp===0, c2Destroyed=ph2.hp===0;
+    const p1AllDead=state.p1.hp.every(c=>c.hp<=0);
+    const p2AllDead=state.p2.hp.every(c=>c.hp<=0);
+    return { outcome, c1, c2, r1, r2, dmgTo1, dmgTo2, c1Destroyed, c2Destroyed, p1AllDead, p2AllDead, gameOver:p1AllDead||p2AllDead };
+  }
+
+  function revealCommit(result) {
+    state.revealed = true;
+    state.phase = result.gameOver ? 'gameover' : 'done';
+  }
+
+  function nextRound() {
+    state.round++;
+    state.phase='p1select';
+    state.p1.sel=null; state.p1.ppr=null;
+    state.p2.sel=null; state.p2.ppr=null;
+    state.revealed=false;
+    state.pending={ player:null, cardId:null, ppr:null };
+  }
+
+  function restart() { init(); }
+
+  return {
+    get state()  { return state; },
+    get cdef()   { return cdef; },
+    get phpe()   { return phpe; },
+    get totalHp(){ return totalHp; },
+    init, selectCard, choosePPR, confirmTurn, resolveRound, revealCommit, nextRound, restart,
+  };
+})();
+</script>
+
+<!-- ③ RENDERER LAYER -->
+<script id="renderer-layer">
+'use strict';
+const RENDERER = (() => {
+  const labels = { p1: THEME.STRINGS.player1, p2: THEME.STRINGS.player2 };
+  const getLabel = p => labels[p];
+  const setLabel = (p, v) => { labels[p] = v || THEME.STRINGS[`player${p==='p1'?1:2}`]; };
+  const $ = id => document.getElementById(id);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // v18 STATE MODEL
+  // ──────────────────────────────────────────────────────────────────────
+  // Face state lives on EACH CARD as data-face="up|down".
+  // The deck-wrap carries data-deck-state="active|inactive|waking" for scale.
+  //
+  // This eliminates:
+  //   • flipLock — DOM can be rebuilt any time; new cards inherit correct state
+  //   • deckState object — truth is in the DOM attribute, always readable
+  //   • _snapFace / rAF races — each card sets its own attribute immediately
+  //   • descendant-selector inheritance bugs — each card is self-contained
+  //
+  // Public API that UI layer calls:
+  //   flipDeck(player, onComplete)   — animate face-down + scale inactive
+  //   revealDeck(player, onComplete) — animate face-up   + scale active/waking
+  //   render()                       — full rebuild (reads _faceIntent)
+  //   renderPlayerGrid(player, id, faceOverride) — rebuilds one deck
+  //
+  // _faceIntent = { p1: 'up'|'down', p2: 'up'|'down' }
+  // This is the only state variable. It's set before render() is called.
+  // ══════════════════════════════════════════════════════════════════════
+
+  const _faceIntent = { p1: 'up', p2: 'down' };
+
+  // Track whether a flip animation is in progress (prevents overlapping calls)
+  const _animating  = { p1: false, p2: false };
+
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RENDER FUNCTIONS
+  // ══════════════════════════════════════════════════════════════════════
+
+  function render() {
+    renderDecks();
+    renderPlayerHpBars();
+    renderPhase();
+    updateRoundCounter();
+  }
+
+  function updateRoundCounter() {
+    const el = $('round-num');
+    if (el) el.textContent = ENGINE.state.round;
+  }
+
+  function buildHpHearts(hp, maxHp) {
+    let h = '';
+    for (let i = 0; i < maxHp; i++) {
+      const full = i < hp;
+      h += `<span class="hp-heart ${full?'full':'empty'}">${full?'❤️':'🖤'}</span>`;
+    }
+    return h;
+  }
+
+  function renderDecks() {
+    renderPlayerGrid('p1', 'deck-p1');
+    renderPlayerGrid('p2', 'deck-p2');
+  }
+
+  // ── renderPlayerGrid ───────────────────────────────────────────────────────
+  // Rebuilds a deck from scratch. Each card receives:
+  //   data-face="up|down"   — drives the CSS flip
+  //   data-flip-i="N"       — drives the stagger delay (via CSS var --flip-i)
+  // Since face state is on each card element, rebuild is always safe —
+  // no flipLock needed, no rAF, no race condition possible.
+  function renderPlayerGrid(player, containerId) {
+    // If a flip animation is actively running, skip this rebuild to avoid
+    // interrupting mid-animation. The intent is already stored in _faceIntent.
+    if (_animating[player]) return;
+
+    const G    = ENGINE.state;
+    const grid = $(containerId);
+    if (!grid) return;
+
+    const face      = _faceIntent[player];        // 'up' or 'down'
+    const isSelect  = G.phase === `${player}select`;
+    const pending   = G.pending;
+
+    grid.innerHTML = '';
+    // Set deck-wrap scale state
+    grid.dataset.deckState = (face === 'up') ? 'active' : 'inactive';
+
+    G.deck.forEach((c, idx) => {
+      const div  = document.createElement('div');
+      div.className = `card ${c.cls}`;
+      div.dataset.id   = c.id;
+      div.dataset.face = face;          // v18: face state lives HERE, on each card
+      div.style.setProperty('--flip-i', String(idx));
+
+      const pHp    = ENGINE.phpe(player, c.id).hp;
+      const dead   = pHp <= 0;
+      const isUsed = G[player].sel === c.id;
+
+      if (dead)          div.classList.add('dead');
+      else if (isUsed)   div.classList.add('used');
+      else if (isSelect) {
+        div.classList.add('selectable');
+        div.addEventListener('click', () => UI.onCardClick(c.id, player));
+      } else {
+        div.classList.add('disabled');
+      }
+
+      const isPending = isSelect && pending.player === player && pending.cardId === c.id;
+      if (isPending) {
+        div.classList.remove('selectable');
+        div.classList.add('selected');
+      }
+
+      const heartsHTML = buildHpHearts(pHp, c.maxHp);
+
+      div.innerHTML = `
+        <div class="card-glow"></div>
+        <div class="card-battle-fx" data-card-id="${c.id}" data-player="${player}"></div>
+        <div class="card-back">🎴</div>
+        <div class="card-inner">
+          <div class="card-stats">
+            <span class="cs-atk">⚔${c.atk}</span>
+            <span class="cs-def">🛡${c.def}</span>
+          </div>
+          <div class="card-icon-area"><span class="card-icon-emoji">${c.icon}</span></div>
+          <div class="card-name">${c.name}</div>
+          <div class="card-hp-hearts">${heartsHTML}</div>
+        </div>`;
+
+      grid.appendChild(div);
+    });
+  }
+
+  function renderPlayerHpBars() {
+    const maxTotal = THEME.CARDS.reduce((s, c) => s + c.maxHp, 0);
+    ['p1','p2'].forEach(p => {
+      const t   = ENGINE.totalHp(p);
+      const pct = Math.max(0, t / maxTotal * 100);
+      const col = THEME.hpColor(t, maxTotal);
+      $(`${p}-php-fill`).style.cssText = `width:${pct}%;background:${col}`;
+      $(`${p}-php-num`).textContent     = t;
+    });
+  }
+
+  function renderPhase() {
+    const G = ENGINE.state;
+
+    $('tb-p1').classList.toggle('show', G.phase==='p1select');
+    $('tb-p2').classList.toggle('show', G.phase==='p2select');
+    $('reveal-focus').classList.toggle('show', G.phase==='reveal');
+
+    // ── Turn indicator — left-edge anchor ──
+    const ti = $('turn-indicator');
+    if (ti) {
+      if (G.phase === 'p1select') {
+        ti.classList.add('show');
+        ti.classList.remove('p2-turn');
+        // P1 is bottom zone: indicator sits at ~75% from top
+        ti.style.top = '75%';
+      } else if (G.phase === 'p2select') {
+        ti.classList.add('show');
+        ti.classList.add('p2-turn');
+        // P2 is top zone: indicator sits at ~25% from top
+        ti.style.top = '25%';
+      } else {
+        ti.classList.remove('show');
+      }
+    }
+
+    // ── Big Status — sync hand icon to current phase ──
+    if (typeof BIG_STATUS !== 'undefined') BIG_STATUS.syncToPhase(G.phase);
+
+    renderPlayButton('p1');
+    renderPlayButton('p2');
+    renderHint('p1');
+    renderHint('p2');
+
+    updateRoundCounter();
+    syncLabels();
+
+    if (G.phase === 'p1select') applyZoneEmphasis('p1');
+    else if (G.phase === 'p2select') applyZoneEmphasis('p2');
+    else resetZoneEmphasis();
+  }
+
+  function renderPlayButton(p) {
+    const btn  = $(`play-btn-${p}`);
+    const hint = $(`hint-${p}`);
+    if (!btn) return;
+    btn.style.display = 'none';
+    btn.className = '';
+    if (ENGINE.state.phase !== `${p}select`) {
+      if (hint) { hint.textContent = ''; hint.className = 'zone-hint'; }
+      return;
+    }
+    if (hint) { hint.textContent = THEME.STRINGS.pickCard; hint.className = 'zone-hint'; }
+  }
+
+  function renderHint(p) { /* handled in renderPlayButton */ }
+
+  function syncLabels() {
+    const l1=getLabel('p1'), l2=getLabel('p2');
+    const d1=$('deck-p1-label'); if(d1) d1.textContent=l1.slice(0,4);
+    const d2=$('deck-p2-label'); if(d2) d2.textContent=l2.slice(0,4);
+  }
+
+  function showToast(main, sub) {
+    $('toast-main').textContent = main;
+    $('toast-sub').textContent  = sub;
+    $('result-toast').classList.add('show');
+  }
+  function hideToast() { $('result-toast').classList.remove('show'); }
+
+  function showGameOver(p1Dead, p2Dead, round) {
+    const S = THEME.STRINGS;
+    let title='', sub='';
+    if (p1Dead&&p2Dead) { title=S.gameTitleTie;  sub=S.gameSubBoth; }
+    else if (p2Dead)    { title=S.gameTitleP1;   sub=S.gameSubWin(round); }
+    else                { title=S.gameTitleP2;   sub=S.gameSubWin(round); }
+    $('go-crown').textContent    = S.crownIcon;
+    $('go-title').textContent    = title;
+    $('go-subtitle').textContent = sub;
+    $('gameover-screen').classList.add('show');
+  }
+  function hideGameOver() { $('gameover-screen').classList.remove('show'); }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FLIP ANIMATION ENGINE — v18
+  // ──────────────────────────────────────────────────────────────────────
+  // flipDeck(player, onComplete)
+  //   Flips all cards face-down with stagger, shrinks deck-wrap.
+  //   Cards are already in the DOM. We just change data-face on each.
+  //
+  // revealDeck(player, onComplete)
+  //   Flips all cards face-up with reverse stagger, plays wake animation.
+  //
+  // Both functions:
+  //   1. Set _faceIntent immediately (so any subsequent render() call knows)
+  //   2. Set _animating[player]=true to block renderPlayerGrid mid-anim
+  //   3. Mutate data-face on existing card elements — CSS reacts instantly
+  //   4. After animation duration, clear _animating and call onComplete
+  //
+  // No class on deck-wrap. No inherited styles. No race conditions.
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ── flipDeck — animates deck face-down with opacity stagger ──────────────
+  function flipDeck(player, onComplete) {
+    const deck = $(`deck-${player}`);
+    if (!deck) { if (onComplete) onComplete(); return; }
+
+    _faceIntent[player] = 'down';
+    _animating[player]  = true;
+
+    const cards = deck.querySelectorAll('.card');
+    const n     = cards.length;
+
+    // Shrink deck-wrap
+    deck.dataset.deckState = 'inactive';
+
+    // Stagger each card: set --flip-i then flip data-face
+    // CSS transition on .card-inner/.card-back opacity handles the visual
+    cards.forEach((c, i) => {
+      c.style.setProperty('--flip-i', String(i));
+      c.dataset.face = 'down';
+    });
+
+    // Duration: flip-dur (460ms) + stagger * (n-1) + buffer
+    const total = 460 + (55 * Math.max(0, n - 1)) + 60;
+    setTimeout(() => {
+      _animating[player] = false;
+      if (onComplete) onComplete();
+    }, total);
+  }
+
+  // ── revealDeck — animates deck face-up with reverse opacity stagger ────────
+  function revealDeck(player, onComplete) {
+    const deck = $(`deck-${player}`);
+    if (!deck) { if (onComplete) onComplete(); return; }
+
+    _faceIntent[player] = 'up';
+    _animating[player]  = true;
+
+    const cards = deck.querySelectorAll('.card');
+    const n     = cards.length;
+
+    // Wake animation on the wrapper
+    deck.dataset.deckState = 'waking';
+
+    // Reverse stagger: last card reveals first
+    cards.forEach((c, i) => {
+      c.style.setProperty('--flip-i', String(n - 1 - i));
+      c.dataset.face = 'up';
+    });
+
+    // Duration: flip-dur + reverse stagger + buffer
+    const total = 460 + (55 * Math.max(0, n - 1)) + 60;
+    setTimeout(() => {
+      // Restore normal stagger order for future flips
+      cards.forEach((c, i) => c.style.setProperty('--flip-i', String(i)));
+      deck.dataset.deckState = 'active';
+      _animating[player] = false;
+      if (onComplete) onComplete();
+    }, total);
+  }
+
+  // ── ZONE EMPHASIS ──────────────────────────────────────────────────────────
+  function applyZoneEmphasis(activePlayer) {
+    const z1 = $('zone-p1');
+    const z2 = $('zone-p2');
+    if (!z1 || !z2) return;
+    z1.classList.remove('zone-turn-active', 'zone-turn-inactive');
+    z2.classList.remove('zone-turn-active', 'zone-turn-inactive');
+    if (!activePlayer) return;
+    if (activePlayer === 'p1') {
+      z1.classList.add('zone-turn-active');
+      z2.classList.add('zone-turn-inactive');
+    } else {
+      z2.classList.add('zone-turn-active');
+      z1.classList.add('zone-turn-inactive');
+    }
+  }
+
+  function resetZoneEmphasis() { applyZoneEmphasis(null); }
+
+  return {
+    render, renderDecks, renderPhase, renderPlayerHpBars,
+    renderPlayerGrid,
+    showToast, hideToast, showGameOver, hideGameOver,
+    syncLabels,
+    flipDeck, revealDeck,
+    applyZoneEmphasis, resetZoneEmphasis,
+    getLabel, setLabel, updateRoundCounter,
+    renderPlayButton,
+    // Expose _faceIntent so UI layer can set desired state before render()
+    get faceIntent() { return _faceIntent; },
+  };
+})();
+</script>
+
+<!-- ③½ BATTLE_FX MODULE -->
+<script id="battle-fx-module">
+'use strict';
+const BATTLE_FX = (() => {
+
+  function findCard(player, cardId) {
+    const grid = document.getElementById(`deck-${player}`);
+    if (!grid) return null;
+    return grid.querySelector(`.card[data-id="${cardId}"]`);
+  }
+
+  function fxLayer(player, cardId) {
+    const card = findCard(player, cardId);
+    return card ? card.querySelector('.card-battle-fx') : null;
+  }
+
+  function pulse(el, cls, duration) {
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), duration);
+  }
+
+  function spawnNumber(player, cardId, text, color, big = false) {
+    const card = findCard(player, cardId);
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top  + rect.height / 2;
+    const el = document.createElement('div');
+    el.className = 'dmg-particle' + (big ? ' dmg-big' : '');
+    el.textContent = text;
+    el.style.color = color;
+    el.style.left  = `${cx}px`;
+    el.style.top   = `${cy}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+    if (big || text.startsWith('−')) {
+      const count = big ? 8 : 6;
+      for (let i = 0; i < count; i++) {
+        const angle = (360 / count) * i + Math.random() * 20;
+        const dist  = 28 + Math.random() * 24;
+        const dx = Math.cos(angle * Math.PI/180) * dist;
+        const dy = Math.sin(angle * Math.PI/180) * dist;
+        const dot = document.createElement('div');
+        dot.className = 'burst-dot';
+        dot.style.cssText = `left:${cx}px;top:${cy}px;background:${color};--dx:${dx.toFixed(1)}px;--dy:${dy.toFixed(1)}px;width:${4+Math.random()*4}px;height:${4+Math.random()*4}px;animation-delay:${Math.random()*60}ms;`;
+        document.body.appendChild(dot);
+        setTimeout(() => dot.remove(), 800);
+      }
+    }
+  }
+
+  function strike(player, cardId) {
+    const card = findCard(player, cardId);
+    if (!card) return;
+    const strikeCls = player === 'p1' ? 'fx-strike-p1' : 'fx-strike-p2';
+    pulse(card, strikeCls, 580);
+    const fx = fxLayer(player, cardId);
+    pulse(card, 'fx-attacker', 580);
+    pulse(fx,   'fx-attack',   500);
+  }
+
+  function damage(player, cardId, amount) {
+    const card = findCard(player, cardId);
+    const fx   = fxLayer(player, cardId);
+    pulse(card, 'fx-damage',     530);
+    pulse(fx,   'fx-damage-hit', 470);
+    pulse(fx,   'fx-shockwave',  520);
+    const big = amount >= 4;
+    if (amount > 0) spawnNumber(player, cardId, `−${amount}❤`, '#ff3838', big);
+  }
+
+  function attack(player, cardId) {
+    const card = findCard(player, cardId);
+    const fx   = fxLayer(player, cardId);
+    pulse(card, 'fx-attacker', 520);
+    pulse(fx,   'fx-attack',   520);
+  }
+
+  function tie(player, cardId) {
+    const card = findCard(player, cardId);
+    pulse(card, 'fx-tie', 650);
+    spawnNumber(player, cardId, '⚖', '#c0a060', false);
+  }
+
+  function win(player, cardId) {
+    const card = findCard(player, cardId);
+    const fx   = fxLayer(player, cardId);
+    pulse(card, 'fx-attacker', 800);
+    pulse(fx,   'fx-win-beam', 1200);
+    spawnNumber(player, cardId, '✦ WIN', '#f5d800', false);
+  }
+
+  function destroyed(player, cardId) {
+    const card = findCard(player, cardId);
+    if (!card) return;
+    pulse(card, 'fx-destroyed', 720);
+    spawnNumber(player, cardId, '💀', '#888', false);
+  }
+
+  /* Expanded reveal timeline — slower, more cinematic:
+     T+0    : decks unflip (reveal)
+     T+600  : attacker strikes
+     T+1000 : impact — defender shakes + number burst
+     T+1300 : win beam
+     T+1700 : destroyed
+  */
+  function resolveResult(result) {
+    const { outcome, c1, c2, dmgTo1, dmgTo2, c1Destroyed, c2Destroyed } = result;
+
+    if (outcome === 'p1') {
+      setTimeout(() => strike('p1', c1.id), 600);
+      setTimeout(() => damage('p2', c2.id, dmgTo2), 1000);
+      setTimeout(() => win('p1', c1.id), 1300);
+    } else if (outcome === 'p2') {
+      setTimeout(() => strike('p2', c2.id), 600);
+      setTimeout(() => damage('p1', c1.id, dmgTo1), 1000);
+      setTimeout(() => win('p2', c2.id), 1300);
+    } else {
+      setTimeout(() => { strike('p1', c1.id); strike('p2', c2.id); }, 600);
+      setTimeout(() => { tie('p1', c1.id); tie('p2', c2.id); }, 900);
+      if (dmgTo1 > 0) setTimeout(() => damage('p1', c1.id, dmgTo1), 1100);
+      if (dmgTo2 > 0) setTimeout(() => damage('p2', c2.id, dmgTo2), 1100);
+    }
+    if (c1Destroyed) setTimeout(() => destroyed('p1', c1.id), 1700);
+    if (c2Destroyed) setTimeout(() => destroyed('p2', c2.id), 1700);
+  }
+
+  return { strike, attack, damage, tie, win, destroyed, resolveResult };
+})();
+</script>
+
+<!-- TOAST CTRL — controle de duração do result toast -->
+<script id="toast-ctrl-module">
+'use strict';
+const TOAST_CTRL = (() => {
+  let durSec   = 2;
+  let _hideTimer   = null;
+  let _nextTimer   = null;
+
+  function setDur(sec) {
+    durSec = sec;
+    // Sincroniza label e slider no flow-widget (se estiver aberto)
+    const wLbl = document.getElementById('fctl-toast-val');
+    if (wLbl) wLbl.textContent = sec % 1 === 0 ? sec + 's' : sec.toFixed(1) + 's';
+    const wSl = document.getElementById('fctl-toast-dur');
+    if (wSl && +wSl.value !== sec) {
+      wSl.value = sec;
+      // Atualiza o fill visual do trilho no widget
+      wSl.style.setProperty('--fctl-pct', (((sec - 1) / 9) * 100).toFixed(1) + '%');
+    }
+  }
+
+  function show(main, sub, onDone) {
+    clearTimeout(_hideTimer);
+    clearTimeout(_nextTimer);
+
+    const elMain = document.getElementById('toast-main');
+    const elSub  = document.getElementById('toast-sub');
+    const bar    = document.getElementById('toast-progress-bar');
+    const toast  = document.getElementById('result-toast');
+
+    if (elMain) elMain.textContent = main;
+    if (elSub)  elSub.textContent  = sub;
+
+    // Reset instantâneo da barra
+    if (bar) {
+      bar.classList.remove('draining');
+      bar.style.transition = 'none';
+      bar.style.transform  = 'scaleX(1)';
+    }
+
+    toast.classList.add('show');
+
+    // Dois rAF garantem que o reset foi pintado antes de iniciar o dreno
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (bar) {
+        bar.classList.add('draining');
+        bar.style.transition = `transform ${durSec}s linear`;
+        bar.style.transform  = 'scaleX(0)';
+      }
+    }));
+
+    _hideTimer = setTimeout(() => {
+      toast.classList.remove('show');
+      if (onDone) _nextTimer = setTimeout(onDone, 420);
+    }, durSec * 1000);
+  }
+
+  function hide() {
+    clearTimeout(_hideTimer);
+    clearTimeout(_nextTimer);
+    const bar   = document.getElementById('toast-progress-bar');
+    const toast = document.getElementById('result-toast');
+    if (bar) { bar.classList.remove('draining'); bar.style.transition='none'; bar.style.transform='scaleX(1)'; }
+    if (toast) toast.classList.remove('show');
+  }
+
+  return { setDur, show, hide, getDur: () => durSec };
+})();
+</script>
+
+<!-- ④ UI LAYER -->
+<script id="ui-layer">
+'use strict';
+const UI = (() => {
+
+  // ── Card Focus Overlay State ─────────────────────────────────────────────
+  let _focusPlayer = null;
+  let _focusCardId = null;
+  let _focusDismissing = false;
+
+  function _buildFocusClone(cardDef, playerHp) {
+    const clone = document.getElementById('focus-card-clone');
+    // Apply element token CSS variables
+    const clsMap = {
+      fire:     { a:'#2a1008', b:'#120804', ea:'#ff3000', eb:'#ff8c30', color:'var(--fire)',  glow:'var(--fire-glow)' },
+      water:    { a:'#041c2c', b:'#040e18', ea:'#0077cc', eb:'#22aaee', color:'var(--water)', glow:'var(--water-glow)' },
+      earth:    { a:'#0e1808', b:'#080e04', ea:'#4a6a1a', eb:'#7aaa32', color:'var(--earth)', glow:'var(--earth-glow)' },
+      storm:    { a:'#081820', b:'#040c14', ea:'#4ab0cc', eb:'#9de0f0', color:'var(--storm)', glow:'var(--storm-glow)' },
+      electric: { a:'#1c1800', b:'#0e0c00', ea:'#b09000', eb:'#f5d800', color:'var(--elec)',  glow:'var(--elec-glow)' },
+    };
+    const tk = clsMap[cardDef.cls] || clsMap.fire;
+    clone.style.setProperty('--focus-bg-a',         tk.a);
+    clone.style.setProperty('--focus-bg-b',         tk.b);
+    clone.style.setProperty('--focus-stripe-a',     tk.ea);
+    clone.style.setProperty('--focus-stripe-b',     tk.eb);
+    clone.style.setProperty('--focus-elem-color',   tk.color);
+    clone.style.setProperty('--focus-elem-glow',    tk.glow);
+
+    // Build hearts
+    let hearts = '';
+    for (let i = 0; i < cardDef.maxHp; i++) {
+      hearts += `<span style="font-size:clamp(7px,.95vw,9px);opacity:${i < playerHp ? '.9' : '.14'}">${i < playerHp ? '❤️' : '🖤'}</span>`;
+    }
+
+    clone.innerHTML = `
+      <div class="focus-stats">
+        <span class="focus-atk">⚔${cardDef.atk}</span>
+        <span class="focus-def">🛡${cardDef.def}</span>
+      </div>
+      <div class="focus-icon">${cardDef.icon}</div>
+      <div class="focus-name">${cardDef.name}</div>
+      <div class="focus-hearts">${hearts}</div>`;
+
+    // Reset animation
+    clone.classList.remove('dismiss');
+    void clone.offsetWidth;
+  }
+
+  function _buildFocusPPR(cardId, player, currentPPR) {
+    const row = document.getElementById('focus-ppr-row');
+    // Pega o glow da carta para tingir as bolinhas
+    const elemGlow = document.getElementById('focus-card-clone')
+      ?.style.getPropertyValue('--focus-elem-glow') || 'rgba(201,150,58,.3)';
+    // Delays de bob aleatórios por botão para movimento assíncrono
+    const bobDelays = [0.1, 0.85, 0.45];
+    row.innerHTML = Object.entries(THEME.PPR).map(([key, ppr], i) => {
+      const chosen = currentPPR === key ? 'chosen' : '';
+      return `<button class="focus-ppr-btn ${chosen}"
+        style="--ppr-i:${i}; --ppr-glow:${elemGlow}; --bob-delay:${bobDelays[i]}s"
+        onclick="UI.onFocusPPR('${key}','${cardId}','${player}')"
+        title="${ppr.label}">
+          ${ppr.icon}
+          <span class="focus-ppr-label">${ppr.label}</span>
+        </button>`;
+    }).join('');
+  }
+
+  // ── openFocus ─────────────────────────────────────────────────────────────
+  // Called when a player clicks a card in the deck.
+  // Launches the full-screen focus overlay with the card + PPR options.
+  function openFocus(cardId, player) {
+    const res = ENGINE.selectCard(player, cardId);
+    if (!res.ok) return;
+
+    _focusPlayer = player;
+    _focusCardId = cardId;
+    _focusDismissing = false;
+
+    const cardDef  = ENGINE.cdef(cardId);
+    const playerHp = ENGINE.phpe(player, cardId).hp;
+    const pending  = ENGINE.state.pending;
+
+    _buildFocusClone(cardDef, playerHp);
+    _buildFocusPPR(cardId, player, pending.ppr);
+
+    // Reset cancel hint animation
+    const hint = document.getElementById('focus-cancel-hint');
+    hint.style.opacity = '0';
+    hint.style.animation = 'none';
+    void hint.offsetWidth;
+    hint.style.animation = '';
+
+    document.getElementById('card-focus-overlay').classList.add('show');
+  }
+
+  // ── onFocusPPR ────────────────────────────────────────────────────────────
+  // Player clicks a PPR pill inside the focus overlay.
+  function onFocusPPR(choice, cardId, player) {
+    const res = ENGINE.choosePPR(player, cardId, choice);
+    if (!res.ok) return;
+
+    // Mark chosen pill visually
+    const row = document.getElementById('focus-ppr-row');
+    row.querySelectorAll('.focus-ppr-btn').forEach(btn => btn.classList.remove('chosen'));
+    const chosen = row.querySelector(`[onclick*="'${choice}'"]`);
+    if (chosen) chosen.classList.add('chosen');
+
+    // Brief pause then auto-confirm
+    setTimeout(() => _confirmFocus(player), 280);
+  }
+
+  // ── _confirmFocus ─────────────────────────────────────────────────────────
+  // Dismisses the focus overlay, flips card back, triggers confirm flow.
+  function _confirmFocus(player) {
+    if (_focusDismissing) return;
+    _focusDismissing = true;
+
+    const clone = document.getElementById('focus-card-clone');
+    clone.classList.add('dismiss');
+
+    const overlay = document.getElementById('card-focus-overlay');
+    overlay.style.transition = 'opacity .3s ease .12s';
+    overlay.classList.remove('show');
+
+    // After dismiss animation, run onConfirm which handles deck flip
+    setTimeout(() => {
+      overlay.style.transition = '';
+      _focusPlayer = null;
+      _focusCardId = null;
+      _focusDismissing = false;
+      onConfirm(player);
+    }, 420);
+  }
+
+  // ── onFocusCancel ─────────────────────────────────────────────────────────
+  function onFocusCancel() {
+    if (_focusDismissing) return;
+
+    // Reset engine pending selection
+    if (_focusPlayer) {
+      ENGINE.state.pending.player  = null;
+      ENGINE.state.pending.cardId  = null;
+      ENGINE.state.pending.ppr     = null;
+    }
+    _focusPlayer = null;
+    _focusCardId = null;
+    _focusDismissing = false;
+
+    const overlay = document.getElementById('card-focus-overlay');
+    overlay.classList.remove('show');
+
+    // Re-render so the card goes back to selectable state
+    RENDERER.renderPlayerGrid(ENGINE.state.phase === 'p1select' ? 'p1' : 'p2',
+      `deck-${ENGINE.state.phase === 'p1select' ? 'p1' : 'p2'}`);
+  }
+
+  // ── onCardClick ───────────────────────────────────────────────────────────
+  // v16: opens the focus overlay instead of inline PPR
+  function onCardClick(cardId, player) {
+    // If focus is already open for same card, ignore
+    if (_focusPlayer === player && _focusCardId === cardId) return;
+    openFocus(cardId, player);
+  }
+
+  // ── onPPRClick (legacy fallback, now unused) ──────────────────────────────
+  function onPPRClick(e, choice, cardId, player) {
+    e.stopPropagation();
+    const res = ENGINE.choosePPR(player, cardId, choice);
+    if (!res.ok) return;
+    RENDERER.renderPlayerGrid(player, `deck-${player}`);
+    RENDERER.renderPlayButton(player);
+  }
+
+  // ── onConfirm ──────────────────────────────────────────────────────────────
+  // Turn flow:
+  //   P1 confirms → flip P1 deck down → then reveal P2 deck up → render P2 turn
+  //   P2 confirms → flip P2 deck down → go to reveal phase
+  function onConfirm(player) {
+    const res = ENGINE.confirmTurn(player);
+    if (!res.ok) return;
+
+    if (res.nextPhase === 'p2select') {
+      // ── P1 just finished ──
+      // Step 1: flip P1's deck face-down with animation
+      RENDERER.flipDeck('p1', () => {
+        // Step 2: after P1 flip done, reveal P2's deck with animation
+        RENDERER.revealDeck('p2', () => {
+          // Step 3: after P2 reveal done, render the full P2 turn UI
+          RENDERER.render();
+          RENDERER.applyZoneEmphasis('p2');
+        });
+      });
+    } else {
+      // ── P2 just finished → reveal phase ──
+      RENDERER.flipDeck('p2', () => {
+        RENDERER.render(); // renders reveal overlay (phase === 'reveal')
+      });
+    }
+  }
+
+  // ── onReveal ───────────────────────────────────────────────────────────────
+  function onReveal() {
+    const result = ENGINE.resolveRound();
+
+    // 1) Fade out overlay
+    const rf = document.getElementById('reveal-focus');
+    rf.classList.remove('show');
+    rf.classList.add('hiding');
+
+    // 2) Reveal both decks simultaneously (dramatic unflip)
+    RENDERER.revealDeck('p1');
+    RENDERER.revealDeck('p2');
+
+    // ── BIG STATUS: ATTACK moment ──
+    if (typeof BIG_STATUS !== 'undefined') BIG_STATUS.setState('attack', 900);
+
+    // 3) Battle FX fire after both decks are face-up (~600ms)
+    setTimeout(() => {
+      BATTLE_FX.resolveResult(result);
+    }, 500);
+
+    // 4) Commit result state — but do NOT call renderDecks here (would kill animation)
+    setTimeout(() => {
+      rf.classList.remove('hiding');
+      ENGINE.revealCommit(result);
+      // Only update HP hearts on existing card elements, don't rebuild DOM
+      _updateCardHpHearts('p1');
+      _updateCardHpHearts('p2');
+    }, 600);
+
+    // 5) HP bars update
+    setTimeout(() => {
+      RENDERER.renderPlayerHpBars();
+    }, 1200);
+
+    // ── BIG STATUS: show outcome after battle FX ──
+    setTimeout(() => {
+      if (typeof BIG_STATUS !== 'undefined') {
+        if (result.gameOver) {
+          BIG_STATUS.setState('gameover');
+        } else if (result.outcome === 'tie') {
+          BIG_STATUS.setState('tie', 3000);
+        } else if (result.outcome === 'p1') {
+          BIG_STATUS.setState('p1win', 3000);
+        } else {
+          BIG_STATUS.setState('p2win', 3000);
+        }
+      }
+    }, 1100);
+
+    // 6) Toast
+    setTimeout(() => {
+      RENDERER.renderPhase();
+      const S=THEME.STRINGS, p1=result.c1, p2=result.c2;
+      const pprP1=THEME.PPR[result.r1], pprP2=THEME.PPR[result.r2];
+      let main='', sub='';
+      if (result.outcome==='tie') {
+        main=`⚖ ${S.roundTie} ${pprP1.icon} vs ${pprP2.icon}`;
+        sub=`Cada carta perde 2 de vida`;
+      } else if (result.outcome==='p1') {
+        main=`🔴 ${S.roundWinP1} ${pprP1.icon} derrota ${pprP2.icon}`;
+        sub=`${p1.icon} ${p1.name} causou ${result.dmgTo2} de dano!`;
+      } else {
+        main=`🔵 ${S.roundWinP2} ${pprP2.icon} derrota ${pprP1.icon}`;
+        sub=`${p2.icon} ${p2.name} causou ${result.dmgTo1} de dano!`;
+      }
+      if (result.c1Destroyed) sub += ` 💀 ${p1.name} destruída!`;
+      if (result.c2Destroyed) sub += ` 💀 ${p2.name} destruída!`;
+
+      // 7) Usa TOAST_CTRL.show() — duração e barra de progresso configuráveis.
+      //    O callback onDone dispara automaticamente ao fim da duração escolhida.
+      if (result.gameOver) {
+        // Em game over, mostra o toast e depois exibe a tela de resultado
+        TOAST_CTRL.show(main, sub, () => {
+          RENDERER.showGameOver(result.p1AllDead, result.p2AllDead, ENGINE.state.round);
+        });
+      } else {
+        TOAST_CTRL.show(main, sub, () => {
+          ENGINE.nextRound();
+          RENDERER.faceIntent.p1 = 'up';
+          RENDERER.faceIntent.p2 = 'down';
+          RENDERER.render();
+        });
+      }
+    }, 1800);
+  }
+
+  // ── Helper: update HP hearts in-place without rebuilding cards ──────────────
+  function _updateCardHpHearts(player) {
+    const grid = document.getElementById(`deck-${player}`);
+    if (!grid) return;
+    grid.querySelectorAll('.card').forEach(cardEl => {
+      const cardId = cardEl.dataset.id;
+      const ph = ENGINE.phpe(player, cardId);
+      if (!ph) return;
+      const template = THEME.CARDS.find(c => c.id === cardId);
+      if (!template) return;
+      const heartsEl = cardEl.querySelector('.card-hp-hearts');
+      if (!heartsEl) return;
+      let h = '';
+      for (let i = 0; i < template.maxHp; i++) {
+        const full = i < ph.hp;
+        h += `<span class="hp-heart ${full?'full':'empty'}">${full?'❤️':'🖤'}</span>`;
+      }
+      heartsEl.innerHTML = h;
+      if (ph.hp <= 0) {
+        cardEl.classList.add('dead');
+        cardEl.classList.remove('used', 'selectable', 'selected');
+      }
+    });
+  }
+
+  function onRestart() {
+    RENDERER.hideGameOver();
+    TOAST_CTRL.hide();
+    RENDERER.resetZoneEmphasis();
+    document.getElementById('card-focus-overlay').classList.remove('show');
+    ENGINE.restart();
+    RENDERER.faceIntent.p1 = 'up';
+    RENDERER.faceIntent.p2 = 'down';
+    if (typeof BIG_STATUS !== 'undefined') BIG_STATUS.syncToPhase('p1select');
+    RENDERER.render();
+  }
+
+  return { onCardClick, onPPRClick, onConfirm, onReveal, onRestart, onFocusPPR, onFocusCancel, openFocus };
+})();
+</script>
+
+<!-- GPC -->
+<script id="gpc-module">
+'use strict';
+const GPC = (() => {
+  // SPEEDS[idx] = multiplicador de pace-speed (quanto maior, mais rápido).
+  // period do pulso = inversamente proporcional → velocidade visual acompanha.
+  const SPEEDS  = [8, 32, 64, 128, 256, 512, 1024];
+  const LABELS  = ['⅛×','¼×','½×','1×','2×','4×','8×'];
+  // Período do pulso (ms) por índice: velocidade baixa = pulso lento, alta = pulso rápido
+  const PERIODS = [2400, 1600, 1000, 600, 350, 180, 80];
+  // Quantos dots acendem (0–4) por índice
+  const DOTS    = [1, 1, 2, 2, 3, 3, 4];
+  let idx = 3; // padrão: 1×
+
+  function applySpeed() {
+    const s   = SPEEDS[idx];
+    const per = PERIODS[idx];
+    const lbl = LABELS[idx];
+    const lit = DOTS[idx];
+
+    // CSS --pace-speed governa todos os setTimeout baseados em GPC.t()
+    document.documentElement.style.setProperty('--pace-speed', s);
+
+    // Atualiza label numérico
+    const el = document.getElementById('gpc-speed-val');
+    if (el) el.textContent = lbl;
+
+    // Atualiza período da animação do pulso
+    const bar = document.getElementById('gpc-pulse-bar');
+    if (bar) bar.style.animationDuration = per + 'ms';
+
+    // Intensidade da borda do container
+    const cont = document.getElementById('gpc-inline');
+    if (cont) {
+      const intensity = 0.1 + (idx / (SPEEDS.length - 1)) * 0.55;
+      cont.style.setProperty('border-color', `rgba(201,150,58,${intensity.toFixed(2)})`);
+    }
+
+    // Dots acendem proporcionalmente à velocidade
+    document.querySelectorAll('.gpc-dot').forEach((d, i) => {
+      d.classList.toggle('lit', i < lit);
+    });
+
+    // Flash visual no ícone (reforço ao mudar)
+    const icon = document.getElementById('gpc-icon-label');
+    if (icon) {
+      icon.style.transition = 'none';
+      icon.style.opacity = '1';
+      icon.style.color = '#e8be6a';
+      icon.style.transform = 'scale(1.4)';
+      setTimeout(() => {
+        icon.style.transition = 'opacity .15s, color .3s, transform .3s';
+        icon.style.color = '';
+        icon.style.transform = '';
+      }, 60);
+    }
+  }
+
+  function t(baseMs) { return Math.round(baseMs / SPEEDS[idx]); }
+  function step(dir) {
+    const n = idx + dir;
+    if (n < 0 || n >= SPEEDS.length) return;
+    idx = n;
+    applySpeed();
+  }
+  function setIdx(n) {
+    if (n < 0 || n >= SPEEDS.length) return;
+    idx = n;
+    applySpeed();
+  }
+  function getIdx() { return idx; }
+  const init = () => applySpeed();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else setTimeout(init, 0);
+  return { t, step, setIdx, getIdx };
+})();
+</script>
+
+<!-- BIG STATUS MODULE — palco das mãos animadas -->
+<script id="big-status-module">
+'use strict';
+const BIG_STATUS = (() => {
+
+  const STATES = ['idle','p1turn','p2turn','attack','p1win','p2win','tie','gameover'];
+  const LABELS = {
+    idle:     '',
+    p1turn:   'J1\nVez',
+    p2turn:   'J2\nVez',
+    attack:   'Ataque!',
+    p1win:    'J1\nVence!',
+    p2win:    'J2\nVence!',
+    tie:      'Empate',
+    gameover: 'Fim\nde\nJogo',
+  };
+
+  let _current = 'idle';
+  let _timer = null;
+
+  function _el(id) { return document.getElementById(id); }
+
+  function _showHand(state) {
+    if (_current === state) return;
+
+    // Exit current
+    const prev = _el('bsh-' + _current);
+    if (prev) {
+      prev.classList.remove('bs-active');
+      prev.classList.add('bs-exit');
+      setTimeout(() => prev && prev.classList.remove('bs-exit'), 280);
+    }
+
+    _current = state;
+
+    // Enter new
+    const next = _el('bsh-' + state);
+    if (next) {
+      next.classList.remove('bs-exit');
+      // Force reflow before adding active
+      void next.offsetWidth;
+      next.classList.add('bs-active');
+    }
+
+    // Update label
+    const lbl = _el('bs-label');
+    if (lbl) {
+      const txt = LABELS[state] || '';
+      lbl.textContent = txt.replace(/\\n/g, '\n');
+      lbl.style.whiteSpace = 'pre-line';
+      if (txt) {
+        lbl.classList.add('bs-show');
+      } else {
+        lbl.classList.remove('bs-show');
+      }
+    }
+  }
+
+  function setState(state, duration) {
+    // Clear any pending auto-revert
+    if (_timer) { clearTimeout(_timer); _timer = null; }
+
+    if (!STATES.includes(state)) return;
+    _showHand(state);
+
+    // Auto-revert after duration (ms) if specified
+    if (duration) {
+      _timer = setTimeout(() => {
+        // Revert to the logical turn state based on game phase
+        const G = (typeof ENGINE !== 'undefined') ? ENGINE.state : null;
+        if (G) {
+          if (G.phase === 'p1select') _showHand('p1turn');
+          else if (G.phase === 'p2select') _showHand('p2turn');
+          else _showHand('idle');
+        } else {
+          _showHand('idle');
+        }
+        _timer = null;
+      }, duration);
+    }
+  }
+
+  function syncToPhase(phase) {
+    if (_timer) return; // don't interrupt timed states
+    if (phase === 'p1select') _showHand('p1turn');
+    else if (phase === 'p2select') _showHand('p2turn');
+    else if (phase === 'reveal' || phase === 'done') _showHand('idle');
+    else if (phase === 'gameover') _showHand('gameover');
+    else _showHand('idle');
+  }
+
+  function init() {
+    _showHand('idle');
+  }
+
+  return { setState, syncToPhase, init };
+})();
+</script>
+
+<!-- BOOT -->
+<script id="boot">
+// v18: _faceIntent is already {p1:'up', p2:'down'} by default in RENDERER.
+// render() reads _faceIntent and stamps data-face on each card directly.
+// First painted frame is correct — zero rAF, zero setTimeout, zero race.
+ENGINE.init();
+BIG_STATUS.init();
+RENDERER.render();
+</script>
+
+<script id="hotkey-module">
+'use strict';
+(function () {
+  const dock = document.getElementById('fab-dock');
+  const ACTION_KEYS = new Set(['ArrowLeft','ArrowRight','s','S','f','F']);
+
+  document.addEventListener('keydown', e => {
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.ctrlKey || e.metaKey) return;
+
+    // $ — toggle visibilidade do dock
+    if (e.key === '$') { dock.classList.toggle('fab-visible'); return; }
+
+    if (!ACTION_KEYS.has(e.key)) return;
+
+    // Primeira ação revela o dock
+    dock.classList.add('fab-visible');
+
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); GPC.step(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); GPC.step(+1); }
+    if (e.key === 's' || e.key === 'S') window.__seg?.toggle();
+    if (e.key === 'f' || e.key === 'F') window.FLOW_WIDGET?.toggle();
+  });
+})();
+</script>
+
+<!-- FLOW TIMELINE WIDGET -->
+<style id="flow-styles">
+#flow-fab.flow-active{border-color:rgba(201,150,58,.8);color:var(--gold-lt);background:rgba(201,150,58,.14);}
+
+#flow-panel{
+  display:none;
+  position:fixed;
+  bottom:64px;left:14px;
+  width:clamp(320px,42vw,540px);
+  max-height:82vh;
+  background:#14111a;
+  border:1px solid rgba(201,150,58,.28);
+  border-radius:12px;
+  box-shadow:0 8px 40px rgba(0,0,0,.75);
+  z-index:8500;
+  overflow:hidden;
+  flex-direction:column;
+  font-family:'Cinzel',serif;
+}
+#flow-panel.flow-open{display:flex;}
+
+/* Header */
+#flow-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;
+  border-bottom:1px solid rgba(201,150,58,.15);
+  flex-shrink:0;
+}
+#flow-header-left{display:flex;align-items:center;gap:8px;}
+#flow-icon{font-size:14px;color:var(--gold);}
+#flow-title{font-family:'Cinzel Decorative',serif;font-size:10px;letter-spacing:2px;color:var(--gold-lt);}
+#flow-subtitle{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:1px;}
+#flow-close{background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:2px 6px;transition:color .15s;line-height:1;}
+#flow-close:hover{color:var(--text);}
+
+/* ── Painel de controles sempre visível ── */
+#flow-controls{
+  flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  background:#0d0b10;
+}
+
+/* Linha de controle individual */
+.fctl-row{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.fctl-row:last-child{border-bottom:none;}
+
+.fctl-icon{
+  font-size:13px;flex-shrink:0;width:18px;text-align:center;
+}
+.fctl-label{
+  font-size:8px;letter-spacing:.8px;color:var(--text-dim);
+  flex-shrink:0;min-width:88px;text-transform:uppercase;
+}
+
+/* Trilho do slider */
+.fctl-track{
+  flex:1;position:relative;height:20px;
+  display:flex;align-items:center;
+}
+.fctl-track input[type=range]{
+  width:100%;height:4px;
+  appearance:none;-webkit-appearance:none;
+  background:rgba(255,255,255,.08);
+  border-radius:4px;outline:none;cursor:pointer;
+  position:relative;z-index:1;
+}
+/* Fill dourado à esquerda do thumb — via JS que atualiza --fctl-pct */
+.fctl-track input[type=range]::before{
+  content:'';
+  position:absolute;left:0;top:50%;transform:translateY(-50%);
+  height:4px;border-radius:4px;
+  background:linear-gradient(90deg,var(--gold-dk),var(--gold-lt));
+  width:var(--fctl-pct,50%);
+  pointer-events:none;
+}
+.fctl-track input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--gold-lt);
+  box-shadow:0 0 0 2px rgba(201,150,58,.25),0 0 8px rgba(201,150,58,.5);
+  cursor:pointer;
+  transition:transform .12s,box-shadow .12s;
+}
+.fctl-track input[type=range]::-webkit-slider-thumb:hover{
+  transform:scale(1.25);
+  box-shadow:0 0 0 3px rgba(201,150,58,.35),0 0 14px rgba(201,150,58,.7);
+}
+.fctl-track input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;border:none;
+  background:var(--gold-lt);cursor:pointer;
+}
+
+/* Valor numérico à direita */
+.fctl-val{
+  font-family:'Cinzel Decorative',serif;font-size:11px;
+  color:var(--gold-lt);min-width:36px;text-align:right;flex-shrink:0;
+}
+
+/* Indicador de pulso vivo — barra animada abaixo do slider de velocidade */
+#fctl-speed-pulse{
+  height:2px;margin:0 14px 8px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  transform-origin:left;
+  animation:fctlPulse var(--fctl-period,600ms) ease-in-out infinite;
+  opacity:0;
+  transition:opacity .3s;
+}
+#fctl-speed-pulse.pulse-on{opacity:.75;}
+@keyframes fctlPulse{
+  0%  {transform:scaleX(0) translateX(0);opacity:0;}
+  15% {opacity:1;}
+  85% {opacity:.8;}
+  100%{transform:scaleX(1) translateX(0);opacity:0;}
+}
+
+/* Toolbar filtros */
+#flow-toolbar{
+  display:flex;align-items:center;gap:6px;padding:7px 14px;
+  border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;flex-wrap:wrap;
+}
+.flow-pill{
+  font-size:9px;letter-spacing:.5px;padding:3px 9px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.1);background:none;
+  color:rgba(255,255,255,.35);cursor:pointer;transition:all .15s;
+  font-family:'Cinzel',serif;
+}
+.flow-pill:hover{border-color:rgba(201,150,58,.4);color:var(--gold-lt);}
+.flow-pill.fp-active{border-color:rgba(201,150,58,.6);color:var(--gold-lt);background:rgba(201,150,58,.1);}
+
+/* Summary strip */
+#flow-summary{
+  display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;
+}
+.flow-scard{
+  flex:1;padding:7px 12px;text-align:center;
+  border-right:1px solid rgba(255,255,255,.05);
+}
+.flow-scard:last-child{border-right:none;}
+.flow-snum{font-family:'Cinzel Decorative',serif;font-size:13px;color:var(--gold-lt);}
+.flow-slbl{font-size:8px;letter-spacing:.5px;color:var(--text-dim);margin-top:2px;}
+
+/* Timeline scroll */
+#flow-body{overflow-y:auto;flex:1;padding:10px 14px;}
+#flow-body::-webkit-scrollbar{width:4px;}
+#flow-body::-webkit-scrollbar-track{background:transparent;}
+#flow-body::-webkit-scrollbar-thumb{background:rgba(201,150,58,.2);border-radius:4px;}
+
+.flow-section-lbl{
+  font-size:8px;letter-spacing:2px;color:var(--text-dim);
+  margin:10px 0 6px;text-transform:uppercase;
+}
+.flow-section-lbl:first-child{margin-top:0;}
+.flow-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;}
+
+.flow-block{
+  position:relative;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;background:#1c1825;
+  padding:8px 10px 10px;cursor:pointer;
+  transition:border-color .15s,background .15s;
+  overflow:hidden;min-width:100px;
+}
+.flow-block:hover{border-color:rgba(201,150,58,.4);background:#211d2c;}
+.flow-block.fb-selected{border-color:var(--gold)!important;background:rgba(201,150,58,.08)!important;}
+
+.fb-tag{font-size:8px;letter-spacing:.5px;color:var(--text-dim);margin-bottom:3px;}
+.fb-name{font-size:10px;color:var(--text);white-space:nowrap;}
+.fb-dur{font-size:8px;color:var(--text-dim);margin-top:2px;}
+.fb-bar{position:absolute;bottom:0;left:0;height:2px;border-radius:0 0 0 8px;opacity:.6;}
+
+.flow-divider{height:1px;background:rgba(255,255,255,.05);margin:10px 0;position:relative;}
+.flow-divider-lbl{
+  position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  font-size:8px;background:#14111a;padding:0 6px;
+  color:var(--text-dim);letter-spacing:1px;white-space:nowrap;
+}
+
+/* Editor de momento */
+#flow-editor{
+  display:none;border-top:1px solid rgba(201,150,58,.15);
+  padding:12px 14px;flex-shrink:0;background:#0d0b10;
+}
+#flow-editor.fe-open{display:block;}
+.fe-title{font-family:'Cinzel Decorative',serif;font-size:9px;letter-spacing:1.5px;color:var(--gold);margin-bottom:10px;}
+.fe-field{margin-bottom:10px;}
+.fe-label{font-size:8px;letter-spacing:.5px;color:var(--text-dim);margin-bottom:4px;}
+.fe-input{
+  width:100%;background:#1c1825;border:1px solid rgba(255,255,255,.1);
+  border-radius:6px;padding:5px 8px;
+  color:var(--text);font-family:'Crimson Pro',serif;font-size:12px;
+  outline:none;transition:border-color .15s;
+}
+.fe-input:focus{border-color:rgba(201,150,58,.5);}
+textarea.fe-input{resize:vertical;font-size:11px;line-height:1.5;}
+.fe-dur-row{display:flex;align-items:center;gap:8px;}
+.fe-dur-row input[type=range]{flex:1;accent-color:var(--gold);}
+.fe-dur-val{font-family:'Cinzel Decorative',serif;font-size:10px;color:var(--gold-lt);min-width:48px;text-align:right;}
+.fe-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.fe-tag{
+  font-size:8px;letter-spacing:.5px;padding:2px 7px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.1);background:none;
+  color:var(--text-dim);cursor:pointer;transition:all .15s;font-family:'Cinzel',serif;
+}
+.fe-tag:hover{border-color:rgba(201,150,58,.4);color:var(--gold-lt);}
+.fe-tag.ft-sel{border-color:rgba(201,150,58,.7);color:var(--gold-lt);background:rgba(201,150,58,.12);}
+.fe-order{display:flex;gap:5px;margin-top:8px;}
+.fe-order-btn{
+  font-size:9px;padding:3px 9px;border-radius:5px;
+  border:1px solid rgba(255,255,255,.1);background:none;
+  color:var(--text-dim);cursor:pointer;transition:all .15s;font-family:'Cinzel',serif;
+}
+.fe-order-btn:hover{border-color:rgba(201,150,58,.4);color:var(--gold-lt);}
+.fe-btns{display:flex;gap:6px;margin-top:10px;}
+.fe-btn{
+  font-size:9px;letter-spacing:.5px;padding:5px 11px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.1);background:none;
+  color:var(--text-dim);cursor:pointer;transition:all .15s;font-family:'Cinzel',serif;
+}
+.fe-btn:hover{border-color:rgba(201,150,58,.4);color:var(--gold-lt);}
+.fe-btn-gold{border-color:rgba(201,150,58,.5);color:var(--gold);}
+.fe-btn-gold:hover{background:rgba(201,150,58,.1);}
+.fe-btn-dim{border-color:rgba(255,80,30,.3);color:rgba(255,100,50,.6);}
+.fe-btn-dim:hover{background:rgba(255,50,30,.08);}
+</style>
+
+<!-- Flow Panel DOM -->
+<div id="flow-panel">
+  <div id="flow-header">
+    <div id="flow-header-left">
+      <span id="flow-icon">⏱</span>
+      <div>
+        <div id="flow-title">Flow Timeline</div>
+        <div id="flow-subtitle">Controles e momentos do jogo</div>
+      </div>
+    </div>
+    <button id="flow-close" onclick="FLOW_WIDGET.toggle()">✕</button>
+  </div>
+
+  <!-- ── Controles sempre visíveis ── -->
+  <div id="flow-controls">
+
+    <!-- Velocidade das animações -->
+    <div class="fctl-row">
+      <span class="fctl-icon">⚡</span>
+      <span class="fctl-label">Velocidade</span>
+      <div class="fctl-track">
+        <input type="range" id="fctl-speed"
+               min="0" max="6" step="1" value="3"
+               oninput="FLOW_WIDGET.setSpeed(+this.value)">
+      </div>
+      <span class="fctl-val" id="fctl-speed-val">1×</span>
+    </div>
+    <!-- Barra de pulso vivo sincronizada com a velocidade -->
+    <div id="fctl-speed-pulse"></div>
+
+    <!-- Tempo de exibição do status final -->
+    <div class="fctl-row">
+      <span class="fctl-icon">🏆</span>
+      <span class="fctl-label">Status final</span>
+      <div class="fctl-track">
+        <input type="range" id="fctl-toast-dur"
+               min="1" max="10" step="0.5" value="2"
+               oninput="FLOW_WIDGET.setToastDur(+this.value)">
+      </div>
+      <span class="fctl-val" id="fctl-toast-val">2s</span>
+    </div>
+
+  </div>
+
+  <div id="flow-summary">
+    <div class="flow-scard"><div class="flow-snum" id="fs-phases">12</div><div class="flow-slbl">Momentos</div></div>
+    <div class="flow-scard"><div class="flow-snum" id="fs-dur">~7s</div><div class="flow-slbl">Por rodada</div></div>
+    <div class="flow-scard"><div class="flow-snum" id="fs-cycle">∞</div><div class="flow-slbl">Ciclo</div></div>
+  </div>
+
+  <div id="flow-toolbar">
+    <span style="font-size:8px;letter-spacing:.5px;color:var(--text-dim);">VER:</span>
+    <button class="flow-pill fp-active" onclick="FLOW_WIDGET.filter('all',this)">Todos</button>
+    <button class="flow-pill" onclick="FLOW_WIDGET.filter('p1',this)">Player 1</button>
+    <button class="flow-pill" onclick="FLOW_WIDGET.filter('p2',this)">Player 2</button>
+    <button class="flow-pill" onclick="FLOW_WIDGET.filter('resolve',this)">Resolução</button>
+    <button class="flow-pill" onclick="FLOW_WIDGET.filter('transition',this)">Transição</button>
+  </div>
+
+  <div id="flow-body"></div>
+
+  <div id="flow-editor">
+    <div class="fe-title" id="fe-title">Editando momento</div>
+
+    <div class="fe-field">
+      <div class="fe-label">Nome</div>
+      <input class="fe-input" type="text" id="fe-name" oninput="FLOW_WIDGET.liveUpdate('name',this.value)">
+    </div>
+
+    <div class="fe-field">
+      <div class="fe-label">Descrição / comportamento</div>
+      <textarea class="fe-input" id="fe-desc" rows="2" oninput="FLOW_WIDGET.liveUpdate('desc',this.value)"></textarea>
+    </div>
+
+    <div class="fe-field">
+      <div class="fe-label">Duração estimada do momento</div>
+      <div class="fe-dur-row">
+        <input type="range" id="fe-dur" min="0" max="3000" step="50" oninput="FLOW_WIDGET.liveUpdate('dur',+this.value)">
+        <span class="fe-dur-val" id="fe-dur-val">500ms</span>
+      </div>
+    </div>
+
+    <div class="fe-field">
+      <div class="fe-label">Categoria</div>
+      <div class="fe-tags" id="fe-tags">
+        <button class="fe-tag" onclick="FLOW_WIDGET.setTag('p1',this)">Player 1</button>
+        <button class="fe-tag" onclick="FLOW_WIDGET.setTag('p2',this)">Player 2</button>
+        <button class="fe-tag" onclick="FLOW_WIDGET.setTag('resolve',this)">Resolução</button>
+        <button class="fe-tag" onclick="FLOW_WIDGET.setTag('transition',this)">Transição</button>
+      </div>
+    </div>
+
+    <div class="fe-field">
+      <div class="fe-label">Função do engine</div>
+      <input class="fe-input" type="text" id="fe-fn" oninput="FLOW_WIDGET.liveUpdate('fn',this.value)">
+    </div>
+
+    <div class="fe-order">
+      <button class="fe-order-btn" onclick="FLOW_WIDGET.movePhase(-1)">← Antes</button>
+      <button class="fe-order-btn" onclick="FLOW_WIDGET.movePhase(1)">Depois →</button>
+    </div>
+
+    <div class="fe-btns">
+      <button class="fe-btn fe-btn-gold" onclick="FLOW_WIDGET.closeEditor()">Fechar</button>
+      <button class="fe-btn" onclick="FLOW_WIDGET.resetPhase()">Restaurar</button>
+      <button class="fe-btn fe-btn-dim" onclick="FLOW_WIDGET.exportJSON()">Exportar JSON</button>
+    </div>
+  </div>
+</div>
+
+<script id="flow-widget-module">
+'use strict';
+const FLOW_WIDGET = (() => {
+
+  const COLORS = { p1:'#378ADD', p2:'#1D9E75', resolve:'#BA7517', transition:'#9de0f0' };
+  const TAG_LABELS = { p1:'Player 1', p2:'Player 2', resolve:'Resolução', transition:'Transição' };
+
+  // Mapeamento de índice do slider → config do GPC
+  const SPEED_LABELS  = ['⅛×','¼×','½×','1×','2×','4×','8×'];
+  const SPEED_PERIODS = [2400, 1600, 1000, 600, 350, 180, 80]; // ms do pulso
+
+  const DEFAULTS = [
+    { id:'p1-deck',    tag:'p1',         name:'Deck P1 aberto',         dur:0,    fn:'renderDecks() + _faceIntent.p1=up',           desc:'Cartas do P1 face-up, animação iconIdle ativa. Mouse-over dispara .selectable e o glow elemental.' },
+    { id:'p1-select',  tag:'p1',         name:'P1 seleciona carta',      dur:300,  fn:'ENGINE.selectCard("p1", cardId)',              desc:'Clique na carta preenche state.pending. A carta recebe .selected e exibe a PPR tray.' },
+    { id:'p1-focus',   tag:'p1',         name:'Janela focal P1',         dur:400,  fn:'UI.openFocus(cardId, "p1")',                   desc:'Carta voa para o centro (card-focus overlay). Pills PPR surgem com stagger fade+scale ao redor.' },
+    { id:'p1-ppr',     tag:'p1',         name:'P1 escolhe PPR',          dur:200,  fn:'ENGINE.choosePPR("p1", cardId, choice)',       desc:'Clique em Pedra, Papel ou Tesoura. Pill recebe .chosen. pending.ppr preenchido.' },
+    { id:'p1-confirm', tag:'transition', name:'P1 confirma — transição', dur:600,  fn:'ENGINE.confirmTurn("p1") → phase=p2select',   desc:'Deck P1 flipa face-down (flipDeck). Overlay fecha. Deck P2 flipa face-up em seguida.' },
+    { id:'p2-deck',    tag:'p2',         name:'Deck P2 aberto',          dur:0,    fn:'renderDecks() + _faceIntent.p2=up',           desc:'Cartas do P2 face-up. Zona P2 recebe zone-turn-active. Fluxo espelha o de P1.' },
+    { id:'p2-select',  tag:'p2',         name:'P2 seleciona carta',      dur:300,  fn:'ENGINE.selectCard("p2", cardId)',              desc:'Mesmo fluxo de P1: pending preenchido, carta recebe .selected.' },
+    { id:'p2-focus',   tag:'p2',         name:'Janela focal P2',         dur:400,  fn:'UI.openFocus(cardId, "p2")',                   desc:'Overlay central com carta e pills PPR para P2.' },
+    { id:'p2-ppr',     tag:'p2',         name:'P2 escolhe PPR',          dur:200,  fn:'ENGINE.choosePPR("p2", cardId, choice)',       desc:'PPR de P2 registrado. pending.ppr preenchido.' },
+    { id:'p2-confirm', tag:'transition', name:'P2 confirma — revelar',   dur:800,  fn:'ENGINE.confirmTurn("p2") → phase=reveal',     desc:'Deck P2 flipa face-down. Overlay REVELAR aparece. Ambas cartas revelam e resolveRound() é chamado.' },
+    { id:'resolve',    tag:'resolve',    name:'Resolução da rodada',     dur:1500, fn:'ENGINE.resolveRound() + BATTLE_FX.resolveResult()', desc:'calcDmg aplicado. FX: strike, damage-hit, destroyed. Números burst. Toast com resultado.' },
+    { id:'next-round', tag:'transition', name:'Próxima rodada / fim',    dur:600,  fn:'ENGINE.nextRound() → phase=p1select',         desc:'Se houver cartas vivas: nextRound(), volta a P1. Se gameOver: tela de vitória/derrota.' },
+  ];
+
+  let phases = DEFAULTS.map(d => ({...d}));
+  let selected = null;
+  let activeFilter = 'all';
+  let open = false;
+
+  // ── Helpers para fill visual dos sliders ────────────────────────────────────
+  function setSliderFill(el, pct) {
+    // Atualiza a CSS var que controla o pseudo-elemento ::before do trilho
+    el.style.setProperty('--fctl-pct', pct.toFixed(1) + '%');
+  }
+
+  // ── Controle de velocidade (fctl-speed → GPC) ──────────────────────────────
+  function setSpeed(idx) {
+    if (typeof GPC !== 'undefined') GPC.setIdx(idx);
+
+    const lbl = document.getElementById('fctl-speed-val');
+    if (lbl) lbl.textContent = SPEED_LABELS[idx] || '1×';
+
+    const sl = document.getElementById('fctl-speed');
+    if (sl) setSliderFill(sl, (idx / 6) * 100);
+
+    const pulse = document.getElementById('fctl-speed-pulse');
+    if (pulse) {
+      pulse.style.setProperty('--fctl-period', SPEED_PERIODS[idx] + 'ms');
+      pulse.classList.add('pulse-on');
+    }
+  }
+
+  // Lê o índice atual do GPC
+  function _getGPCIdx() {
+    return (typeof GPC !== 'undefined') ? GPC.getIdx() : 3;
+  }
+
+  // ── Controle de duração do toast ────────────────────────────────────────────
+  function setToastDur(sec) {
+    if (typeof TOAST_CTRL !== 'undefined') TOAST_CTRL.setDur(sec);
+
+    const lbl = document.getElementById('fctl-toast-val');
+    if (lbl) lbl.textContent = sec % 1 === 0 ? sec + 's' : sec.toFixed(1) + 's';
+
+    // Atualiza fill do trilho (1–10s → 0–100%)
+    const sl = document.getElementById('fctl-toast-dur');
+    if (sl) setSliderFill(sl, ((sec - 1) / 9) * 100);
+  }
+
+  // ── toggle / filter / render ────────────────────────────────────────────────
+  function toggle() {
+    open = !open;
+    document.getElementById('flow-panel').classList.toggle('flow-open', open);
+    document.getElementById('flow-fab').classList.toggle('flow-active', open);
+    if (open) {
+      // Sincroniza sliders com estado real ao abrir
+      _syncSlidersOnOpen();
+      render();
+    }
+  }
+
+  function _syncSlidersOnOpen() {
+    // Velocidade: lê índice atual do GPC
+    const idx = Math.max(0, _getGPCIdx());
+    const speedSl = document.getElementById('fctl-speed');
+    if (speedSl) {
+      speedSl.value = idx < 0 ? 3 : idx;
+      setSliderFill(speedSl, ((idx < 0 ? 3 : idx) / 6) * 100);
+    }
+    const speedLbl = document.getElementById('fctl-speed-val');
+    if (speedLbl) speedLbl.textContent = SPEED_LABELS[idx < 0 ? 3 : idx] || '1×';
+
+    const pulse = document.getElementById('fctl-speed-pulse');
+    if (pulse) {
+      pulse.style.setProperty('--fctl-period', SPEED_PERIODS[idx < 0 ? 3 : idx] + 'ms');
+      pulse.classList.add('pulse-on');
+    }
+
+    // Toast dur: lê de TOAST_CTRL
+    if (typeof TOAST_CTRL !== 'undefined') {
+      const dur = TOAST_CTRL.getDur();
+      const toastSl = document.getElementById('fctl-toast-dur');
+      if (toastSl) {
+        toastSl.value = dur;
+        setSliderFill(toastSl, ((dur - 1) / 9) * 100);
+      }
+      const toastLbl = document.getElementById('fctl-toast-val');
+      if (toastLbl) toastLbl.textContent = dur % 1 === 0 ? dur + 's' : dur.toFixed(1) + 's';
+    }
+  }
+
+  function filter(tag, btn) {
+    activeFilter = tag;
+    document.querySelectorAll('.flow-pill').forEach(p => p.classList.remove('fp-active'));
+    btn.classList.add('fp-active');
+    render();
+  }
+
+  function render() {
+    const body = document.getElementById('flow-body');
+    if (!body) return;
+    body.innerHTML = '';
+
+    const visible = activeFilter === 'all' ? phases : phases.filter(p => p.tag === activeFilter);
+    if (!visible.length) {
+      body.innerHTML = '<div style="font-size:10px;color:var(--text-dim);padding:8px 0;">Nenhum momento nesta categoria.</div>';
+      updateSummary(); return;
+    }
+
+    const groups = [];
+    let cur = null;
+    visible.forEach(p => {
+      if (!cur || cur.tag !== p.tag) { cur = { tag:p.tag, items:[] }; groups.push(cur); }
+      cur.items.push(p);
+    });
+
+    groups.forEach((grp, gi) => {
+      if (activeFilter === 'all' && gi > 0) {
+        const div = document.createElement('div');
+        div.className = 'flow-divider';
+        div.innerHTML = `<span class="flow-divider-lbl">${TAG_LABELS[grp.tag]}</span>`;
+        body.appendChild(div);
+      }
+      const lbl = document.createElement('div');
+      lbl.className = 'flow-section-lbl';
+      lbl.textContent = TAG_LABELS[grp.tag];
+      body.appendChild(lbl);
+
+      const row = document.createElement('div');
+      row.className = 'flow-row';
+
+      grp.items.forEach(ph => {
+        const stepNum = phases.indexOf(ph) + 1;
+        const w = Math.max(100, Math.min(170, 70 + (ph.dur / 3000) * 100));
+        const block = document.createElement('div');
+        block.className = 'flow-block' + (selected === ph.id ? ' fb-selected' : '');
+        block.style.width = w + 'px';
+        block.dataset.id = ph.id;
+        block.onclick = () => openEditor(ph.id);
+        block.innerHTML = `
+          <div class="fb-tag">${stepNum}. ${TAG_LABELS[ph.tag]}</div>
+          <div class="fb-name">${ph.name}</div>
+          <div class="fb-dur">${ph.dur === 0 ? 'instantâneo' : ph.dur + 'ms'}</div>
+          <div class="fb-bar" style="width:${Math.max(8,(ph.dur/3000)*100)}%;background:${COLORS[ph.tag]}"></div>
+        `;
+        row.appendChild(block);
+      });
+
+      body.appendChild(row);
+    });
+
+    updateSummary();
+  }
+
+  function openEditor(id) {
+    selected = id;
+    const ph = phases.find(p => p.id === id);
+    document.getElementById('fe-title').textContent = 'Editando: ' + ph.name;
+    document.getElementById('fe-name').value = ph.name;
+    document.getElementById('fe-desc').value = ph.desc;
+    document.getElementById('fe-dur').value = ph.dur;
+    document.getElementById('fe-dur-val').textContent = ph.dur === 0 ? '0ms' : ph.dur + 'ms';
+    document.getElementById('fe-fn').value = ph.fn;
+    document.querySelectorAll('.fe-tag').forEach(t => {
+      const map = {'Player 1':'p1','Player 2':'p2','Resolução':'resolve','Transição':'transition'};
+      t.classList.toggle('ft-sel', map[t.textContent] === ph.tag);
+    });
+    document.getElementById('flow-editor').classList.add('fe-open');
+    render();
+  }
+
+  function closeEditor() {
+    selected = null;
+    document.getElementById('flow-editor').classList.remove('fe-open');
+    render();
+  }
+
+  function liveUpdate(field, val) {
+    if (!selected) return;
+    const ph = phases.find(p => p.id === selected);
+    if (field === 'dur') {
+      ph.dur = val;
+      document.getElementById('fe-dur-val').textContent = val === 0 ? '0ms' : val + 'ms';
+    } else { ph[field] = val; }
+    render();
+    document.getElementById('flow-editor').classList.add('fe-open');
+  }
+
+  function setTag(tag, btn) {
+    if (!selected) return;
+    phases.find(p => p.id === selected).tag = tag;
+    document.querySelectorAll('.fe-tag').forEach(t => t.classList.remove('ft-sel'));
+    btn.classList.add('ft-sel');
+    render();
+    document.getElementById('flow-editor').classList.add('fe-open');
+  }
+
+  function movePhase(dir) {
+    if (!selected) return;
+    const idx = phases.findIndex(p => p.id === selected);
+    const ni = idx + dir;
+    if (ni < 0 || ni >= phases.length) return;
+    [phases[idx], phases[ni]] = [phases[ni], phases[idx]];
+    render();
+    document.getElementById('flow-editor').classList.add('fe-open');
+  }
+
+  function resetPhase() {
+    if (!selected) return;
+    const def = DEFAULTS.find(d => d.id === selected);
+    if (!def) return;
+    phases[phases.findIndex(p => p.id === selected)] = {...def};
+    openEditor(selected);
+  }
+
+  function updateSummary() {
+    const total = phases.reduce((s, p) => s + p.dur, 0);
+    const el1 = document.getElementById('fs-phases');
+    const el2 = document.getElementById('fs-dur');
+    if (el1) el1.textContent = phases.length;
+    if (el2) el2.textContent = '~' + Math.round(total / 1000) + 's';
+  }
+
+  function exportJSON() {
+    const data = JSON.stringify(phases, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'flow_config.json';
+    a.click();
+  }
+
+  return { toggle, filter, render, liveUpdate, setTag, movePhase, resetPhase, closeEditor, exportJSON, setSpeed, setToastDur };
+})();
+</script>
+
+<style id="seg-styles">
+:root{--seg-bg:#1a1d21;--seg-surface:#22262c;--seg-border:rgba(255,255,255,.10);--seg-border-md:rgba(255,255,255,.16);--seg-text:#d4d8de;--seg-muted:#6b7280;--seg-accent:#4f8ef7;--seg-accent-lt:#7eb0ff;--seg-font:system-ui,-apple-system,'Segoe UI',sans-serif;--seg-mono:'SF Mono','Fira Code',monospace;}
+#seg-fab{position:static;width:34px;height:34px;border-radius:8px;background:var(--seg-bg);border:1px solid var(--seg-border-md);color:var(--seg-muted);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s,color .15s,background .15s;font-family:var(--seg-mono);line-height:1;flex-shrink:0;}
+#seg-fab:hover{border-color:var(--seg-accent);color:var(--seg-accent);background:rgba(79,142,247,.08);}
+#seg-fab.active{border-color:var(--seg-accent);color:var(--seg-accent-lt);background:rgba(79,142,247,.14);}
+#seg-overlay-root{display:none;position:fixed;inset:0;z-index:8000;pointer-events:none;}
+#seg-overlay-root.active{display:block;}
+.seg-region{position:fixed;box-sizing:border-box;border:1.5px solid transparent;border-radius:2px;transition:background .12s;pointer-events:all;cursor:pointer;}
+.seg-region:hover{z-index:8100!important;}.seg-region.seg-selected{z-index:8200!important;}
+.seg-label{position:absolute;top:4px;left:5px;background:var(--seg-bg);border:1px solid var(--seg-border-md);color:var(--seg-text);font-family:var(--seg-mono);font-size:10px;padding:1px 6px;border-radius:3px;white-space:nowrap;pointer-events:none;max-width:150px;overflow:hidden;text-overflow:ellipsis;}
+.seg-region.seg-selected .seg-label{background:var(--seg-accent);border-color:var(--seg-accent);color:#fff;}
+.seg-corner{position:absolute;bottom:3px;right:3px;width:7px;height:7px;border-right:1.5px solid rgba(255,255,255,.2);border-bottom:1.5px solid rgba(255,255,255,.2);pointer-events:none;}
+#seg-panel{display:none;position:fixed;top:0;right:0;height:100%;width:236px;z-index:8500;background:var(--seg-bg);border-left:1px solid var(--seg-border);flex-direction:column;font-family:var(--seg-font);color:var(--seg-text);overflow:hidden;pointer-events:all;font-size:12px;}
+#seg-panel.active{display:flex;}
+#seg-panel-header{padding:12px 14px 10px;border-bottom:1px solid var(--seg-border);flex-shrink:0;display:flex;align-items:center;gap:8px;}
+#seg-panel-icon{width:22px;height:22px;border-radius:5px;background:rgba(79,142,247,.15);border:1px solid rgba(79,142,247,.3);color:var(--seg-accent);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+#seg-panel-title{font-size:12px;font-weight:600;color:var(--seg-text);}#seg-panel-subtitle{font-size:10px;color:var(--seg-muted);line-height:1.3;}
+#seg-region-list{flex:1;overflow-y:auto;padding:4px 0;}
+#seg-region-list::-webkit-scrollbar{width:3px;}#seg-region-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.seg-list-item{display:flex;align-items:center;gap:8px;padding:5px 14px;cursor:pointer;transition:background .1s;border-left:2px solid transparent;}
+.seg-list-item:hover{background:rgba(255,255,255,.04);}.seg-list-item.selected{background:rgba(79,142,247,.10);border-left-color:var(--seg-accent);}
+.seg-list-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+.seg-list-name{font-family:var(--seg-mono);font-size:10px;color:var(--seg-text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.seg-list-item.selected .seg-list-name{color:var(--seg-accent-lt);}
+.seg-list-elem{font-size:10px;color:var(--seg-muted);font-family:var(--seg-mono);}
+#seg-detail{border-top:1px solid var(--seg-border);padding:10px 14px;flex-shrink:0;background:var(--seg-surface);}
+#seg-detail-empty{font-size:11px;color:var(--seg-muted);text-align:center;padding:8px 0;}
+#seg-detail-form{display:none;}#seg-detail-form.show{display:block;}
+#seg-detail-id{font-family:var(--seg-mono);font-size:10px;color:var(--seg-muted);margin-bottom:8px;}
+#seg-name-label{font-size:10px;font-weight:600;color:var(--seg-muted);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+#seg-name-input{width:100%;background:var(--seg-bg);border:1px solid var(--seg-border-md);border-radius:5px;padding:5px 8px;color:var(--seg-text);font-family:var(--seg-mono);font-size:11px;outline:none;transition:border-color .15s;}
+#seg-name-input:focus{border-color:var(--seg-accent);}
+#seg-detail-meta{font-family:var(--seg-mono);font-size:10px;color:var(--seg-muted);line-height:1.7;margin-top:8px;}
+#seg-footer{padding:10px 14px;border-top:1px solid var(--seg-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.seg-footer-btn{font-family:var(--seg-font);font-size:11px;font-weight:500;background:none;border:1px solid var(--seg-border-md);color:var(--seg-muted);border-radius:5px;padding:4px 10px;cursor:pointer;transition:border-color .15s,color .15s,background .15s;}
+.seg-footer-btn:hover{border-color:var(--seg-accent-lt);color:var(--seg-accent-lt);background:rgba(79,142,247,.06);}
+.seg-footer-btn.primary{border-color:var(--seg-accent);color:var(--seg-accent-lt);background:rgba(79,142,247,.1);}
+.seg-footer-btn.primary:hover{background:rgba(79,142,247,.2);}
+#seg-export-modal{display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.75);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px;}
+#seg-export-modal.show{display:flex;}
+#seg-export-box{background:var(--seg-bg);border:1px solid var(--seg-border-md);border-radius:10px;width:100%;max-width:560px;max-height:75vh;display:flex;flex-direction:column;overflow:hidden;}
+#seg-export-header{padding:12px 16px;border-bottom:1px solid var(--seg-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#seg-export-title{font-family:var(--seg-mono);font-size:12px;color:var(--seg-text);font-weight:600;}
+.seg-export-close{background:none;border:none;color:var(--seg-muted);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px;transition:color .15s;}
+.seg-export-close:hover{color:var(--seg-text);}
+#seg-export-area{flex:1;overflow-y:auto;padding:14px 16px;font-family:var(--seg-mono);font-size:11px;color:var(--seg-text);line-height:1.6;white-space:pre;}
+#seg-export-footer{padding:10px 16px;border-top:1px solid var(--seg-border);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0;}
+#seg-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--seg-bg);border:1px solid var(--seg-border-md);color:var(--seg-text);font-family:var(--seg-font);font-size:12px;padding:7px 16px;border-radius:6px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;}
+#seg-toast.show{opacity:1;}
+</style>
+
+<div id="seg-panel">
+  <div id="seg-panel-header">
+    <div id="seg-panel-icon">⬡</div>
+    <div><div id="seg-panel-title">Segmentation</div><div id="seg-panel-subtitle">Click to label regions</div></div>
+  </div>
+  <div id="seg-region-list"></div>
+  <div id="seg-detail">
+    <div id="seg-detail-empty">Select a region to edit its label</div>
+    <div id="seg-detail-form">
+      <div id="seg-detail-id"></div>
+      <label id="seg-name-label" for="seg-name-input">Label</label>
+      <input id="seg-name-input" type="text" placeholder="Enter label…" autocomplete="off">
+      <div id="seg-detail-meta"></div>
+    </div>
+  </div>
+  <div id="seg-footer">
+    <button class="seg-footer-btn" onclick="window.__seg.resetLabels()">Reset</button>
+    <button class="seg-footer-btn primary" onclick="window.__seg.export()">Export JSON</button>
+  </div>
+</div>
+<div id="seg-export-modal">
+  <div id="seg-export-box">
+    <div id="seg-export-header"><span id="seg-export-title">Export — Region Map</span><button class="seg-export-close" onclick="window.__seg.closeExport()">✕</button></div>
+    <pre id="seg-export-area"></pre>
+    <div id="seg-export-footer"><button class="seg-footer-btn" onclick="window.__seg.closeExport()">Close</button><button class="seg-footer-btn primary" onclick="window.__seg.copyExport()">Copy JSON</button></div>
+  </div>
+</div>
+<div id="seg-toast"></div>
+
+<script>
+(function(){
+'use strict';
+const SKIP=new Set(['seg-overlay-root','seg-panel','seg-export-modal','seg-toast','result-toast','gameover-screen','reveal-focus','fab-dock']);
+const EXCLUDE_TAGS=new Set(['SCRIPT','STYLE','LINK','META','HEAD','HTML']);
+let active=false,regions=[],selected=null,exportData=null;
+const labelStore={};
+const overlayRoot=document.getElementById('seg-overlay-root');
+function domDepth(el){let d=0,n=el;while(n.parentElement){d++;n=n.parentElement;}return d;}
+function semanticLabel(el){if(el.id)return'#'+el.id;const role=el.getAttribute('role');if(role)return role;const t=el.tagName.toLowerCase();const cls=[...el.classList].filter(c=>c.length>2&&c.length<20).slice(0,2).join('.');return cls?`${t}.${cls}`:t;}
+function buildOverlayBoxes(){overlayRoot.innerHTML='';regions=[];const all=document.querySelectorAll('*');let elIdx=0;all.forEach(el=>{if(EXCLUDE_TAGS.has(el.tagName))return;if(overlayRoot.contains(el)||document.getElementById('seg-panel')?.contains(el))return;if(SKIP.has(el.id))return;const r=el.getBoundingClientRect();if(r.width<30||r.height<16||r.width>window.innerWidth*.97)return;const id='seg-'+elIdx++;const label=semanticLabel(el);const depth=domDepth(el);const hue=(depth*47+label.charCodeAt(0)*13)%360;const stored=labelStore[id];const userLabel=stored!=null?stored:label;const box=document.createElement('div');box.className='seg-region';box.dataset.id=id;box.style.cssText=`left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border-color:hsl(${hue},65%,55%,.5);background:hsl(${hue},65%,55%,.04);z-index:${8000+depth}`;box.innerHTML=`<span class="seg-label">${userLabel}</span><div class="seg-corner"></div>`;box.addEventListener('click',e=>{e.stopPropagation();selectRegion(id);});overlayRoot.appendChild(box);regions.push({id,elementId:el.id||'',label,userLabel,box,rect:r,depth,hue,desc:`${el.tagName.toLowerCase()} — ${r.width.toFixed(0)}×${r.height.toFixed(0)}`});});}
+function selectRegion(id){selected=id;document.querySelectorAll('.seg-region').forEach(b=>b.classList.remove('seg-selected'));document.querySelectorAll('.seg-list-item').forEach(li=>li.classList.remove('selected'));const reg=regions.find(r=>r.id===id);if(!reg)return;reg.box.classList.add('seg-selected');const li=document.querySelector(`.seg-list-item[data-region-id="${id}"]`);if(li){li.classList.add('selected');li.scrollIntoView({block:'nearest'});}document.getElementById('seg-detail-empty').style.display='none';const form=document.getElementById('seg-detail-form');form.classList.add('show');document.getElementById('seg-detail-id').textContent=`#${reg.elementId}`;document.getElementById('seg-name-input').value=reg.userLabel;const r=reg.rect;document.getElementById('seg-detail-meta').innerHTML=`x:${Math.round(r.left)} y:${Math.round(r.top)}<br>w:${Math.round(r.width)} h:${Math.round(r.height)}<br>depth:${reg.depth} hue:${reg.hue}°<br><span style="opacity:.7">${reg.desc}</span>`;setTimeout(()=>document.getElementById('seg-name-input').focus(),50);}
+function onNameInput(){if(!selected)return;const val=document.getElementById('seg-name-input').value;const reg=regions.find(r=>r.id===selected);if(!reg)return;reg.userLabel=val;labelStore[reg.id]=val;const lbl=reg.box.querySelector('.seg-label');if(lbl)lbl.textContent=val||reg.label;const li=document.querySelector(`.seg-list-item[data-region-id="${selected}"] .seg-list-name`);if(li)li.textContent=val||reg.label;}
+function renderList(){const list=document.getElementById('seg-region-list');list.innerHTML='';[...regions].sort((a,b)=>a.depth-b.depth).forEach(reg=>{const item=document.createElement('div');item.className='seg-list-item';item.dataset.regionId=reg.id;item.innerHTML=`<div class="seg-list-dot" style="background:hsl(${reg.hue},65%,55%)"></div><span class="seg-list-name">${reg.userLabel}</span><span class="seg-list-elem">#${reg.elementId}</span>`;item.addEventListener('click',()=>selectRegion(reg.id));list.appendChild(item);});}
+function buildExportPayload(){return{meta:{tool:'Elemental Clash v8',exported_at:new Date().toISOString(),region_count:regions.length,viewport:{width:window.innerWidth,height:window.innerHeight}},regions:regions.map(reg=>({id:reg.id,label:reg.userLabel,element_id:reg.elementId,description:reg.desc,rect:{x:Math.round(reg.rect.left),y:Math.round(reg.rect.top),width:Math.round(reg.rect.width),height:Math.round(reg.rect.height)},dom_depth:reg.depth,color_hue:reg.hue}))};}
+function showExport(){exportData=buildExportPayload();document.getElementById('seg-export-area').textContent=JSON.stringify(exportData,null,2);document.getElementById('seg-export-modal').classList.add('show');}
+function closeExport(){document.getElementById('seg-export-modal').classList.remove('show');}
+function copyExport(){if(!exportData)return;navigator.clipboard.writeText(JSON.stringify(exportData,null,2)).then(()=>showToast('JSON copied!')).catch(()=>showToast('Select text manually'));}
+let toastTimer;
+function showToast(msg){const el=document.getElementById('seg-toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2000);}
+let resizeTimer;
+window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{if(active)buildOverlayBoxes();renderList();},80);});
+function toggle(){active=!active;const fab=document.getElementById('seg-fab');const panel=document.getElementById('seg-panel');fab.classList.toggle('active',active);overlayRoot.classList.toggle('active',active);panel.classList.toggle('active',active);if(active){buildOverlayBoxes();renderList();selected=null;document.getElementById('seg-detail-empty').style.display='';document.getElementById('seg-detail-form').classList.remove('show');showToast('Segmentation mode ON');}else{overlayRoot.innerHTML='';regions=[];selected=null;closeExport();}}
+function resetLabels(){regions.forEach(reg=>{labelStore[reg.id]=reg.label;const lbl=reg.box.querySelector('.seg-label');if(lbl)lbl.textContent=reg.label;});renderList();if(selected){const reg=regions.find(r=>r.id===selected);if(reg)document.getElementById('seg-name-input').value=reg.label;}showToast('Labels reset');}
+document.getElementById('seg-fab').addEventListener('click',toggle);
+document.getElementById('seg-name-input').addEventListener('input',onNameInput);
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&e.key==='S'){e.preventDefault();toggle();}});
+overlayRoot.addEventListener('click',e=>{document.getElementById('seg-name-input').blur();if(e.target===overlayRoot){selected=null;document.querySelectorAll('.seg-region').forEach(b=>b.classList.remove('seg-selected'));document.querySelectorAll('.seg-list-item').forEach(li=>li.classList.remove('selected'));document.getElementById('seg-detail-empty').style.display='';document.getElementById('seg-detail-form').classList.remove('show');}});
+document.getElementById('seg-name-input').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();document.getElementById('seg-name-input').blur();}});
+window.__seg={toggle,export:showExport,closeExport,copyExport,resetLabels,getRegions:()=>buildExportPayload()};
+})();
+</script>
+</body>
+</html>

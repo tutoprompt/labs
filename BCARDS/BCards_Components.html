@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BCards — Componentes Modulares</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&family=Crimson+Pro:wght@400;600&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0b10; --surface:#14111a; --raised:#1c1825; --card-bg:#211d2c;
+  --gold:#c9963a; --gold-lt:#e8be6a; --gold-dk:#7a5818;
+  --text:#e2d9c8; --text-dim:#6a6070;
+  --green:#4ade80; --blue:#60a5fa; --red:#f87171; --amber:#fbbf24;
+  --r:12px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);font-family:'Crimson Pro',serif}
+body{padding:32px 24px 80px;max-width:980px;margin:0 auto}
+h1{font-family:'Cinzel Decorative',serif;font-size:clamp(14px,2vw,20px);color:var(--gold-lt);letter-spacing:3px;margin-bottom:6px}
+.sub{font-size:13px;color:var(--text-dim);letter-spacing:1px;margin-bottom:48px}
+.sec-title{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid rgba(201,150,58,.2)}
+.sec{margin-bottom:56px}
+pre{background:#080610;border:1px solid rgba(201,150,58,.18);border-radius:var(--r);padding:20px 22px;overflow-x:auto;font-size:11.5px;line-height:1.75;color:#c8d0e4;tab-size:2;white-space:pre}
+.callout{background:rgba(201,150,58,.06);border:1px solid rgba(201,150,58,.2);border-left:3px solid var(--gold);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.7;color:#b8a89a}
+.callout strong{color:var(--gold-lt)}
+.callout code,.callout-ok code,.callout-warn code{font-family:monospace;font-size:11px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;color:#9dc0ee}
+.callout-ok{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.2);border-left:3px solid var(--green);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.7;color:#b8a89a}
+.callout-ok strong{color:var(--green)}
+.callout-warn{background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-left:3px solid var(--amber);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.7;color:#b8a89a}
+.callout-warn strong{color:var(--amber)}
+.callout-blue{background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.2);border-left:3px solid var(--blue);border-radius:0 var(--r) var(--r) 0;padding:14px 18px;margin-bottom:20px;font-size:13px;line-height:1.7;color:#b8a89a}
+.callout-blue strong{color:var(--blue)}
+table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}
+th{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--gold);text-align:left;padding:8px 12px;border-bottom:1px solid rgba(201,150,58,.2)}
+td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;color:#b8a89a}
+td code{font-family:monospace;font-size:10.5px;background:rgba(255,255,255,.05);padding:1px 4px;border-radius:3px;color:#9dc0ee}
+.tag-verdict{display:inline-block;font-size:9px;padding:2px 8px;border-radius:10px;letter-spacing:.5px}
+.tag-v{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:var(--green)}
+.tag-w{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
+.tag-i{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:var(--blue)}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(201,150,58,.15) 50%,transparent);margin:48px 0}
+.label-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.badge{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:10px}
+.badge-green{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--green)}
+.badge-amber{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
+.badge-blue{background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);color:var(--blue)}
+.step{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px;font-size:13px;line-height:1.6;color:#b8a89a}
+.step-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:rgba(201,150,58,.12);border:1px solid rgba(201,150,58,.3);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:9px;color:var(--gold-lt);margin-top:3px}
+</style>
+</head>
+<body>
+
+<h1>BCARDS — COMPONENTES MODULARES</h1>
+<p class="sub">Análise · CtxIconComponent · CardComponent · v29 prep</p>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PARTE 1 — ANÁLISE: ctx-icon é variação ou instância independente?
+══════════════════════════════════════════════════════════════ -->
+<div class="sec">
+<div class="sec-title">① Análise — ctx-icon: variação ou instância independente?</div>
+
+<div class="callout" style="margin-bottom:24px">
+  A classe <code>ctx-icon punch-winner visible phase-select icon-flipped icon-flipped-v</code>
+  que você está vendo <strong>não é uma instância independente — é a mesma div base acumulando modificadores</strong>.
+  O componente tem uma única estrutura no DOM para cada jogador (<code>#ctx-icon-p1</code> e <code>#ctx-icon-p2</code>),
+  e as classes são trocadas pelo JS via <code>updateCtxIcon()</code>, <code>showPunchIcon()</code> etc.
+</div>
+
+<table>
+  <thead><tr><th>Classe</th><th>Origem</th><th>Papel</th><th>Tipo</th></tr></thead>
+  <tbody>
+    <tr><td><code>ctx-icon</code></td><td>DOM estático (HTML)</td><td>Container base — posição, tamanho, opacidade 0</td><td><span class="tag-verdict tag-i">BASE</span></td></tr>
+    <tr><td><code>visible</code></td><td><code>applyIcon()</code> em <code>updateCtxIcon()</code></td><td>Ativa <code>opacity:1</code> e a animação <code>iconPulse</code></td><td><span class="tag-verdict tag-v">ESTADO</span></td></tr>
+    <tr><td><code>phase-select</code></td><td><code>applyIcon()</code> via spec.cls</td><td>Drop-shadow mais leve (mão aberta)</td><td><span class="tag-verdict tag-v">ESTADO</span></td></tr>
+    <tr><td><code>icon-flipped</code></td><td><code>applyIcon()</code> via spec.flip</td><td><code>scaleX(-1)</code> no SVG filho — aponta para os decks</td><td><span class="tag-verdict tag-w">MODIFICADOR</span></td></tr>
+    <tr><td><code>icon-flipped-v</code></td><td><code>applyIcon()</code> via spec.flipV</td><td><code>scaleY(-1)</code> no SVG filho — corrige orientação P2</td><td><span class="tag-verdict tag-w">MODIFICADOR</span></td></tr>
+    <tr><td><code>punch-winner</code></td><td><code>showPunchIcon()</code></td><td>Troca <code>iconPulse</code> por <code>punchWinner</code> loop</td><td><span class="tag-verdict tag-v">ESTADO</span></td></tr>
+  </tbody>
+</table>
+
+<div class="callout-ok">
+  <strong>Conclusão:</strong> existe <strong>uma única div <code>.ctx-icon</code> por jogador</strong>.
+  Todas as variações (select, confirm, battle, punch-winner, punch-loser, push) são modificadores CSS
+  empilhados sobre o mesmo elemento. O SVG interno é clonado dinamicamente de templates
+  <code>&lt;svg id="svg-icon-show|ok|punch" style="display:none"&gt;</code>.
+  A div nunca carrega mais de um SVG ao mesmo tempo — <code>applyIcon()</code> faz <code>el.innerHTML = ''</code>
+  antes de injetar o clone.
+</div>
+
+<div class="callout-warn">
+  <strong>Consequência para o componente modular:</strong> a lógica de "qual SVG + quais classes"
+  está espalhada em 4 funções (<code>updateCtxIcon</code>, <code>showOkIcons</code>,
+  <code>hideOkIcon</code>, <code>showPunchIcon</code>). Um componente modular centraliza isso
+  em um único objeto com método <code>.set(spec)</code>.
+</div>
+
+<div class="callout-blue">
+  <strong>Sobre o widget de animação na jornada:</strong> é viável. Cada keyframe do ctx-icon
+  já é uma animação CSS nomeada (<code>iconPulse</code>, <code>punchWinner</code>, <code>punchEnter</code>,
+  <code>punchImpactP1/P2</code>, <code>punchLoserPushedUp/Down</code>).
+  Um widget poderia expor sliders de <code>duration</code>, <code>easing</code> e
+  <code>translateY offset</code> via CSS custom properties injetadas no <code>:root</code>.
+  <strong>Complexidade adicionada: média.</strong> Não quebra nada do engine atual pois as animações
+  são CSS puras — o JS não controla os valores internos dos keyframes.
+  Fica em aberto para a próxima iteração.
+</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PARTE 2 — CtxIconComponent
+══════════════════════════════════════════════════════════════ -->
+<div class="sec">
+<div class="sec-title">② CtxIconComponent — ícone contextual modular</div>
+
+<div class="callout" style="margin-bottom:24px">
+  O componente substitui as 4 funções globais (<code>updateCtxIcon</code>, <code>showOkIcons</code>,
+  <code>hideOkIcon</code>, <code>showPunchIcon</code>) por uma fábrica com API declarativa.
+  Cada instância controla <strong>um único <code>.ctx-icon</code></strong> e expõe
+  <code>.set(spec)</code>, <code>.clear()</code> e <code>.animate(name)</code>.
+  A integração no HTML é zero-invasiva: substitui o bloco <code>ctx-icon-system</code>.
+</div>
+
+<div class="label-row">
+  <span class="badge badge-green">SUBSTITUI ctx-icon-system</span>
+  <span class="badge badge-amber">Zero mudanças no CSS existente</span>
+  <span class="badge badge-blue">Retrocompatível com STATE_ANIM</span>
+</div>
+
+<pre><code>/* ════════════════════════════════════════════════════════════════
+   CTX ICON COMPONENT — Elemental Clash v29
+   ════════════════════════════════════════════════════════════════
+
+   FACTORY: CtxIcon(elementId, options?)
+   Cria uma instância que controla um único .ctx-icon no DOM.
+
+   options = {
+     svgTemplates : { show:'svg-icon-show', ok:'svg-icon-ok', punch:'svg-icon-punch' },
+     size         : null,      // string CSS ou null (usa clamp do CSS)
+     position     : 'right',   // 'right' | 'left' | { top, right, bottom, left }
+     zIndex       : 25,
+   }
+
+   SPEC para .set(spec):
+   {
+     svg     : 'show' | 'ok' | 'punch' | string,  // chave em svgTemplates
+     phase   : 'select' | 'confirm' | 'battle',   // classe CSS phase-*
+     flip    : false,    // scaleX(-1) no SVG
+     flipV   : false,    // scaleY(-1) no SVG
+     anim    : 'pulse' | 'punch-winner' | 'punch-entering' |
+               'striking-p1' | 'striking-p2' |
+               'pushed-up' | 'pushed-down' | null,
+   }
+   ════════════════════════════════════════════════════════════════ */
+'use strict';
+
+function CtxIcon(elementId, opts = {}) {
+  const el = document.getElementById(elementId);
+  if (!el) { console.warn(`[CtxIcon] Elemento não encontrado: "${elementId}"`); return null; }
+
+  const defaults = {
+    svgTemplates: {
+      show  : 'svg-icon-show',
+      ok    : 'svg-icon-ok',
+      punch : 'svg-icon-punch',
+    },
+    size     : null,
+    position : 'right',
+    zIndex   : 25,
+  };
+  const cfg = Object.assign({}, defaults, opts);
+
+  // Aplica overrides de tamanho/posição via style inline
+  _applyLayout();
+
+  // ── Classes de animação mapeadas ──────────────────────────────
+  const ANIM_CLASSES = {
+    'pulse'        : [],  // animação padrão de iconPulse (via .visible)
+    'punch-winner' : ['punch-winner'],
+    'punch-entering': ['punch-winner', 'punch-entering'],
+    'striking-p1'  : ['punch-winner', 'punch-striking-p1'],
+    'striking-p2'  : ['punch-winner', 'punch-striking-p2'],
+    'pushed-up'    : ['punch-loser', 'punch-pushed-up'],
+    'pushed-down'  : ['punch-loser', 'punch-pushed-down'],
+  };
+
+  // Todas as classes removíveis (não inclui a base .ctx-icon)
+  const ALL_MODIFIER_CLASSES = [
+    'visible', 'phase-select', 'phase-confirm', 'phase-battle',
+    'icon-flipped', 'icon-flipped-v',
+    'punch-winner', 'punch-loser',
+    'punch-entering', 'punch-striking-p1', 'punch-striking-p2',
+    'punch-pushed-up', 'punch-pushed-down',
+  ];
+
+  // ── LAYOUT ───────────────────────────────────────────────────
+  function _applyLayout() {
+    if (cfg.size) {
+      el.style.width  = cfg.size;
+      el.style.height = cfg.size;
+    }
+
+    el.style.zIndex = cfg.zIndex;
+
+    if (typeof cfg.position === 'string') {
+      // 'right' (padrão) ou 'left'
+      el.style.right = cfg.position === 'left' ? 'auto' : 'clamp(10px, 2.5vw, 26px)';
+      el.style.left  = cfg.position === 'left' ? 'clamp(10px, 2.5vw, 26px)' : 'auto';
+      el.style.top   = '50%';
+    } else {
+      // objeto { top, right, bottom, left } — posicionamento livre
+      Object.assign(el.style, cfg.position);
+    }
+  }
+
+  // ── CLEAR — reseta o elemento ao estado invisível ─────────────
+  function clear() {
+    el.classList.remove(...ALL_MODIFIER_CLASSES);
+    el.innerHTML = '';
+    el.style.animation = '';
+  }
+
+  // ── INJECT SVG — clona template e injeta no container ─────────
+  function _injectSvg(svgKey) {
+    const tmplId = cfg.svgTemplates[svgKey] || svgKey; // aceita id direto
+    const tmpl = document.getElementById(tmplId);
+    if (!tmpl) { console.warn(`[CtxIcon] SVG template não encontrado: "${tmplId}"`); return; }
+    const clone = tmpl.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.removeAttribute('style');
+    el.innerHTML = '';
+    el.appendChild(clone);
+  }
+
+  // ── SET — aplica um spec completo ─────────────────────────────
+  function set(spec) {
+    if (!spec) { clear(); return; }
+
+    // 1) Limpa tudo
+    clear();
+
+    // 2) Injeta SVG
+    if (spec.svg) _injectSvg(spec.svg);
+
+    // 3) Classe de fase
+    if (spec.phase) el.classList.add(`phase-${spec.phase}`);
+
+    // 4) Flips no SVG
+    if (spec.flip)  el.classList.add('icon-flipped');
+    if (spec.flipV) el.classList.add('icon-flipped-v');
+
+    // 5) Animação
+    const animKey = spec.anim || 'pulse';
+    const animCls = ANIM_CLASSES[animKey] || [];
+    animCls.forEach(c => el.classList.add(c));
+
+    // 6) Torna visível por último (dispara a transição de opacity)
+    el.classList.add('visible');
+  }
+
+  // ── ANIMATE — troca apenas a animação sem recriar o SVG ───────
+  // Útil para transições fight-impact: punch-entering → striking → loop
+  function animate(animKey) {
+    const animCls = ANIM_CLASSES[animKey];
+    if (!animCls) return;
+
+    // Remove classes de animação atuais
+    const animAllCls = Object.values(ANIM_CLASSES).flat();
+    el.classList.remove(...animAllCls);
+
+    // Force reflow para reiniciar a animação CSS
+    void el.offsetWidth;
+
+    animCls.forEach(c => el.classList.add(c));
+  }
+
+  // ── UPDATE LAYOUT — permite reposicionar após criação ─────────
+  function updateLayout(newOpts) {
+    Object.assign(cfg, newOpts);
+    _applyLayout();
+  }
+
+  return { set, clear, animate, updateLayout, el };
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   CTX ICON MANAGER — Cria e gerencia as duas instâncias do jogo
+   Substitui as 4 funções globais do ctx-icon-system original.
+
+   INTEGRAÇÃO: substituir todo o conteúdo de <script id="ctx-icon-system">
+   por este bloco. O CSS existente permanece 100% intacto.
+   ════════════════════════════════════════════════════════════════ */
+
+let _pprIconLock = false;
+
+const CTX_ICONS = {
+  p1: CtxIcon('ctx-icon-p1'),
+  p2: CtxIcon('ctx-icon-p2'),
+};
+
+// ── updateCtxIcon — mesma assinatura do original ──────────────────
+function updateCtxIcon(phase, override) {
+  if (_pprIconLock && !override && phase !== null && phase !== 'reveal') return;
+  if (phase === 'reveal' || phase === 'p1select' || override) _pprIconLock = false;
+
+  const MAP = {
+    'p1select': {
+      p1: { svg:'show', phase:'select', flip:true },
+      p2: null,
+    },
+    'p2select': {
+      p1: null,
+      p2: { svg:'show', phase:'select', flip:true, flipV:true },
+    },
+    'reveal': { p1:null, p2:null },
+  };
+
+  const config = override || MAP[phase] || { p1:null, p2:null };
+  CTX_ICONS.p1.set(config.p1 || null);
+  CTX_ICONS.p2.set(config.p2 || null);
+}
+
+// ── showOkIcons — mesma assinatura do original ────────────────────
+function showOkIcons(confirmedPlayer) {
+  _pprIconLock = true;
+  ['p1','p2'].forEach(p => {
+    if (p === confirmedPlayer) { CTX_ICONS[p].clear(); return; }
+    CTX_ICONS[p].set({ svg:'ok', phase:'confirm' });
+  });
+}
+
+// ── hideOkIcon — mesma assinatura do original ─────────────────────
+function hideOkIcon(player) {
+  CTX_ICONS[player].clear();
+  const other = player === 'p1' ? 'p2' : 'p1';
+  if (!CTX_ICONS[other].el.classList.contains('visible')) _pprIconLock = false;
+}
+
+// ── showPunchIcon — mesma assinatura do original ──────────────────
+// Mantém a sequência de 4 fases da animação de combate intacta.
+function showPunchIcon(winner) {
+  CTX_ICONS.p1.clear();
+  CTX_ICONS.p2.clear();
+  if (!winner || winner === 'tie') return;
+
+  const loser = winner === 'p1' ? 'p2' : 'p1';
+
+  // Fase 1: entrada dramática (T+0)
+  CTX_ICONS[winner].set({ svg:'punch', phase:'battle', anim:'punch-entering' });
+
+  // Fase 2: soco em direção ao rival (T+480ms)
+  setTimeout(() => {
+    CTX_ICONS[winner].animate(winner === 'p1' ? 'striking-p1' : 'striking-p2');
+
+    // Fase 3: rival aparece e é empurrado (T+580ms)
+    setTimeout(() => {
+      CTX_ICONS[loser].set({
+        svg   : 'punch',
+        phase : 'battle',
+        anim  : loser === 'p2' ? 'pushed-up' : 'pushed-down',
+      });
+    }, 100);
+  }, 480);
+
+  // Fase 4: punch volta ao loop de vitória (T+1050ms)
+  setTimeout(() => {
+    CTX_ICONS[winner].animate('punch-winner');
+  }, 1050);
+}
+</code></pre>
+
+<div class="callout-ok" style="margin-top:20px">
+  <strong>O que muda no jogo:</strong> substituir apenas o conteúdo do
+  <code>&lt;script id="ctx-icon-system"&gt;</code> por este bloco.
+  Nenhum outro arquivo, CSS ou função muda. As 4 assinaturas
+  (<code>updateCtxIcon</code>, <code>showOkIcons</code>, <code>hideOkIcon</code>, <code>showPunchIcon</code>)
+  são mantidas idênticas — RENDERER e UI continuam chamando as mesmas funções.
+</div>
+
+<div class="callout-warn" style="margin-top:0">
+  <strong>Extensões possíveis via <code>updateLayout()</code>:</strong>
+  depois de criar a instância, você pode reposicionar ou redimensionar
+  sem recriar o elemento — útil para um futuro modo de tela cheia ou animação da jornada:<br><br>
+  <code>CTX_ICONS.p1.updateLayout({ position: 'left', size: '80px' })</code><br>
+  <code>CTX_ICONS.p2.updateLayout({ position: { top:'20px', right:'20px' } })</code>
+</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PARTE 3 — CardComponent
+══════════════════════════════════════════════════════════════ -->
+<div class="sec">
+<div class="sec-title">③ CardComponent — carta modular (deck + preview)</div>
+
+<div class="callout" style="margin-bottom:24px">
+  Atualmente a carta existe em <strong>dois lugares completamente separados</strong>
+  com markup e lógica duplicados:<br><br>
+  · <strong>Deck</strong>: template string em <code>renderPlayerGrid()</code> —
+  <code>.card &gt; .card-glow + .card-battle-fx + .card-back + .card-inner</code><br>
+  · <strong>Preview/Focus</strong>: <code>_buildFocusClone()</code> —
+  <code>#focus-card-clone &gt; .focus-stats + .focus-icon + .focus-name + .focus-hearts</code><br><br>
+  O CardComponent unifica os dois em uma única função que varia por <code>mode</code>.
+</div>
+
+<table>
+  <thead><tr><th>Propriedade</th><th>Deck</th><th>Focus/Preview</th><th>Compartilhado</th></tr></thead>
+  <tbody>
+    <tr><td>Estrutura HTML</td><td>Template string</td><td>innerHTML direto</td><td><span class="tag-verdict tag-i">UNIFICADO</span></td></tr>
+    <tr><td>Tokens de elemento</td><td>CSS vars na classe (.fire, .water…)</td><td>CSS vars via style inline</td><td><span class="tag-verdict tag-i">UNIFICADO</span></td></tr>
+    <tr><td>HP hearts</td><td><code>buildHpHearts()</code></td><td>Loop inline</td><td><span class="tag-verdict tag-i">UNIFICADO</span></td></tr>
+    <tr><td>Escala</td><td><code>clamp(72px,13vw,112px)</code></td><td>Customizada via CSS</td><td>Separado por mode</td></tr>
+    <tr><td>FX layer</td><td><code>.card-battle-fx</code></td><td>Ausente</td><td>Só no deck</td></tr>
+    <tr><td>data-face</td><td>up/down</td><td>Sempre up</td><td>Configurável</td></tr>
+  </tbody>
+</table>
+
+<div class="label-row" style="margin-bottom:10px">
+  <span class="badge badge-green">SUBSTITUI renderPlayerGrid inner template</span>
+  <span class="badge badge-green">SUBSTITUI _buildFocusClone</span>
+  <span class="badge badge-amber">CSS existente 100% preservado</span>
+</div>
+
+<pre><code>/* ════════════════════════════════════════════════════════════════
+   CARD COMPONENT — Elemental Clash v29
+   ════════════════════════════════════════════════════════════════
+
+   CARD_TOKENS — mapa de elemento → CSS variables
+   Centraliza o mapeamento que estava duplicado em renderPlayerGrid
+   (via classes CSS) e _buildFocusClone (via style inline).
+   ════════════════════════════════════════════════════════════════ */
+'use strict';
+
+const CARD_TOKENS = {
+  fire    : { a:'#2a1008', b:'#120804', ea:'#ff3000', eb:'#ff8c30', color:'var(--fire)',  glow:'var(--fire-glow)'  },
+  water   : { a:'#041c2c', b:'#040e18', ea:'#0077cc', eb:'#22aaee', color:'var(--water)', glow:'var(--water-glow)' },
+  earth   : { a:'#0e1808', b:'#080e04', ea:'#4a6a1a', eb:'#7aaa32', color:'var(--earth)', glow:'var(--earth-glow)' },
+  storm   : { a:'#081820', b:'#040c14', ea:'#4ab0cc', eb:'#9de0f0', color:'var(--storm)', glow:'var(--storm-glow)' },
+  electric: { a:'#1c1800', b:'#0e0c00', ea:'#b09000', eb:'#f5d800', color:'var(--elec)',  glow:'var(--elec-glow)'  },
+};
+
+
+/* ────────────────────────────────────────────────────────────────
+   buildHpHearts(hp, maxHp, opts?)
+   Função utilitária compartilhada — elimina o buildHpHearts do
+   RENDERER e o loop inline do _buildFocusClone.
+
+   opts = {
+     fontSize : string CSS    (default: undefined — herda do contexto)
+     fullIcon : string        (default: '❤️')
+     emptyIcon: string        (default: '🖤')
+   }
+   ──────────────────────────────────────────────────────────────── */
+function buildHpHearts(hp, maxHp, opts = {}) {
+  const full  = opts.fullIcon  || '❤️';
+  const empty = opts.emptyIcon || '🖤';
+  const fs    = opts.fontSize  ? `style="font-size:${opts.fontSize}"` : '';
+  let h = '';
+  for (let i = 0; i < maxHp; i++) {
+    const isFull = i < hp;
+    h += `<span class="hp-heart ${isFull ? 'full' : 'empty'}" ${fs}>${isFull ? full : empty}</span>`;
+  }
+  return h;
+}
+
+
+/* ────────────────────────────────────────────────────────────────
+   createCard(cardDef, playerHp, opts) → HTMLElement
+
+   cardDef = objeto de THEME.CARDS
+   playerHp = hp atual do jogador para este card (ENGINE.phpe)
+
+   opts = {
+     mode     : 'deck' | 'focus',   // obrigatório
+     player   : 'p1' | 'p2',        // para data-player no battle-fx
+     face     : 'up' | 'down',      // default 'up'
+     flipIndex: number,              // --flip-i para stagger (deck)
+     state    : 'selectable' | 'selected' | 'used' | 'dead' | 'disabled',
+     onClick  : Function | null,     // callback de clique
+   }
+
+   RETORNA um HTMLElement pronto para appendChild.
+   ──────────────────────────────────────────────────────────────── */
+function createCard(cardDef, playerHp, opts = {}) {
+  const mode      = opts.mode      || 'deck';
+  const face      = opts.face      || 'up';
+  const flipIndex = opts.flipIndex ?? 0;
+  const state     = opts.state     || 'disabled';
+  const player    = opts.player    || 'p1';
+
+  const tk = CARD_TOKENS[cardDef.cls] || CARD_TOKENS.fire;
+
+  // ── Elemento raiz ──────────────────────────────────────────────
+  const el = document.createElement('div');
+  el.className = `card ${cardDef.cls}`;
+  el.dataset.id   = cardDef.id;
+  el.dataset.face = face;
+  el.style.setProperty('--flip-i', String(flipIndex));
+
+  // ── Aplica tokens como CSS vars inline no modo focus ──────────
+  // No modo deck, os tokens chegam via classe .fire/.water/etc no CSS.
+  // No modo focus, o #focus-card-clone não carrega a classe de elemento,
+  // então precisamos injetar manualmente as mesmas vars.
+  if (mode === 'focus') {
+    el.style.setProperty('--focus-bg-a',       tk.a);
+    el.style.setProperty('--focus-bg-b',       tk.b);
+    el.style.setProperty('--focus-stripe-a',   tk.ea);
+    el.style.setProperty('--focus-stripe-b',   tk.eb);
+    el.style.setProperty('--focus-elem-color', tk.color);
+    el.style.setProperty('--focus-elem-glow',  tk.glow);
+  }
+
+  // ── Estado ────────────────────────────────────────────────────
+  if (state === 'dead') {
+    el.classList.add('dead');
+  } else if (state === 'used') {
+    el.classList.add('used');
+  } else if (state === 'selected') {
+    el.classList.add('selected');
+  } else if (state === 'selectable') {
+    el.classList.add('selectable');
+    if (opts.onClick) el.addEventListener('click', opts.onClick);
+  } else {
+    el.classList.add('disabled');
+  }
+
+  // ── Hearts ─────────────────────────────────────────────────────
+  const hearts = buildHpHearts(
+    playerHp,
+    cardDef.maxHp,
+    mode === 'focus' ? { fontSize: 'clamp(7px,.95vw,9px)' } : {}
+  );
+
+  // ── Conteúdo por mode ─────────────────────────────────────────
+  if (mode === 'deck') {
+    // Estrutura completa: glow + battle-fx + back + inner
+    el.innerHTML = `
+      <div class="card-glow"></div>
+      <div class="card-battle-fx" data-card-id="${cardDef.id}" data-player="${player}"></div>
+      <div class="card-back">🎴</div>
+      <div class="card-inner">
+        <div class="card-stats">
+          <span class="cs-atk">⚔${cardDef.atk}</span>
+          <span class="cs-def">🛡${cardDef.def}</span>
+        </div>
+        <div class="card-icon-area">
+          <span class="card-icon-emoji">${cardDef.icon}</span>
+        </div>
+        <div class="card-name">${cardDef.name}</div>
+        <div class="card-hp-hearts">${hearts}</div>
+      </div>`;
+
+  } else {
+    // Mode focus: sem battle-fx, sem card-back, usa classes focus-*
+    // Compatível com #focus-card-clone e seu CSS existente.
+    el.innerHTML = `
+      <div class="focus-stats">
+        <span class="focus-atk">⚔${cardDef.atk}</span>
+        <span class="focus-def">🛡${cardDef.def}</span>
+      </div>
+      <div class="focus-icon">${cardDef.icon}</div>
+      <div class="focus-name">${cardDef.name}</div>
+      <div class="focus-hearts">${hearts}</div>`;
+  }
+
+  return el;
+}
+
+
+/* ────────────────────────────────────────────────────────────────
+   updateCardHp(cardEl, cardDef, newHp)
+   Atualiza os hearts in-place sem recriar o elemento.
+   Substitui _updateCardHpHearts() do UI layer.
+   ──────────────────────────────────────────────────────────────── */
+function updateCardHp(cardEl, cardDef, newHp) {
+  const heartsEl = cardEl.querySelector('.card-hp-hearts, .focus-hearts');
+  if (!heartsEl) return;
+  heartsEl.innerHTML = buildHpHearts(newHp, cardDef.maxHp);
+  if (newHp <= 0) {
+    cardEl.classList.add('dead');
+    cardEl.classList.remove('used', 'selectable', 'selected');
+  }
+}
+</code></pre>
+
+<div class="sec-title" style="margin-top:32px">Como integrar no renderPlayerGrid e _buildFocusClone</div>
+
+<div class="callout" style="margin-bottom:20px">
+  Com o <code>CardComponent</code> pronto, as duas funções ficam assim — sem duplicação de markup:
+</div>
+
+<pre><code>// ── renderPlayerGrid — versão com CardComponent ──────────────────
+function renderPlayerGrid(player, containerId) {
+  if (_animating[player]) return;
+  const G    = ENGINE.state;
+  const grid = document.getElementById(containerId);
+  if (!grid) return;
+
+  const face     = _faceIntent[player];
+  const isSelect = G.phase === `${player}select`;
+  const pending  = G.pending;
+
+  grid.innerHTML = '';
+  grid.dataset.deckState = face === 'up' ? 'active' : 'inactive';
+
+  G.deck.forEach((c, idx) => {
+    const pHp    = ENGINE.phpe(player, c.id).hp;
+    const dead   = pHp <= 0;
+    const isUsed = G[player].sel === c.id;
+    const isPending = isSelect && pending.player === player && pending.cardId === c.id;
+
+    let state = 'disabled';
+    if (dead)          state = 'dead';
+    else if (isUsed)   state = 'used';
+    else if (isPending) state = 'selected';
+    else if (isSelect) state = 'selectable';
+
+    const cardEl = createCard(c, pHp, {
+      mode      : 'deck',
+      player,
+      face,
+      flipIndex : idx,
+      state,
+      onClick   : state === 'selectable' ? () => UI.onCardClick(c.id, player) : null,
+    });
+
+    grid.appendChild(cardEl);
+  });
+}
+
+
+// ── _buildFocusClone — versão com CardComponent ──────────────────
+function _buildFocusClone(cardDef, playerHp) {
+  const container = document.getElementById('focus-card-clone');
+
+  // Limpa o conteúdo anterior preservando o elemento #focus-card-clone
+  container.innerHTML = '';
+
+  // Injeta os tokens de elemento como CSS vars no container
+  const tk = CARD_TOKENS[cardDef.cls] || CARD_TOKENS.fire;
+  container.style.setProperty('--focus-bg-a',       tk.a);
+  container.style.setProperty('--focus-bg-b',       tk.b);
+  container.style.setProperty('--focus-stripe-a',   tk.ea);
+  container.style.setProperty('--focus-stripe-b',   tk.eb);
+  container.style.setProperty('--focus-elem-color', tk.color);
+  container.style.setProperty('--focus-elem-glow',  tk.glow);
+
+  // Cria o inner usando CardComponent no mode focus
+  // Note: não se usa createCard() para o wrapper pois #focus-card-clone
+  // já tem seu próprio CSS e animação de dismiss — apenas o conteúdo interno.
+  const hearts = buildHpHearts(playerHp, cardDef.maxHp, { fontSize: 'clamp(7px,.95vw,9px)' });
+  container.innerHTML = `
+    &lt;div class="focus-stats"&gt;
+      &lt;span class="focus-atk"&gt;⚔${cardDef.atk}&lt;/span&gt;
+      &lt;span class="focus-def"&gt;🛡${cardDef.def}&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="focus-icon"&gt;${cardDef.icon}&lt;/div&gt;
+    &lt;div class="focus-name"&gt;${cardDef.name}&lt;/div&gt;
+    &lt;div class="focus-hearts"&gt;${hearts}&lt;/div&gt;`;
+
+  container.classList.remove('dismiss');
+  void container.offsetWidth;
+}
+</code></pre>
+
+<div class="callout-ok" style="margin-top:20px">
+  <strong>O que muda no jogo:</strong>
+  <br>1. Adicionar <code>CARD_TOKENS</code>, <code>buildHpHearts</code>, <code>createCard</code> e
+  <code>updateCardHp</code> como um novo <code>&lt;script id="card-component"&gt;</code>
+  antes do <code>renderer-layer</code>.
+  <br>2. Substituir o <code>div.innerHTML = \`...\`</code> dentro de <code>renderPlayerGrid</code>
+  pela chamada a <code>createCard()</code>.
+  <br>3. Substituir o corpo de <code>_buildFocusClone</code> pela versão acima.
+  <br>4. Substituir <code>buildHpHearts</code> do RENDERER e
+  <code>_updateCardHpHearts</code> do UI por chamadas a <code>updateCardHp()</code>.
+</div>
+
+<div class="callout-warn" style="margin-top:0">
+  <strong>Nota sobre o #focus-card-clone:</strong> o container em si (<code>#focus-card-clone</code>)
+  tem CSS e animação de dismiss próprios que não devem ser substituídos.
+  O CardComponent preenche apenas o <em>conteúdo interno</em> desse container,
+  não o elemento wrapper.
+</div>
+</div>
+
+
+<!-- RODAPÉ -->
+<div style="margin-top:48px;padding-top:20px;border-top:1px solid rgba(201,150,58,.1);font-size:11px;color:var(--text-dim);letter-spacing:.5px;text-align:center">
+  ELEMENTAL CLASH · Análise de Componentes · v29 prep · 29/03/2026
+</div>
+
+</body>
+</html>

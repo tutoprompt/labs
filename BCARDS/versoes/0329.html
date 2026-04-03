@@ -1,0 +1,2973 @@
+<!DOCTYPE html>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ELEMENTAL CLASH — SNAPSHOT DE DESIGN v3.0                                  ║
+║  ⚠️  INSTRUÇÕES OBRIGATÓRIAS PARA QUALQUER IA QUE EDITAR ESTE ARQUIVO ⚠️    ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║  REGRAS QUE DEVEM SER SEMPRE RESPEITADAS:                                   ║
+║                                                                              ║
+║  1. ARQUIVO ÚNICO — todo HTML + CSS + JS deve estar num único .html           ║
+║  2. SEM DEPENDÊNCIAS EXTERNAS — exceto Google Fonts (já linkadas)            ║
+║  3. LAYOUT VERTICAL: topbar → battle (50%) → deck (50%)                     ║
+║  4. SEM DRAG-AND-DROP — interação apenas por clique                          ║
+║  5. MECÂNICA OCULTA — cartas ficam viradas até clicar em REVELAR            ║
+║  6. TURNOS: p1select → p2select → reveal → done → próxima rodada           ║
+║  7. CARTAS (5): Fogo🔥 Água💧 Tempestade🌪 Relâmpago⚡ Terra🌍              ║
+║  8. PPR: Pedra vence Tesoura, Papel vence Pedra, Tesoura vence Papel        ║
+║  9. DANO = max(1, ceil((atk_atacante - def_defensor) × 1.45))               ║
+║  10. EMPATE PPR → ambas as cartas perdem 2 de vida                          ║
+║  11. WIDGET DE BARRAS — toggle on/off com label editável por jogador        ║
+║  12. RESPONSIVO — desktop, tablet e mobile                                  ║
+║  13. ESTÉTICA — dark fantasy estilo Hearthstone (fonts: Cinzel + Crimson)   ║
+║  14. CORES: J1=#c0392b (vermelho) J2=#1565c0 (azul) Ouro=#c9963a           ║
+║  15. ANIMAÇÕES: fly to field, flipReveal, dmgFlash, pulseBar               ║
+║  16. ZOOM DESKTOP — html{zoom:2} em @media(min-width:768px)                 ║
+║      Escala 2× todo o layout em desktop. NÃO REMOVER esta regra.           ║
+║      Firefox usa @supports(-moz-appearance:none) com transform:scale(2).   ║
+║      O body deve ter height:50dvh quando zoom:2 está ativo.                 ║
+║                                                                              ║
+║  ATRIBUTOS DAS CARTAS (calibrados para ~11 rodadas, −38% vs versão anterior):║
+║    fire:  atk=9 def=2 maxHp=12                                              ║
+║    water: atk=6 def=5 maxHp=12                                              ║
+║    earth: atk=5 def=6 maxHp=12                                              ║
+║    storm: atk=7 def=4 maxHp=12                                              ║
+║    elec:  atk=8 def=2 maxHp=12                                              ║
+║                                                                              ║
+║  ESTRUTURA DO GAME STATE (G):                                               ║
+║    G.round, G.phase, G.deck[], G.p1{hp[],sel,ppr}, G.p2{hp[],sel,ppr}     ║
+║    G.revealed — controla se as cartas do campo estão visíveis               ║
+║                                                                              ║
+║  NÃO ALTERE a mecânica de jogo sem revisar TODAS as 16 regras acima.       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Elemental Clash v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  /* palette */
+  --ink:        #07060a;
+  --bg:         #0d0b10;
+  --surface:    #14111a;
+  --raised:     #1c1825;
+  --card-bg:    #211d2c;
+  --gold:       #c9963a;
+  --gold-lt:    #e8be6a;
+  --gold-dk:    #7a5818;
+  --gold-glow:  rgba(201,150,58,.4);
+  --silver:     #8a8fa8;
+  --text:       #e2d9c8;
+  --text-dim:   #6a6070;
+  --p1-col:     #c0392b;
+  --p1-lt:      #e74c3c;
+  --p1-glow:    rgba(192,57,43,.5);
+  --p2-col:     #1565c0;
+  --p2-lt:      #2196f3;
+  --p2-glow:    rgba(21,101,192,.5);
+  /* elements */
+  --fire:       #ff6030;
+  --fire-glow:  rgba(255,96,48,.5);
+  --water:      #22aaee;
+  --water-glow: rgba(34,170,238,.5);
+  --earth:      #7a9a42;
+  --earth-glow: rgba(122,154,66,.5);
+  --storm:      #9de0f0;
+  --storm-glow: rgba(157,224,240,.5);
+  --elec:       #f5d800;
+  --elec-glow:  rgba(245,216,0,.5);
+  /* hp */
+  --hp-hi:   #3ec96a;
+  --hp-mid:  #f0a020;
+  --hp-lo:   #e83030;
+  /* layout */
+  --r:        12px;
+  --r-sm:     7px;
+  /* pace scaling — JS sets this via GPC */
+  --pace-speed: 1;
+}
+
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════ */
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; }
+
+body {
+  font-family: 'Crimson Pro', serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* stone texture overlay */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 80%, rgba(201,150,58,.04) 0%, transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+}
+
+/* rune grid */
+body::after {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    repeating-linear-gradient(0deg,  transparent, transparent 59px, rgba(201,150,58,.025) 59px, rgba(201,150,58,.025) 60px),
+    repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(201,150,58,.02)  59px, rgba(201,150,58,.02)  60px);
+}
+
+
+/* ═══════════════════════════════════════════════
+   FAB DOCK — bottom-left icon cluster
+═══════════════════════════════════════════════ */
+#fab-dock {
+  position: fixed;
+  bottom: 14px;
+  left: 14px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.fab-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--seg-bg, #1a1d21);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #6b7280;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  line-height: 1;
+}
+.fab-btn:hover {
+  border-color: rgba(201,150,58,.6);
+  color: var(--gold-lt);
+  background: rgba(201,150,58,.08);
+}
+/* gpc inline control — collapses to icon, expands on hover */
+#gpc-inline {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #1a1d21;
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: border-color 0.15s, background 0.15s, width 0.2s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+  white-space: nowrap;
+}
+#gpc-inline:hover {
+  width: 96px;
+  border-color: rgba(201,150,58,.6);
+  background: rgba(201,150,58,.08);
+}
+#gpc-icon-label {
+  font-size: 15px;
+  position: absolute;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+#gpc-inline:hover #gpc-icon-label { opacity: 0; }
+
+#gpc-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.15s 0.05s;
+  pointer-events: none;
+}
+#gpc-inline:hover #gpc-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+#gpc-controls button {
+  width: 22px; height: 22px;
+  background: none;
+  border: none;
+  color: var(--gold-lt);
+  font-size: 17px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.1s;
+  flex-shrink: 0;
+}
+#gpc-controls button:hover { color: #fff; }
+#gpc-speed-val {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  color: var(--gold);
+  min-width: 26px;
+  text-align: center;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN BODY: battle (50%) + deck (50%)
+═══════════════════════════════════════════════ */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  height: 100dvh;
+}
+
+/* ─────────── PLAYER GRIDS (top=P2, bottom=P1 via deck-area) ─────────── */
+.player-grid {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px,1vw,10px);
+  padding: clamp(4px,1vw,10px) clamp(6px,1.5vw,14px);
+  align-items: center;
+  justify-content: center;
+  /* no hard borders — background fades into battle area */
+  background: transparent;
+  overflow: hidden;
+  position: relative;
+}
+
+/* P2 grid — ownership bloom from top edge, fades down */
+#grid-p2 {
+  background:
+    radial-gradient(ellipse 100% 120% at 50% 0%,
+      rgba(21,101,192,.09) 0%,
+      transparent 75%);
+}
+
+/* P1 grid — ownership bloom from bottom edge, fades up */
+#cards-grid {
+  background:
+    radial-gradient(ellipse 100% 120% at 50% 100%,
+      rgba(192,57,43,.09) 0%,
+      transparent 75%);
+}
+
+/* Active player: amplify the bloom, no border ring */
+.player-grid.grid-active,
+#cards-grid.grid-active {
+  box-shadow: none;
+  background-image: none;
+}
+#cards-grid.grid-active {
+  background:
+    radial-gradient(ellipse 110% 140% at 50% 110%,
+      rgba(192,57,43,.22) 0%,
+      rgba(192,57,43,.08) 40%,
+      transparent 70%);
+}
+#grid-p2.grid-active {
+  background:
+    radial-gradient(ellipse 110% 140% at 50% -10%,
+      rgba(21,101,192,.22) 0%,
+      rgba(21,101,192,.08) 40%,
+      transparent 70%);
+}
+
+/* ─────────── BATTLE AREA ─────────── */
+#battle-area {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Side panels */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 3px;
+  position: relative;
+  overflow: hidden;
+}
+#side-p1 {
+  background: linear-gradient(90deg, rgba(192,57,43,.14) 0%, transparent 100%);
+}
+#side-p2 {
+  background: linear-gradient(270deg, rgba(21,101,192,.14) 0%, transparent 100%);
+}
+
+/* active player glow */
+#side-p1.active { background: linear-gradient(90deg, rgba(192,57,43,.28) 0%, transparent 100%); }
+#side-p1.active::after {
+  content:'';
+  position:absolute; left:0; top:0; bottom:0; width:3px;
+  background: linear-gradient(to bottom, transparent, var(--p1-lt), transparent);
+  animation: pulseBar 1.2s ease-in-out infinite;
+}
+#side-p2.active { background: linear-gradient(270deg, rgba(21,101,192,.28) 0%, transparent 100%); }
+#side-p2.active::after {
+  content:'';
+  position:absolute; right:0; top:0; bottom:0; width:3px;
+  background: linear-gradient(to bottom, transparent, var(--p2-lt), transparent);
+  animation: pulseBar 1.2s ease-in-out infinite;
+}
+
+@keyframes pulseBar { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+.side-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(6px,.9vw,8px);
+  letter-spacing: 1px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+#side-p1 .side-title { color: var(--p1-lt); }
+#side-p2 .side-title { color: var(--p2-lt); }
+
+.sp-card-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+.sp-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  transition: opacity .4s;
+}
+.sp-entry.dead { opacity: .18; filter: grayscale(1); }
+.sp-emoji { font-size: clamp(11px,2vw,17px); line-height: 1; }
+.sp-bar-wrap {
+  width: 80%;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,.1);
+  overflow: hidden;
+}
+.sp-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .6s ease, background .4s;
+}
+.sp-hp-num {
+  font-size: clamp(6px,.85vw,8px);
+  color: var(--text-dim);
+  font-family: 'Cinzel', serif;
+  line-height:1;
+}
+
+/* ─────────── FIELD CENTER ─────────── */
+#field-center {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 85%;
+  height: 100%;
+  margin: 0 auto;
+}
+
+@media(min-width:768px) {
+  #field-center {
+    zoom: 1.15;
+  }
+}
+@supports (-moz-appearance: none) {
+  @media(min-width:768px) {
+    #field-center {
+      zoom: unset;
+      transform: scale(1.15);
+      transform-origin: center center;
+    }
+  }
+}
+
+
+.field-half {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: background .5s ease;
+}
+/* Idle: barely visible ownership tint from the deck edge inward */
+#fh-p1 {
+  background: radial-gradient(ellipse 90% 80% at 50% 100%,
+    rgba(192,57,43,.04) 0%, transparent 70%);
+}
+#fh-p2 {
+  background: radial-gradient(ellipse 90% 80% at 50% 0%,
+    rgba(21,101,192,.04) 0%, transparent 70%);
+}
+/* Active: bloom intensifies — no border needed */
+#fh-p1.active {
+  background: radial-gradient(ellipse 100% 90% at 50% 100%,
+    rgba(192,57,43,.18) 0%,
+    rgba(192,57,43,.06) 50%,
+    transparent 75%);
+}
+#fh-p2.active {
+  background: radial-gradient(ellipse 100% 90% at 50% 0%,
+    rgba(21,101,192,.18) 0%,
+    rgba(21,101,192,.06) 50%,
+    transparent 75%);
+}
+
+/* fog effect */
+.field-half::before {
+  content:'';
+  position:absolute; bottom:0; left:0; right:0; height:40%;
+  pointer-events:none;
+  background: linear-gradient(to top, rgba(13,11,16,.5), transparent);
+}
+
+/* field divider: invisible line, separation implied by the two opposing blooms meeting */
+.field-divider {
+  background: transparent;
+  width: 1px;
+}
+
+.field-player-tag {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px,1.1vw,10px);
+  letter-spacing: 2px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+#fh-p1 .field-player-tag { color: var(--p1-lt); }
+#fh-p2 .field-player-tag { color: var(--p2-lt); }
+
+/* turn badge */
+.turn-badge {
+  display: none;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px,1vw,9px);
+  color: var(--gold-lt);
+  background: rgba(201,150,58,.15);
+  border: 1px solid var(--gold-dk);
+  border-radius: 20px;
+  padding: 2px 8px;
+  letter-spacing: 1px;
+  animation: badgePulse 1.2s ease-in-out infinite;
+}
+.turn-badge.show { display: block; }
+@keyframes badgePulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+/* field card slot */
+.field-slot {
+  width: clamp(55px,10vw,86px);
+  height: clamp(74px,13.5vw,116px);
+  border-radius: var(--r);
+  /* empty slot: no hard border — implied by shadow depression */
+  border: none;
+  background: rgba(0,0,0,.35);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.03);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: box-shadow .3s, background .3s;
+  flex-shrink: 0;
+}
+.field-slot.occupied {
+  background: var(--card-bg);
+  box-shadow: 0 4px 16px rgba(0,0,0,.6), 0 0 0 1px rgba(201,150,58,.25);
+}
+
+/* hidden face */
+.face-down {
+  position: absolute; inset:0;
+  display: flex; align-items:center; justify-content:center;
+  background:
+    repeating-linear-gradient(45deg,
+      rgba(255,255,255,.03) 0, rgba(255,255,255,.03) 5px,
+      transparent 5px, transparent 10px);
+  font-size: clamp(22px,4vw,36px);
+  border-radius: calc(var(--r) - 2px);
+}
+.face-down::after {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(circle at 50% 50%, rgba(201,150,58,.06), transparent 70%);
+}
+
+/* revealed face */
+.face-up {
+  position: absolute; inset:0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px;
+  animation: flipReveal .4s cubic-bezier(.25,.46,.45,.94);
+}
+@keyframes flipReveal {
+  0%  { transform: perspective(400px) rotateY(-90deg) scale(.8); opacity:0; }
+  100%{ transform: perspective(400px) rotateY(0deg)   scale(1);  opacity:1; }
+}
+.fu-icon { font-size: clamp(20px,3.8vw,32px); }
+.fu-ppr  {
+  font-family:'Cinzel',serif;
+  font-size:clamp(6px,.85vw,9px);
+  color:var(--gold-lt);
+  background:rgba(0,0,0,.55);
+  padding:1px 4px; border-radius:3px;
+  letter-spacing:.5px;
+}
+.fu-dmg {
+  position:absolute; top:3px; right:4px;
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(8px,1.3vw,11px);
+  color:#ff4444;
+  text-shadow:0 0 8px #ff000088;
+  animation:dmgPop .6s ease forwards;
+}
+@keyframes dmgPop {
+  0%  { transform:scale(2) translateY(-4px); opacity:1; }
+  100%{ transform:scale(.8) translateY(-12px); opacity:0; }
+}
+
+/* ── LAST STATS ── */
+/* Posicionados em absolute dentro do #battle-area (position:relative)
+   ficam entre o side-panel e o field-center, sem overflow:hidden */
+.last-stats {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  background: rgba(0,0,0,.35);
+  border-radius: 8px;
+  border: 1px solid rgba(201,150,58,.12);
+  min-width: 80px;
+  max-width: 120px;
+}
+.last-stats.show { opacity: 1; }
+
+/* ls-p1: borda esquerda do battle-area */
+#ls-p1 {
+  left: 8px;
+  text-align: left;
+}
+/* ls-p2: borda direita do battle-area */
+#ls-p2 {
+  right: 8px;
+  text-align: right;
+}
+
+.ls-row {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(6px, 0.95vw, 9px);
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  display: block;
+}
+.ls-icon   { font-size: clamp(10px, 1.8vw, 14px); }
+.ls-name   { color: var(--text); font-weight: 600; }
+.ls-ppr    { color: var(--gold-lt); }
+.ls-dmg    { color: #ff5555; font-weight: 700; }
+.ls-winner { color: var(--gold); font-weight: 700; letter-spacing: 1px; }
+.ls-winner.p1 { color: var(--p1-lt); }
+.ls-winner.p2 { color: var(--p2-lt); }
+.ls-empty  { color: var(--text-dim); font-style: italic; opacity: 0.5; }
+
+/* ── Player HP bar (standalone rows at top/bottom) ── */
+.player-hp-bar-wrap {
+  width: 100%;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: transparent;
+  z-index: 2;
+}
+#p2-hp-bar-wrap { flex-direction: row-reverse; }
+
+/* ─────────── GRUPO P2 — slide-out coop ─────────── */
+#p2-group {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transform: translateY(0) scale(1);
+  transform-origin: top center;
+  transition: transform .45s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
+#p2-group.hidden-up {
+  transform: translateY(-30%) scale(1.1);
+}
+
+/* ─────────── GRUPO P1 — slide-out coop (espelho) ─────────── */
+#p1-group {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transform: translateY(0) scale(1);
+  transform-origin: bottom center;
+  transition: transform .45s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
+#p1-group.hidden-down {
+  transform: translateY(30%) scale(1.1);
+}
+
+#p2-hp-bar-wrap {
+  flex-direction: row-reverse;
+}
+#p1-hp-bar-wrap {
+  /* inherits transparent */
+}
+.php-label {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(6px,.9vw,8px);
+  letter-spacing:1px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.php-bar {
+  flex:1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.08);
+  overflow:hidden;
+}
+.php-fill {
+  height:100%; border-radius:3px;
+  transition:width .6s ease, background .5s;
+}
+.php-num {
+  font-family:'Cinzel',serif;
+  font-size:clamp(6px,.9vw,8px);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+#p1-php-label,.p1-clr { color:var(--p1-lt); }
+#p2-php-label,.p2-clr { color:var(--p2-lt); }
+#p1-php-fill { background: linear-gradient(90deg, #7b0000, var(--p1-lt)); }
+#p2-php-fill { background: linear-gradient(90deg, #00227b, var(--p2-lt)); }
+
+/* ─────────── DECK AREA (P1 bottom) ─────────── */
+#deck-area {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  /* no hard border — ownership conveyed by bloom gradient */
+  background: transparent;
+  overflow: hidden;
+  position: relative;
+}
+
+#deck-center-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#deck-center-static {
+  font-family:'Cinzel',serif;
+  font-size:clamp(7px,1.1vw,9px);
+  color:var(--gold-dk);
+  letter-spacing:3px;
+  white-space:nowrap;
+  text-align:center;
+  transition: opacity .2s;
+}
+/* hide static label when reveal overlay is shown */
+#reveal-focus.show ~ * #deck-center-static { opacity: 0; pointer-events: none; }
+
+/* ── REVEAL FOCUS OVERLAY ── */
+#reveal-focus {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(3px) saturate(.5);
+  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+#reveal-focus.show {
+  opacity: 1;
+  pointer-events: all;
+}
+#reveal-focus.hiding {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#btn-reveal {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(11px, 1.8vw, 15px);
+  letter-spacing: 3px;
+  padding: 10px 28px;
+  border-radius: 50px;
+  border: 2px solid var(--gold);
+  background: linear-gradient(135deg, #2a1a00, #7a4e00, #c97d00, #7a4e00, #2a1a00);
+  background-size: 300% 100%;
+  color: #fff8e0;
+  cursor: pointer;
+  position: relative;
+  z-index: 251;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(255,200,80,.8), 0 1px 2px rgba(0,0,0,.9);
+  box-shadow:
+    0 0 0 1px rgba(201,150,58,.4),
+    0 0 24px rgba(201,150,58,.5),
+    0 0 60px rgba(201,150,58,.25),
+    0 8px 32px rgba(0,0,0,.8);
+  animation: revealPulse 1.4s ease-in-out infinite;
+  overflow: hidden;
+  transition: transform .15s, box-shadow .15s;
+}
+#btn-reveal::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -60%;
+  width: 40%; height: 200%;
+  background: linear-gradient(105deg, transparent, rgba(255,240,180,.35), transparent);
+  transform: skewX(-15deg);
+  animation: revealSheen 2.2s ease-in-out infinite;
+}
+#btn-reveal::after {
+  content: '✦ REVELAR ✦';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* text já vem do HTML, esse after é só decorativo — oculto */
+  display: none;
+}
+@keyframes revealPulse {
+  0%,100% {
+    box-shadow:
+      0 0 0 1px rgba(201,150,58,.4),
+      0 0 24px rgba(201,150,58,.5),
+      0 0 60px rgba(201,150,58,.25),
+      0 8px 32px rgba(0,0,0,.8);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(201,150,58,.7),
+      0 0 40px rgba(201,150,58,.8),
+      0 0 90px rgba(201,150,58,.4),
+      0 8px 32px rgba(0,0,0,.8);
+  }
+}
+@keyframes revealSheen {
+  0%   { left: -60%; opacity: 0; }
+  15%  { opacity: 1; }
+  50%  { left: 130%; opacity: 1; }
+  51%  { opacity: 0; }
+  100% { left: 130%; opacity: 0; }
+}
+#btn-reveal:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 50px rgba(201,150,58,.9),
+    0 0 100px rgba(201,150,58,.5),
+    0 12px 40px rgba(0,0,0,.9);
+}
+#p2-hp-bar-wrap { justify-self:end; width:100%; }
+
+#field-halves {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  overflow: hidden;
+  position: relative;
+}
+
+#deck-whose {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: clamp(8px,1.3vw,10px);
+  color: var(--text-dim);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+}
+#deck-whose span { color: var(--gold-lt); }
+
+#cards-grid {
+  flex:1;
+  display:flex;
+  flex-wrap:wrap;
+  gap:clamp(6px,1.3vw,12px);
+  padding:clamp(6px,1.5vw,14px);
+  align-items:center;
+  justify-content:center;
+  align-content:center;
+  overflow-y:auto;
+}
+
+/* ═══════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════ */
+.card {
+  width:  clamp(72px,13vw,112px);
+  height: clamp(98px,17.5vw,152px);
+  border-radius: var(--r);
+  background: var(--card-bg);
+  /* no idle border — elevation via shadow communicates depth */
+  border: 1px solid transparent;
+  box-shadow: 0 3px 10px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.4);
+  display: flex;
+  flex-direction: column;
+  padding: clamp(5px,.9vw,9px);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .18s, border-color .18s, opacity .25s, filter .25s;
+  flex-shrink: 0;
+}
+
+/* PILAR 1 — press feedback imediato no toque/click */
+.card.selectable:active:not(.dead) {
+  transform: scale(.96) !important;
+  transition: transform .07s ease-out !important;
+}
+
+/* element top stripe */
+.card::after {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:3px;
+  border-radius: var(--r) var(--r) 0 0;
+}
+.card.fire::after     { background: linear-gradient(90deg, #ff2200, var(--fire)); }
+.card.water::after    { background: linear-gradient(90deg, #0077cc, var(--water)); }
+.card.earth::after    { background: linear-gradient(90deg, #4a6e10, var(--earth)); }
+.card.storm::after    { background: linear-gradient(90deg, #60c8e0, var(--storm)); }
+.card.electric::after { background: linear-gradient(90deg, #c8a800, var(--elec)); }
+
+/* element glow bg */
+.card-glow {
+  position:absolute; inset:0; border-radius:var(--r);
+  opacity:.07;
+  pointer-events:none;
+  transition:opacity .18s;
+}
+.card.fire     .card-glow { background:radial-gradient(circle at 50% 30%,var(--fire),transparent 65%); }
+.card.water    .card-glow { background:radial-gradient(circle at 50% 30%,var(--water),transparent 65%); }
+.card.earth    .card-glow { background:radial-gradient(circle at 50% 30%,var(--earth),transparent 65%); }
+.card.storm    .card-glow { background:radial-gradient(circle at 50% 30%,var(--storm),transparent 65%); }
+.card.electric .card-glow { background:radial-gradient(circle at 50% 30%,var(--elec),transparent 65%); }
+
+/* Border appears only when card becomes interactive */
+@keyframes cardIdlePulse {
+  0%,100% { box-shadow: 0 3px 10px rgba(0,0,0,.55), 0 0 0 1px rgba(201,150,58,.0); }
+  50%     { box-shadow: 0 5px 18px rgba(0,0,0,.65), 0 0 0 1px rgba(201,150,58,.18); }
+}
+.card.selectable {
+  animation: cardIdlePulse 2.4s ease-in-out infinite;
+}
+
+/* hover */
+.card.selectable:hover:not(.dead) {
+  transform: translateY(-7px) scale(1.06);
+  box-shadow: 0 16px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(201,150,58,.5);
+  border-color: rgba(201,150,58,.5);
+  animation: none;
+}
+.card.selectable:hover .card-glow { opacity:.18; }
+
+/* PILAR 3 — SELECIONADO: scale + borda + glow (2 atributos simultâneos) */
+.card.selected {
+  transform: translateY(-10px) scale(1.08) !important;
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 2px var(--gold), 0 0 28px var(--gold-glow), 0 18px 36px rgba(0,0,0,.7) !important;
+  animation: none !important;
+}
+.card.selected .card-glow { opacity:.25 !important; }
+
+/* PILAR 3 — MORTO: 2 atributos — opacidade baixa + grayscale + blur */
+.card.dead {
+  opacity: .15;
+  cursor: not-allowed;
+  filter: grayscale(1) blur(.5px);
+  transform: scale(.96);
+  animation: none;
+}
+
+/* PILAR 3 — BLOQUEADO (vez do outro jogador): dessatura ~35%, sem animação */
+.card.disabled {
+  cursor: not-allowed;
+  filter: saturate(.35);
+  opacity: .7;
+  animation: none;
+}
+
+/* PILAR 3 — EM ESPERA (carta já selecionada): shimmer loop comunica "aguardando" */
+@keyframes cardShimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.card.used {
+  opacity: .72;
+  filter: saturate(.6);
+  animation: none;
+}
+.card.used::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r);
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,255,255,.06) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: cardShimmer 2.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* inner layout */
+.card-icon-area {
+  flex: 1;
+  display:flex; align-items:center; justify-content:center;
+  font-size: clamp(22px,4.5vw,38px);
+  position:relative;
+}
+
+.card-name {
+  font-family:'Cinzel',serif;
+  font-size:clamp(7px,1.1vw,10px);
+  color:var(--gold);
+  text-align:center;
+  letter-spacing:.5px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  margin-bottom:2px;
+}
+
+.card-stats {
+  display:flex;
+  justify-content:space-between;
+  font-size:clamp(7px,1vw,10px);
+  padding:0 2px;
+  margin-bottom:3px;
+}
+.cs-atk { color:#e84040; font-weight:700; }
+.cs-def { color:#4080e8; font-weight:700; }
+
+.card-hp-row {
+  display:flex;
+  align-items:center;
+  gap:3px;
+}
+.card-hp-bar {
+  flex:1; height:5px; border-radius:3px;
+  background:rgba(255,255,255,.1); overflow:hidden;
+}
+.card-hp-fill {
+  height:100%; border-radius:3px;
+  transition:width .6s ease, background .5s;
+}
+.card-hp-val {
+  font-size:clamp(7px,1vw,10px);
+  white-space:nowrap;
+  min-width:20px;
+  text-align:right;
+}
+
+/* damage flash */
+@keyframes dmgFlash {
+  0%  { box-shadow:0 0 0 3px #ff4444,0 0 20px #ff444488; }
+  100%{ box-shadow:none; }
+}
+.dmg-flash { animation:dmgFlash .5s ease forwards; }
+
+/* card fly animation */
+@keyframes flyToField {
+  0%   { transform:translate(0,0) scale(1); opacity:1; z-index:50; }
+  40%  { transform:translate(0,-20px) scale(.9); opacity:.9; }
+  100% { transform:translate(0,-60px) scale(.6); opacity:0; }
+}
+.flying { animation:flyToField .42s ease forwards; pointer-events:none; }
+
+/* ═══════════════════════════════════════════════
+   PPR MODAL
+═══════════════════════════════════════════════ */
+.overlay {
+  display:none;
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.88);
+  backdrop-filter:blur(8px) saturate(.7);
+  z-index:300;
+  align-items:center; justify-content:center;
+}
+.overlay.show { display:flex; }
+
+.modal {
+  background:
+    linear-gradient(160deg, #28201a 0%, #1a1510 50%, #0e0c0a 100%);
+  border:1px solid var(--gold);
+  border-radius:18px;
+  padding:clamp(18px,4vw,32px);
+  max-width:360px; width:92%;
+  box-shadow:
+    0 0 0 1px rgba(201,150,58,.15),
+    0 0 60px rgba(201,150,58,.15),
+    0 30px 80px rgba(0,0,0,.8);
+  text-align:center;
+  animation:modalIn .28s cubic-bezier(.34,1.56,.64,1);
+  position:relative;
+  overflow:hidden;
+}
+.modal::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-lt),transparent);
+}
+@keyframes modalIn {
+  from { transform:scale(.82) translateY(24px); opacity:0; }
+  to   { transform:scale(1)   translateY(0);    opacity:1; }
+}
+
+.modal-player-title {
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(13px,3vw,20px);
+  color:var(--gold-lt);
+  letter-spacing:2px;
+  margin-bottom:4px;
+}
+.modal-card-preview {
+  display:flex; align-items:center; justify-content:center; gap:12px;
+  padding:10px 14px;
+  background:rgba(0,0,0,.4);
+  border-radius:10px;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,.5);
+  margin-bottom:16px;
+}
+.m-card-icon { font-size:clamp(28px,7vw,44px); }
+.m-card-info { text-align:left; }
+.m-card-name {
+  font-family:'Cinzel',serif;
+  color:var(--gold);
+  font-size:clamp(11px,2.5vw,16px);
+  margin-bottom:2px;
+}
+.m-card-stats { font-size:clamp(9px,2vw,13px); color:var(--text-dim); }
+
+.ppr-options {
+  display:flex; gap:8px; justify-content:center;
+  margin-bottom:16px;
+}
+.ppr-opt {
+  flex:1;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+  padding:clamp(10px,2.5vw,16px) clamp(4px,1.2vw,8px);
+  cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  transition: border-color .18s, background .18s, transform .18s, box-shadow .18s;
+  color:var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+/* PILAR 1 — press imediato */
+.ppr-opt:active {
+  transform: scale(.94) !important;
+  transition: transform .07s ease-out !important;
+}
+.ppr-opt:hover {
+  border-color:var(--gold);
+  background:rgba(201,150,58,.1);
+  transform:translateY(-3px) scale(1.04);
+}
+.ppr-opt.chosen {
+  border-color:var(--gold-lt);
+  background:rgba(201,150,58,.2);
+  box-shadow:0 0 18px var(--gold-glow);
+  transform:translateY(-3px) scale(1.04);
+}
+.ppr-emoji { font-size:clamp(24px,6vw,38px); }
+.ppr-name {
+  font-family:'Cinzel',serif;
+  font-size:clamp(7px,1.4vw,10px);
+  color:var(--gold);
+  letter-spacing:1px;
+}
+
+.btn-confirm {
+  font-family:'Cinzel',serif;
+  font-size:clamp(10px,2vw,14px);
+  letter-spacing:2px;
+  padding:clamp(9px,2vw,13px) clamp(24px,6vw,44px);
+  border-radius:25px;
+  border:1px solid var(--gold);
+  background:linear-gradient(135deg,#3a2800,#6a4800,#3a2800);
+  color:var(--gold-lt);
+  cursor:pointer;
+  transition: transform .18s, box-shadow .18s, opacity .18s;
+  position:relative; overflow:hidden;
+}
+/* PILAR 1 — press imediato */
+.btn-confirm:active:not(:disabled) {
+  transform: scale(.95) !important;
+  transition: transform .07s ease-out !important;
+}
+.btn-confirm:hover:not(:disabled) {
+  transform:scale(1.06);
+  box-shadow:0 0 24px var(--gold-glow), 0 6px 20px rgba(0,0,0,.5);
+}
+.btn-confirm:disabled { opacity:.28; cursor:not-allowed; transform:none; box-shadow:none; }
+
+/* ═══════════════════════════════════════════════
+   RESULT TOAST
+═══════════════════════════════════════════════ */
+#result-toast {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+#result-toast.show {
+  display: flex;
+  animation: toastIn .35s cubic-bezier(.25,.46,.45,.94);
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: scale(.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+#toast-inner {
+  background: rgba(7,6,10,.82);
+  backdrop-filter: blur(8px) saturate(.6);
+  border: 1px solid rgba(201,150,58,.35);
+  border-radius: 12px;
+  padding: 12px 22px;
+  text-align: center;
+  box-shadow: 0 0 0 1px rgba(201,150,58,.1), 0 12px 40px rgba(0,0,0,.8);
+  min-width: 200px;
+  max-width: 88vw;
+}
+#toast-main {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(10px, 2vw, 14px);
+  color: var(--text);
+  letter-spacing: 1px;
+  line-height: 1.4;
+}
+#toast-sub {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px, 1.2vw, 10px);
+  color: var(--gold-dk);
+  letter-spacing: .5px;
+  margin-top: 5px;
+  opacity: .85;
+}
+
+/* ═══════════════════════════════════════════════
+   GAME OVER SCREEN
+═══════════════════════════════════════════════ */
+#gameover-screen {
+  display:none;
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.94);
+  backdrop-filter:blur(12px) saturate(.5);
+  z-index:400;
+  align-items:center; justify-content:center;
+}
+#gameover-screen.show { display:flex; }
+
+#gameover-box {
+  text-align:center;
+  padding:clamp(28px,7vw,56px) clamp(24px,6vw,50px);
+  background:linear-gradient(160deg,#2a2010,#0e0c0a);
+  border:2px solid var(--gold);
+  border-radius:22px;
+  box-shadow:
+    0 0 0 1px rgba(201,150,58,.2),
+    0 0 80px rgba(201,150,58,.2),
+    0 40px 100px rgba(0,0,0,.9);
+  max-width:420px; width:92%;
+  animation:modalIn .4s cubic-bezier(.34,1.56,.64,1);
+  position:relative;
+  overflow:hidden;
+}
+#gameover-box::before {
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-lt),transparent);
+}
+
+#go-crown { font-size:clamp(36px,10vw,72px); margin-bottom:8px; animation:crownBob .8s ease-in-out infinite alternate; }
+@keyframes crownBob { from{transform:translateY(0)} to{transform:translateY(-6px)} }
+
+#go-title {
+  font-family:'Cinzel Decorative',serif;
+  font-size:clamp(18px,5.5vw,42px);
+  background:linear-gradient(135deg,var(--gold),var(--gold-lt),var(--gold));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  letter-spacing:3px;
+  margin-bottom:6px;
+}
+#go-subtitle {
+  color:var(--text-dim);
+  font-size:clamp(11px,2.5vw,17px);
+  margin-bottom:24px;
+  letter-spacing:.5px;
+}
+
+/* ═══════════════════════════════════════════════
+   MISC UTILS
+═══════════════════════════════════════════════ */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--gold-dk); border-radius:2px; }
+
+/* ── Mobile ── */
+@media(max-width:480px) {
+  .card { width:clamp(64px,17vw,80px); height:clamp(86px,23vw,108px); }
+  #side-p1, #side-p2 { width:clamp(36px,8vw,52px); }
+  .sp-emoji { font-size:clamp(10px,3.5vw,15px); }
+  .side-title { display:none; }
+}
+
+/* ── Desktop: escala nativa 200% ──────────────────────────────────────────
+   O jogo foi projetado para telas pequenas/mobile-first.
+   Em desktop aplicamos zoom:2 no html para que o jogo ocupe o viewport
+   como se estivesse em 200% — sem precisar mexer no zoom do navegador.
+   O zoom CSS é equivalente ao "zoom do navegador" mas controlado por código:
+   todo o layout, vw/vh, clamp(), fixed, absolute — tudo escala junto.
+   Suporte: Chrome, Edge, Safari (nativo). Firefox: usa transform fallback.
+────────────────────────────────────────────────────────────────────────── */
+@media(min-width:768px) {
+  html {
+    zoom: 1.36;
+    /* garante que o body preencha o viewport lógico com zoom 1.36 */
+    height: calc(100dvh / 1.36);
+  }
+  body {
+    height: calc(100dvh / 1.36);
+  }
+}
+
+/* ── Firefox fallback (não suporta zoom CSS, usa transform) ── */
+@supports (-moz-appearance: none) {
+  @media(min-width:768px) {
+    html {
+      zoom: unset;
+      height: 100%;
+    }
+    body {
+      height: 100dvh;
+      transform: scale(1.36);
+      transform-origin: top left;
+      width: calc(100% / 1.36);
+      overflow: hidden;
+    }
+  }
+}
+
+/* Widget Panel */
+#widget-panel {
+  position: fixed;
+  right: 12px;
+  top: 10px;
+  z-index: 150;
+  width: clamp(200px, 28vw, 280px);
+  background: linear-gradient(160deg, rgba(28,22,34,.97) 0%, rgba(14,11,18,.97) 100%);
+  border: 1px solid rgba(201,150,58,.4);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 0 0 1px rgba(201,150,58,.1), 0 0 30px rgba(201,150,58,.12), 0 16px 48px rgba(0,0,0,.7);
+  display: none;
+  animation: widgetIn .22s cubic-bezier(.34,1.56,.64,1);
+  backdrop-filter: blur(12px);
+}
+#widget-panel.open { display: block; }
+@keyframes widgetIn {
+  from { opacity:0; transform:scale(.92) translateY(-8px); }
+  to   { opacity:1; transform:scale(1)   translateY(0); }
+}
+#widget-panel::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px; border-radius:14px 14px 0 0;
+  background:linear-gradient(90deg,transparent,var(--gold-lt),transparent);
+}
+
+.wp-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(8px,1.3vw,11px);
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  /* replaced hard border with fade via gradient shadow */
+  text-shadow: 0 1px 8px rgba(201,150,58,.2);
+}
+
+.wp-player-section {
+  margin-bottom: 10px;
+}
+.wp-player-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.wp-player-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.wp-p1-dot { background: var(--p1-lt); box-shadow: 0 0 6px var(--p1-glow); }
+.wp-p2-dot { background: var(--p2-lt); box-shadow: 0 0 6px var(--p2-glow); }
+
+.wp-label-input {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(8px,1.2vw,11px);
+  color: var(--gold-lt);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(201,150,58,.25);
+  outline: none;
+  padding: 1px 3px;
+  width: 100%;
+  max-width: 120px;
+  letter-spacing: 1px;
+  transition: border-color .2s;
+}
+.wp-label-input:focus { border-color: var(--gold); }
+
+.wp-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.wp-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wp-bar-emoji { font-size: 13px; line-height: 1; flex-shrink: 0; width: 18px; text-align: center; }
+.wp-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+  position: relative;
+}
+.wp-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .6s ease, background .4s;
+  position: relative;
+}
+.wp-bar-fill::after {
+  content:'';
+  position:absolute; right:0; top:0; bottom:0; width:3px;
+  background: rgba(255,255,255,.5);
+  border-radius: 0 3px 3px 0;
+}
+.wp-bar-val {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px,1vw,9px);
+  color: var(--text-dim);
+  min-width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.wp-bar-row.dead .wp-bar-emoji { opacity: .25; filter: grayscale(1); }
+.wp-bar-row.dead .wp-bar-val { opacity: .3; }
+
+.wp-divider {
+  height: 1px;
+  background: linear-gradient(90deg,transparent,rgba(201,150,58,.2),transparent);
+  margin: 8px 0;
+}
+
+.wp-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 4px;
+  background: rgba(0,0,0,.3);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.4);
+}
+.wp-total-label {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(7px,1vw,9px);
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+.wp-total-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.06);
+  overflow: hidden;
+  margin: 0 8px;
+}
+.wp-total-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .6s ease, background .5s;
+}
+.wp-total-val {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(8px,1.1vw,10px);
+}
+</style>
+</head>
+<body>
+
+
+<!-- ══════════ MAIN ══════════ -->
+<div id="main">
+
+  <!-- Grupo P2: HP bar + cartas — slide-out para cima quando NÃO é vez do P2 -->
+  <div id="p2-group">
+    <!-- Row 0: P2 HP bar -->
+    <div id="p2-hp-bar-wrap" class="player-hp-bar-wrap">
+      <span class="php-label p2-clr" id="deck-p2-label">J2</span>
+      <div class="php-bar"><div class="php-fill" id="p2-php-fill"></div></div>
+      <span class="php-num p2-clr" id="p2-php-num">—</span>
+    </div>
+    <!-- Row 1: P2 cards -->
+    <div id="grid-p2" class="player-grid"></div>
+  </div>
+
+  <!-- Row 2: Battle field (center) -->
+  <div id="battle-area">
+
+    <!-- Field center — full width, no sides -->
+    <div id="field-center">
+      <div id="field-halves">
+        <div class="field-half" id="fh-p1">
+          <div class="field-player-tag">🔴 JOGADOR 1</div>
+          <div class="turn-badge" id="tb-p1">Sua vez</div>
+          <div class="field-slot" id="p1-slot"><span style="font-size:clamp(16px,3vw,22px);opacity:.2">✦</span></div>
+        </div>
+        <div class="field-divider"></div>
+        <div class="field-half" id="fh-p2">
+          <div class="field-player-tag">JOGADOR 2 🔵</div>
+          <div class="turn-badge" id="tb-p2">Sua vez</div>
+          <div class="field-slot" id="p2-slot"><span style="font-size:clamp(16px,3vw,22px);opacity:.2">✦</span></div>
+        </div>
+        <div id="deck-whose"><span id="whose-text">—</span></div>
+      </div>
+    </div>
+
+    <!-- Last Stats — fora de qualquer overflow:hidden -->
+    <div class="last-stats" id="ls-p1"><span class="ls-row ls-empty">—</span></div>
+    <div class="last-stats" id="ls-p2"><span class="ls-row ls-empty">—</span></div>
+
+  </div>
+
+  <!-- Grupo P1: cartas + HP bar — slide-out para baixo quando NÃO é vez do P1 -->
+  <div id="p1-group">
+    <!-- Row 3: P1 cards (bottom) -->
+    <div id="deck-area">
+      <div id="cards-grid"></div>
+    </div>
+    <!-- Row 4: P1 HP bar -->
+    <div id="p1-hp-bar-wrap" class="player-hp-bar-wrap">
+      <span class="php-label p1-clr" id="deck-p1-label">J1</span>
+      <div class="php-bar"><div class="php-fill" id="p1-php-fill"></div></div>
+      <span class="php-num p1-clr" id="p1-php-num">—</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════ REVEAL FOCUS OVERLAY ══════════ -->
+<div id="reveal-focus">
+  <button id="btn-reveal" onclick="revealRound()">✦ REVELAR ✦</button>
+</div>
+
+<!-- ══════════ WIDGET DE BARRAS ══════════ -->
+<div id="widget-panel">
+  <div class="wp-title">📊 STATUS DAS BARRAS</div>
+
+  <!-- Jogador 1 -->
+  <div class="wp-player-section" id="wp-p1-section">
+    <div class="wp-player-header">
+      <div class="wp-player-dot wp-p1-dot"></div>
+      <input class="wp-label-input" id="wp-label-p1" value="Jogador 1" maxlength="16" spellcheck="false" oninput="syncWidgetLabels()">
+    </div>
+    <div class="wp-bar-list" id="wp-bars-p1"></div>
+    <div class="wp-total-row">
+      <span class="wp-total-label">TOTAL</span>
+      <div class="wp-total-bar"><div class="wp-total-fill" id="wp-total-fill-p1"></div></div>
+      <span class="wp-total-val p1-clr" id="wp-total-val-p1">—</span>
+    </div>
+  </div>
+
+  <div class="wp-divider"></div>
+
+  <!-- Jogador 2 -->
+  <div class="wp-player-section" id="wp-p2-section">
+    <div class="wp-player-header">
+      <div class="wp-player-dot wp-p2-dot"></div>
+      <input class="wp-label-input" id="wp-label-p2" value="Jogador 2" maxlength="16" spellcheck="false" oninput="syncWidgetLabels()">
+    </div>
+    <div class="wp-bar-list" id="wp-bars-p2"></div>
+    <div class="wp-total-row">
+      <span class="wp-total-label">TOTAL</span>
+      <div class="wp-total-bar"><div class="wp-total-fill" id="wp-total-fill-p2"></div></div>
+      <span class="wp-total-val p2-clr" id="wp-total-val-p2">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PPR MODAL ══════════ -->
+<div class="overlay" id="ppr-overlay">
+  <div class="modal">
+    <div class="modal-player-title" id="m-player">—</div>
+    <div class="modal-card-preview">
+      <div class="m-card-icon" id="m-icon">—</div>
+      <div class="m-card-info">
+        <div class="m-card-name" id="m-name">—</div>
+        <div class="m-card-stats" id="m-stats">—</div>
+      </div>
+    </div>
+    <div class="ppr-options">
+      <div class="ppr-opt" onclick="choosePPR(this,'pedra')">
+        <span class="ppr-emoji">🪨</span><span class="ppr-name">PEDRA</span>
+      </div>
+      <div class="ppr-opt" onclick="choosePPR(this,'papel')">
+        <span class="ppr-emoji">📄</span><span class="ppr-name">PAPEL</span>
+      </div>
+      <div class="ppr-opt" onclick="choosePPR(this,'tesoura')">
+        <span class="ppr-emoji">✂️</span><span class="ppr-name">TESOURA</span>
+      </div>
+    </div>
+    <button class="btn-confirm" id="m-confirm" disabled onclick="confirmChoice()">Confirmar</button>
+  </div>
+</div>
+
+<!-- ══════════ RESULT TOAST ══════════ -->
+<div id="result-toast">
+  <div id="toast-inner">
+    <div id="toast-main">—</div>
+    <div id="toast-sub">—</div>
+  </div>
+</div>
+
+<!-- ══════════ GAME OVER ══════════ -->
+<div id="gameover-screen">
+  <div id="gameover-box">
+    <div id="go-crown">👑</div>
+    <div id="go-title">—</div>
+    <div id="go-subtitle">—</div>
+    <button class="btn-confirm" onclick="restartGame()">Jogar Novamente</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════
+   CARD DEFINITIONS
+   maxHp=6, ATK/DEF inalterados, mult ×1.45
+   Dano médio ~5/rod sobre HP=6 → cartas morrem em 1-2 rodadas
+   Partida estimada: ~5-7 rodadas
+══════════════════════════════════════════════ */
+const CARD_DEFS = [
+  { id:'fire',  name:'Inferno',    icon:'🔥', cls:'fire',    atk:9, def:2, maxHp:6 },
+  { id:'water', name:'Maré',       icon:'💧', cls:'water',   atk:6, def:5, maxHp:6 },
+  { id:'earth', name:'Terra',      icon:'🌍', cls:'earth',   atk:5, def:6, maxHp:6 },
+  { id:'storm', name:'Tempestade', icon:'🌪', cls:'storm',   atk:7, def:4, maxHp:6 },
+  { id:'elec',  name:'Relâmpago',  icon:'⚡', cls:'electric',atk:8, def:2, maxHp:6 },
+];
+
+const MAX_HP_TOTAL = CARD_DEFS.reduce((s,c)=>s+c.maxHp,0); // 70
+
+const PPR = {
+  pedra:   { beats:'tesoura', icon:'🪨' },
+  papel:   { beats:'pedra',   icon:'📄' },
+  tesoura: { beats:'papel',   icon:'✂️' },
+};
+
+/* ══════════════════════════════════════════════
+   GAME STATE
+══════════════════════════════════════════════ */
+let G;
+
+function mkDeck() { return CARD_DEFS.map(d=>({...d,hp:d.maxHp})); }
+
+function initGame() {
+  G = {
+    round: 1,
+    phase: 'p1select',
+    // shared deck — both players read same hp values
+    deck: mkDeck(),
+    // per-player tracking (independent hp for p1 and p2)
+    p1: { hp: mkDeck().map(d=>({id:d.id,hp:d.maxHp})), sel:null, ppr:null },
+    p2: { hp: mkDeck().map(d=>({id:d.id,hp:d.maxHp})), sel:null, ppr:null },
+    revealed: false,
+    _modalPlayer: null,
+    _modalCard: null,
+    _modalPPR: null,
+  };
+}
+
+// Get card from shared def
+const cdef = id => CARD_DEFS.find(c=>c.id===id);
+
+// Get player card hp entry
+const phpe = (player,id) => G[player].hp.find(c=>c.id===id);
+
+// Player total hp
+const totalHp = player => G[player].hp.reduce((s,c)=>s+c.hp,0);
+
+// hp color
+function hpColor(hp,max) {
+  const r = hp/max;
+  return r>.6 ? '#3ec96a' : r>.3 ? '#f0a020' : '#e83030';
+}
+
+/* ══════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════ */
+function render() {
+  renderDeck();
+  renderSidePanels();
+  renderPlayerHpBars();
+  renderPhase();
+  renderWidget();
+}
+
+/* ── Deck ── */
+function renderPlayerGrid(player, containerId) {
+  const grid = document.getElementById(containerId);
+  grid.innerHTML = '';
+  const isSelect = G.phase === (player==='p1' ? 'p1select' : 'p2select');
+
+  G.deck.forEach(c => {
+    const div = document.createElement('div');
+    div.className = `card ${c.cls}`;
+    div.dataset.id = c.id;
+
+    const pHp     = phpe(player, c.id).hp;
+    const dead    = pHp <= 0;
+    const usedThis = G[player].sel === c.id;
+
+    if(dead)           div.classList.add('dead');
+    else if(usedThis)  div.classList.add('used');
+    else if(isSelect)  { div.classList.add('selectable'); div.addEventListener('click', ()=>openModal(c.id, player)); }
+    else               div.classList.add('disabled');
+
+    const pct = Math.max(0, pHp / c.maxHp * 100);
+    const col = hpColor(pHp, c.maxHp);
+
+    div.innerHTML = `
+      <div class="card-glow"></div>
+      <div class="card-icon-area">${c.icon}</div>
+      <div class="card-name">${c.name}</div>
+      <div class="card-stats">
+        <span class="cs-atk">⚔${c.atk}</span>
+        <span class="cs-def">🛡${c.def}</span>
+      </div>
+      <div class="card-hp-row">
+        <div class="card-hp-bar">
+          <div class="card-hp-fill" style="width:${pct}%;background:${col}"></div>
+        </div>
+        <span class="card-hp-val" style="color:${col}">${pHp}</span>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+function renderDeck() {
+  renderPlayerGrid('p1', 'cards-grid');
+  renderPlayerGrid('p2', 'grid-p2');
+}
+
+/* ── Side panels removidos — HP agora nas player-grids ── */
+function renderSidePanels() { /* no-op */ }
+
+/* ── Player HP bars ── */
+function renderPlayerHpBars() {
+  ['p1','p2'].forEach(p => {
+    const t   = totalHp(p);
+    const pct = Math.max(0,t/MAX_HP_TOTAL*100);
+    const col = hpColor(t,MAX_HP_TOTAL);
+    document.getElementById(`${p}-php-fill`).style.cssText = `width:${pct}%;background:${col}`;
+    document.getElementById(`${p}-php-num`).textContent     = t;
+  });
+}
+
+/* ── Phase UI ── */
+function renderPhase() {
+  const whose   = document.getElementById('whose-text');
+
+  // field halves active state
+  document.getElementById('fh-p1').classList.toggle('active', G.phase==='p1select');
+  document.getElementById('fh-p2').classList.toggle('active', G.phase==='p2select');
+  // highlight active player grid
+  document.getElementById('cards-grid').classList.toggle('grid-active', G.phase==='p1select');
+  document.getElementById('grid-p2').classList.toggle('grid-active',    G.phase==='p2select');
+
+  // COOP — grupo P2 sobe pra fora quando não é a vez dele
+  document.getElementById('p2-group').classList.toggle('hidden-up',   G.phase !== 'p2select');
+  // COOP — grupo P1 desce pra fora quando não é a vez dele
+  document.getElementById('p1-group').classList.toggle('hidden-down', G.phase !== 'p1select');
+
+  // turn badges
+  document.getElementById('tb-p1').classList.toggle('show', G.phase==='p1select');
+  document.getElementById('tb-p2').classList.toggle('show', G.phase==='p2select');
+
+  // Focus overlay — escurece tudo quando é hora de revelar
+  document.getElementById('reveal-focus').classList.toggle('show', G.phase==='reveal');
+
+  const whoseLabels = {
+    p1select: 'Vez do Jogador 1',
+    p2select: 'Vez do Jogador 2',
+    reveal:   'Ambos jogaram!',
+    done:     'Próxima rodada →',
+    gameover: '—',
+  };
+  whose.textContent = whoseLabels[G.phase] || '—';
+
+  renderSlots();
+}
+
+/* ── Slots ── */
+function renderSlots() {
+  setSlot('p1');
+  setSlot('p2');
+}
+function setSlot(p) {
+  const slot   = document.getElementById(`${p}-slot`);
+  const cardId = G[p].sel;
+  const ppr    = G[p].ppr;
+  if(!cardId) {
+    slot.innerHTML='<span style="font-size:clamp(16px,3vw,22px);opacity:.2">✦</span>';
+    slot.classList.remove('occupied');
+    return;
+  }
+  slot.classList.add('occupied');
+  const c = cdef(cardId);
+  if(!G.revealed) {
+    slot.innerHTML=`<div class="face-down">🎴</div>`;
+  } else {
+    slot.innerHTML=`
+      <div class="face-up">
+        <span class="fu-icon">${c.icon}</span>
+        ${ppr?`<span class="fu-ppr">${PPR[ppr].icon} ${ppr}</span>`:''}
+      </div>`;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════ */
+function openModal(cardId, player) {
+  const ph = phpe(player,cardId);
+  if(!ph||ph.hp<=0) return;
+  if(G[player].sel===cardId) return;
+
+  G._modalPlayer=player;
+  G._modalCard=cardId;
+  G._modalPPR=null;
+
+  const c = cdef(cardId);
+  document.getElementById('m-player').textContent =
+    player==='p1'?'🔴 Jogador 1':'🔵 Jogador 2';
+  document.getElementById('m-icon').textContent  = c.icon;
+  document.getElementById('m-name').textContent  = c.name;
+  document.getElementById('m-stats').textContent = `⚔ ${c.atk}   🛡 ${c.def}   ❤ ${ph.hp}/${c.maxHp}`;
+
+  document.querySelectorAll('.ppr-opt').forEach(b=>b.classList.remove('chosen'));
+  document.getElementById('m-confirm').disabled=true;
+  document.getElementById('ppr-overlay').classList.add('show');
+}
+
+function choosePPR(btn,choice) {
+  document.querySelectorAll('.ppr-opt').forEach(b=>b.classList.remove('chosen'));
+  btn.classList.add('chosen');
+  G._modalPPR=choice;
+  document.getElementById('m-confirm').disabled=false;
+}
+
+function confirmChoice() {
+  if(!G._modalPPR) return;
+  const p=G._modalPlayer;
+  G[p].sel=G._modalCard;
+  G[p].ppr=G._modalPPR;
+  document.getElementById('ppr-overlay').classList.remove('show');
+  G.phase=p==='p1'?'p2select':'reveal';
+  G.revealed=false;
+  // P1 confirmou: é a primeira jogada da rodada, some os last-stats da rodada anterior
+  if(p==='p1') {
+    document.getElementById('ls-p1').classList.remove('show');
+    document.getElementById('ls-p2').classList.remove('show');
+  }
+  render();
+}
+
+/* ══════════════════════════════════════════════
+   REVEAL
+══════════════════════════════════════════════ */
+function revealRound() {
+  const id1=G.p1.sel, id2=G.p2.sel;
+  const c1=cdef(id1),  c2=cdef(id2);
+  const ph1=phpe('p1',id1), ph2=phpe('p2',id2);
+  const r1=G.p1.ppr,  r2=G.p2.ppr;
+
+  const applyDmg = raw => Math.max(1,Math.ceil(raw*1.45));
+
+  let main='', sub='', dmgTo1=0, dmgTo2=0;
+
+  if(r1===r2){
+    dmgTo1=2; dmgTo2=2;
+    main=`⚖ Empate! ${PPR[r1].icon} vs ${PPR[r2].icon}`;
+    sub=`Cada carta perde 2 pontos de vida`;
+  } else if(PPR[r1].beats===r2){
+    const raw=Math.max(1,c1.atk-c2.def);
+    dmgTo2=applyDmg(raw);
+    main=`🔴 Jogador 1 vence! ${PPR[r1].icon} derrota ${PPR[r2].icon}`;
+    sub=`${c1.icon} ${c1.atk}⚔ − ${c2.def}🛡 ×1.45 = ${dmgTo2} de dano`;
+  } else {
+    const raw=Math.max(1,c2.atk-c1.def);
+    dmgTo1=applyDmg(raw);
+    main=`🔵 Jogador 2 vence! ${PPR[r2].icon} derrota ${PPR[r1].icon}`;
+    sub=`${c2.icon} ${c2.atk}⚔ − ${c1.def}🛡 ×1.45 = ${dmgTo1} de dano`;
+  }
+
+  ph1.hp=Math.max(0,ph1.hp-dmgTo1);
+  ph2.hp=Math.max(0,ph2.hp-dmgTo2);
+
+  if(ph1.hp===0) sub+=` — 💀 ${c1.name} destruída!`;
+  if(ph2.hp===0) sub+=` — 💀 ${c2.name} destruída!`;
+
+  const p1Dead = G.p1.hp.every(c=>c.hp<=0);
+  const p2Dead = G.p2.hp.every(c=>c.hp<=0);
+
+  const rf = document.getElementById('reveal-focus');
+
+  // 1) Fade-out do overlay (400ms)
+  rf.classList.remove('show');
+  rf.classList.add('hiding');
+
+  // 2) Apos fade: revela as cartas (flip animation)
+  setTimeout(()=>{
+    rf.classList.remove('hiding');
+    G.revealed=true;
+    renderSlots();
+  }, 420);
+
+  // 3) Apos flip (~400ms): flash de dano
+  setTimeout(()=>{
+    if(dmgTo1>0) flashSlot('p1');
+    if(dmgTo2>0) flashSlot('p2');
+  }, 750);
+
+  // 4) Pausa dramática: last-stats + toast
+  setTimeout(()=>{
+    G.phase='done';
+    renderPhase();
+    showToast(main,sub);
+    const winner = r1===r2 ? 0 : (PPR[r1].beats===r2 ? 1 : 2);
+    updateLastStats('p1', c1, r1, dmgTo1, dmgTo2, winner);
+    updateLastStats('p2', c2, r2, dmgTo2, dmgTo1, winner);
+  }, 1200);
+
+  // 5) Pausa de leitura, depois avança
+  if(p1Dead||p2Dead) {
+    setTimeout(()=>showGameOver(p1Dead,p2Dead), 3000);
+    return;
+  }
+
+  setTimeout(()=>{
+    hideToast();
+    nextRound();
+  }, 3000);
+}
+
+function updateLastStats(p, card, ppr, dmgReceived, dmgDealt, winner) {
+  const el = document.getElementById(`ls-${p}`);
+  if(!el) return;
+
+  const PPRobj = PPR[ppr] || {};
+  const isP1 = p === 'p1';
+
+  let winnerHTML = '';
+  if(winner === 0) {
+    winnerHTML = `<span class="ls-row ls-winner">⚖ Empate</span>`;
+  } else if((winner===1 && isP1) || (winner===2 && !isP1)) {
+    winnerHTML = `<span class="ls-row ls-winner ${p}">✦ Venceu</span>`;
+  } else {
+    winnerHTML = `<span class="ls-row ls-winner" style="color:var(--text-dim)">✗ Perdeu</span>`;
+  }
+
+  const dmgDealtHTML  = dmgDealt  > 0 ? `<span class="ls-row ls-dmg">⚔ ${dmgDealt} de dano causado</span>` : '';
+  const dmgRecvHTML   = dmgReceived > 0 ? `<span class="ls-row" style="color:#aaa">🛡 ${dmgReceived} de dano recebido</span>` : '';
+
+  el.innerHTML = `
+    <span class="ls-row"><span class="ls-icon">${card.icon}</span> <span class="ls-name">${card.name}</span></span>
+    <span class="ls-row ls-ppr">${PPRobj.icon||''} ${ppr||''}</span>
+    ${winnerHTML}
+    ${dmgDealtHTML}
+    ${dmgRecvHTML}
+  `;
+
+  // Fade in com pequeno delay para não colidir com o toast
+  requestAnimationFrame(()=>{ el.classList.add('show'); });
+}
+
+function flashSlot(p) {
+  const slot=document.getElementById(`${p}-slot`);
+  slot.classList.add('dmg-flash');
+  setTimeout(()=>slot.classList.remove('dmg-flash'),550);
+}
+
+function showToast(main,sub) {
+  document.getElementById('toast-main').textContent=main;
+  document.getElementById('toast-sub').textContent=sub;
+  document.getElementById('result-toast').classList.add('show');
+}
+function hideToast() {
+  document.getElementById('result-toast').classList.remove('show');
+}
+
+/* ══════════════════════════════════════════════
+   NEXT ROUND
+══════════════════════════════════════════════ */
+function nextRound() {
+  G.round++;
+  G.phase='p1select';
+  G.p1.sel=null; G.p1.ppr=null;
+  G.p2.sel=null; G.p2.ppr=null;
+  G.revealed=false;
+
+  ['p1','p2'].forEach(p=>{
+    const s=document.getElementById(`${p}-slot`);
+    s.innerHTML='<span style="font-size:clamp(16px,3vw,22px);opacity:.2">✦</span>';
+    s.classList.remove('occupied');
+  });
+
+  render();
+}
+
+/* ══════════════════════════════════════════════
+   GAME OVER
+══════════════════════════════════════════════ */
+function showGameOver(p1Dead,p2Dead) {
+  let title='', sub='';
+  if(p1Dead&&p2Dead) {
+    title='EMPATE!';
+    sub='Ambos os jogadores foram eliminados';
+  } else if(p2Dead) {
+    title='JOGADOR 1 VENCE!';
+    sub=`Vitória em ${G.round} rodadas`;
+  } else {
+    title='JOGADOR 2 VENCE!';
+    sub=`Vitória em ${G.round} rodadas`;
+  }
+  document.getElementById('go-title').textContent=title;
+  document.getElementById('go-subtitle').textContent=sub;
+  document.getElementById('gameover-screen').classList.add('show');
+  G.phase='gameover';
+}
+
+/* ══════════════════════════════════════════════
+   RESTART
+══════════════════════════════════════════════ */
+function restartGame() {
+  document.getElementById('gameover-screen').classList.remove('show');
+  hideToast();
+  ['p1','p2'].forEach(p=>{
+    const s=document.getElementById(`${p}-slot`);
+    s.innerHTML='<span style="font-size:clamp(16px,3vw,22px);opacity:.2">✦</span>';
+    s.classList.remove('occupied');
+  });
+  initGame();
+  render();
+}
+
+/* ══════════════════════════════════════════════
+   WIDGET DE BARRAS
+══════════════════════════════════════════════ */
+let widgetOpen = false;
+
+function toggleWidget() {
+  widgetOpen = !widgetOpen;
+  const panel = document.getElementById('widget-panel');
+  panel.classList.toggle('open', widgetOpen);
+  if(widgetOpen) renderWidget();
+}
+
+function syncWidgetLabels() {
+  const l1 = document.getElementById('wp-label-p1').value || 'Jogador 1';
+  const l2 = document.getElementById('wp-label-p2').value || 'Jogador 2';
+
+  // update deck header abbreviations
+  const d1 = document.getElementById('deck-p1-label');
+  const d2 = document.getElementById('deck-p2-label');
+  if(d1) d1.textContent = l1.slice(0,4);
+  if(d2) d2.textContent = l2.slice(0,4);
+
+  // update the deck-whose text dynamically
+  const whose = document.getElementById('whose-text');
+  if(G.phase === 'p1select') whose.textContent = `Vez de ${l1}`;
+  else if(G.phase === 'p2select') whose.textContent = `Vez de ${l2}`;
+
+  // update side panel titles
+  const s1 = document.querySelector('#side-p1 .side-title');
+  const s2 = document.querySelector('#side-p2 .side-title');
+  if(s1) s1.textContent = l1.slice(0,3);
+  if(s2) s2.textContent = l2.slice(0,3);
+
+  // update field player tags
+  const ft1 = document.querySelector('#fh-p1 .field-player-tag');
+  const ft2 = document.querySelector('#fh-p2 .field-player-tag');
+  if(ft1) ft1.textContent = `🔴 ${l1.toUpperCase()}`;
+  if(ft2) ft2.textContent = `${l2.toUpperCase()} 🔵`;
+}
+
+// Widget auto-update hook — called at end of every render cycle
+function renderWidget() {
+  if(!widgetOpen) return;
+  ['p1','p2'].forEach(p => {
+    const barList = document.getElementById(`wp-bars-${p}`);
+    if(!barList) return;
+    barList.innerHTML = '';
+
+    CARD_DEFS.forEach(c => {
+      const ph  = phpe(p, c.id);
+      const pct = Math.max(0, ph.hp / c.maxHp * 100);
+      const col = hpColor(ph.hp, c.maxHp);
+      const dead = ph.hp <= 0;
+
+      const row = document.createElement('div');
+      row.className = 'wp-bar-row' + (dead ? ' dead' : '');
+      row.innerHTML = `
+        <span class="wp-bar-emoji">${c.icon}</span>
+        <div class="wp-bar-track">
+          <div class="wp-bar-fill" style="width:${pct}%;background:${col}"></div>
+        </div>
+        <span class="wp-bar-val" style="color:${col}">${ph.hp}</span>`;
+      barList.appendChild(row);
+    });
+
+    // total bar
+    const t   = totalHp(p);
+    const pct = Math.max(0, t / MAX_HP_TOTAL * 100);
+    const col = hpColor(t, MAX_HP_TOTAL);
+    const fillEl = document.getElementById(`wp-total-fill-${p}`);
+    const valEl  = document.getElementById(`wp-total-val-${p}`);
+    if(fillEl) fillEl.style.cssText = `width:${pct}%;background:${col}`;
+    if(valEl)  { valEl.textContent = t; valEl.style.color = col; }
+  });
+}
+
+/* ══════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════ */
+initGame();
+render();
+</script>
+
+
+<!-- ══════════ GPC SCRIPT ══════════ -->
+<script>
+const GPC = (() => {
+  // Speed multipliers — 128× no centro, escala simétrica
+  // 8 → 32 → 64 → 128 → 256 → 512 → 1024
+  const SPEEDS = [8, 32, 64, 128, 256, 512, 1024];
+  const BASE_ROUND_DELAY = 2200;
+  let currentIdx = 3; // default: 128×
+
+  function applySpeed() {
+    const s = SPEEDS[currentIdx];
+    document.documentElement.style.setProperty('--pace-speed', s);
+    const el = document.getElementById('gpc-speed-val');
+    if (el) {
+      // Show clean label: 1× 2× etc
+      el.textContent = (Number.isInteger(s) ? s : s) + '×';
+    }
+  }
+
+  function t(baseMs) {
+    const s = SPEEDS[currentIdx];
+    return Math.round(baseMs / s);
+  }
+
+  function step(dir) {
+    const next = currentIdx + dir;
+    if (next < 0 || next >= SPEEDS.length) return;
+    currentIdx = next;
+    applySpeed();
+  }
+
+  // Init after DOM ready
+  const init = () => applySpeed();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 0);
+  }
+
+  return { t, step };
+})();
+</script>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║  SEGMENTATION MODE — NON-DESTRUCTIVE OVERLAY SYSTEM v1.0        ║
+     ║  Toggle with: Ctrl+Shift+S  or  window.__seg.toggle()           ║
+     ║  Export with: window.__seg.export()                             ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+
+<style id="seg-styles">
+/* ════════════════════════════════════════════════
+   SEGMENTATION WIDGET — Neutral system identity
+   Fonts: system-ui only. Colors: gray + blue accent.
+   Zero overlap with game's Cinzel/gold palette.
+════════════════════════════════════════════════ */
+:root {
+  --seg-bg:        #1a1d21;
+  --seg-surface:   #22262c;
+  --seg-border:    rgba(255,255,255,0.10);
+  --seg-border-md: rgba(255,255,255,0.16);
+  --seg-text:      #d4d8de;
+  --seg-muted:     #6b7280;
+  --seg-accent:    #4f8ef7;
+  --seg-accent-lt: #7eb0ff;
+  --seg-danger:    #ef4444;
+  --seg-font:      system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --seg-mono:      'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ── FAB trigger button — now lives inside #fab-dock ── */
+#seg-fab {
+  position: static;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--seg-bg);
+  border: 1px solid var(--seg-border-md);
+  color: var(--seg-muted);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  font-family: var(--seg-mono);
+  line-height: 1;
+  flex-shrink: 0;
+}
+#seg-fab:hover { border-color: var(--seg-accent); color: var(--seg-accent); background: rgba(79,142,247,0.08); }
+#seg-fab.active { border-color: var(--seg-accent); color: var(--seg-accent-lt); background: rgba(79,142,247,0.14); }
+
+/* tooltip handled by native title attribute */
+
+/* ── Overlay root ── */
+#seg-overlay-root {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  pointer-events: none;
+}
+#seg-overlay-root.active { display: block; }
+
+/* ── Region boxes ── */
+.seg-region {
+  position: fixed;
+  box-sizing: border-box;
+  border: 1.5px solid transparent;
+  border-radius: 2px;
+  transition: background 0.12s;
+  pointer-events: all;
+  cursor: pointer;
+}
+.seg-region:hover   { z-index: 8100 !important; }
+.seg-region.seg-selected { z-index: 8200 !important; }
+
+/* ── Label badge ── */
+.seg-label {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  background: var(--seg-bg);
+  border: 1px solid var(--seg-border-md);
+  color: var(--seg-text);
+  font-family: var(--seg-mono);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0;
+}
+.seg-region.seg-selected .seg-label {
+  background: var(--seg-accent);
+  border-color: var(--seg-accent);
+  color: #fff;
+}
+
+/* ── Corner mark ── */
+.seg-corner {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid rgba(255,255,255,0.2);
+  border-bottom: 1.5px solid rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+
+/* ── Side panel ── */
+#seg-panel {
+  display: none;
+  position: fixed;
+  top: 0; right: 0;
+  height: 100%;
+  width: 236px;
+  z-index: 8500;
+  background: var(--seg-bg);
+  border-left: 1px solid var(--seg-border);
+  flex-direction: column;
+  font-family: var(--seg-font);
+  color: var(--seg-text);
+  overflow: hidden;
+  pointer-events: all;
+  font-size: 12px;
+}
+#seg-panel.active { display: flex; }
+
+#seg-panel-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--seg-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#seg-panel-icon {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  background: rgba(79,142,247,0.15);
+  border: 1px solid rgba(79,142,247,0.3);
+  color: var(--seg-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+#seg-panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--seg-text);
+  letter-spacing: 0;
+}
+#seg-panel-subtitle {
+  font-size: 10px;
+  color: var(--seg-muted);
+  line-height: 1.3;
+}
+
+#seg-region-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+#seg-region-list::-webkit-scrollbar { width: 3px; }
+#seg-region-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.seg-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-left: 2px solid transparent;
+}
+.seg-list-item:hover { background: rgba(255,255,255,0.04); }
+.seg-list-item.selected {
+  background: rgba(79,142,247,0.10);
+  border-left-color: var(--seg-accent);
+}
+.seg-list-dot { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
+.seg-list-name {
+  font-family: var(--seg-mono);
+  font-size: 10px;
+  color: var(--seg-text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.seg-list-item.selected .seg-list-name { color: var(--seg-accent-lt); }
+.seg-list-elem {
+  font-size: 10px;
+  color: var(--seg-muted);
+  font-family: var(--seg-mono);
+}
+
+/* ── Detail pane ── */
+#seg-detail {
+  border-top: 1px solid var(--seg-border);
+  padding: 10px 14px;
+  flex-shrink: 0;
+  background: var(--seg-surface);
+}
+#seg-detail-empty {
+  font-size: 11px;
+  color: var(--seg-muted);
+  text-align: center;
+  padding: 8px 0;
+}
+#seg-detail-form { display: none; }
+#seg-detail-form.show { display: block; }
+#seg-detail-id {
+  font-family: var(--seg-mono);
+  font-size: 10px;
+  color: var(--seg-muted);
+  margin-bottom: 8px;
+}
+#seg-name-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--seg-muted);
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+#seg-name-input {
+  width: 100%;
+  background: var(--seg-bg);
+  border: 1px solid var(--seg-border-md);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-family: var(--seg-mono);
+  font-size: 11px;
+  color: var(--seg-text);
+  outline: none;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  transition: border-color 0.12s;
+}
+#seg-name-input:focus { border-color: var(--seg-accent); }
+#seg-detail-meta {
+  font-size: 10px;
+  color: var(--seg-muted);
+  line-height: 1.8;
+  font-family: var(--seg-mono);
+}
+#seg-detail-meta span { color: var(--seg-text); }
+
+/* ── Action buttons ── */
+#seg-actions {
+  border-top: 1px solid var(--seg-border);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.seg-btn {
+  font-family: var(--seg-font);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--seg-border-md);
+  background: transparent;
+  color: var(--seg-muted);
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: center;
+}
+.seg-btn:hover { background: rgba(255,255,255,0.06); color: var(--seg-text); border-color: rgba(255,255,255,0.22); }
+.seg-btn.primary { background: var(--seg-accent); border-color: var(--seg-accent); color: #fff; }
+.seg-btn.primary:hover { background: var(--seg-accent-lt); border-color: var(--seg-accent-lt); }
+.seg-btn.danger { color: var(--seg-danger); border-color: rgba(239,68,68,0.3); }
+.seg-btn.danger:hover { background: rgba(239,68,68,0.08); border-color: var(--seg-danger); }
+
+/* ── Export modal ── */
+#seg-export-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  background: rgba(0,0,0,0.75);
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+}
+#seg-export-modal.show { display: flex; }
+#seg-export-box {
+  background: var(--seg-bg);
+  border: 1px solid var(--seg-border-md);
+  border-radius: 10px;
+  padding: 18px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: var(--seg-font);
+}
+#seg-export-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--seg-text);
+}
+#seg-export-area {
+  flex: 1;
+  background: var(--seg-surface);
+  border: 1px solid var(--seg-border);
+  border-radius: 5px;
+  padding: 12px;
+  font-family: var(--seg-mono);
+  font-size: 11px;
+  color: #93c5fd;
+  white-space: pre;
+  overflow: auto;
+  min-height: 180px;
+  max-height: 50vh;
+  line-height: 1.6;
+}
+#seg-export-close { align-self: flex-end; }
+#seg-copy-btn { align-self: flex-start; }
+
+/* ── Toast ── */
+#seg-toast {
+  display: none;
+  position: fixed;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: var(--seg-bg);
+  border: 1px solid var(--seg-border-md);
+  color: var(--seg-text);
+  font-family: var(--seg-font);
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#seg-toast.show { display: block; }
+
+/* ── Pointer isolation when overlay is active ── */
+#seg-overlay-root.active ~ #main,
+#seg-overlay-root.active ~ #widget-panel,
+#seg-overlay-root.active ~ .overlay,
+#seg-overlay-root.active ~ #result-toast,
+#seg-overlay-root.active ~ #gameover-screen { pointer-events: none; }
+</style>
+
+<!-- FAB Dock: seg + gpc + restart -->
+<div id="fab-dock">
+  <div id="gpc-inline" title="Velocidade do jogo">
+    <span id="gpc-icon-label">⏱</span>
+    <div id="gpc-controls">
+      <button onclick="GPC.step(-1)">−</button>
+      <span id="gpc-speed-val">1×</span>
+      <button onclick="GPC.step(+1)">+</button>
+    </div>
+  </div>
+  <button class="fab-btn" onclick="restartGame()" title="Reiniciar">↺</button>
+  <button id="seg-fab" title="Segmentation Mode (Ctrl+Shift+S)">⊞</button>
+</div>
+
+<!-- Overlay root: region boxes go here -->
+<div id="seg-overlay-root"></div>
+
+<!-- Right panel -->
+<div id="seg-panel">
+  <div id="seg-panel-header">
+    <div id="seg-panel-icon">⊞</div>
+    <div>
+      <div id="seg-panel-title">Segmentation</div>
+      <div id="seg-panel-subtitle">Elemental Clash v3 · 15 regions</div>
+    </div>
+  </div>
+
+  <div id="seg-region-list"></div>
+
+  <div id="seg-detail">
+    <div id="seg-detail-empty">← Select a region</div>
+    <div id="seg-detail-form">
+      <div id="seg-detail-id"></div>
+      <label id="seg-name-label">Label</label>
+      <input id="seg-name-input" spellcheck="false" placeholder="REGION_NAME" maxlength="32">
+      <div id="seg-detail-meta"></div>
+    </div>
+  </div>
+
+  <div id="seg-actions">
+    <button class="seg-btn primary" onclick="window.__seg.export()">↓ Export JSON</button>
+    <button class="seg-btn" onclick="window.__seg.resetLabels()">↺ Reset Labels</button>
+    <button class="seg-btn danger" onclick="window.__seg.toggle()">✕ Exit Mode</button>
+  </div>
+</div>
+
+<!-- Export modal -->
+<div id="seg-export-modal">
+  <div id="seg-export-box">
+    <div id="seg-export-title">⊞ REGION MAP EXPORT</div>
+    <div id="seg-export-area"></div>
+    <button class="seg-btn primary" id="seg-copy-btn" onclick="window.__seg.copyExport()">⎘ Copy to Clipboard</button>
+    <button class="seg-btn" id="seg-export-close" onclick="window.__seg.closeExport()">Close</button>
+  </div>
+</div>
+
+<div id="seg-toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   SEGMENTATION SYSTEM — OVERLAY MODULE
+   Architecture:
+     detection.js  — infer regions from known DOM structure
+     overlay.js    — draw + position region boxes
+     interaction.js — click, hover, rename
+     export.js     — JSON output generation
+   All under window.__seg namespace
+══════════════════════════════════════════════════════════════════ */
+(function() {
+  'use strict';
+
+  /* ─────────────────────────────────────────────────────
+     DETECTION: Known regions of Elemental Clash v3
+     Each entry: { id, label, elementId, color, description }
+     Color = hsl hue for the region border/dot
+  ───────────────────────────────────────────────────── */
+  const REGION_DEFS = [
+    { id:'topbar',        label:'TOPBAR',         elementId:'topbar',       hue:45,  desc:'Status bar: round counter, reveal button, utility controls' },
+    { id:'battle_area',   label:'BATTLE_AREA',    elementId:'battle-area',  hue:200, desc:'Main battle zone: side panels + field center' },
+    { id:'side_p1',       label:'SIDE_P1',        elementId:'side-p1',      hue:0,   desc:'Player 1 side panel: card HP mini-bars' },
+    { id:'side_p2',       label:'SIDE_P2',        elementId:'side-p2',      hue:210, desc:'Player 2 side panel: card HP mini-bars' },
+    { id:'field_center',  label:'FIELD_CENTER',   elementId:'field-center', hue:45,  desc:'Battlefield center: player field halves + divider' },
+    { id:'field_p1',      label:'FIELD_P1',       elementId:'fh-p1',        hue:0,   desc:'Player 1 field slot: active card placement area' },
+    { id:'field_p2',      label:'FIELD_P2',       elementId:'fh-p2',        hue:210, desc:'Player 2 field slot: active card placement area' },
+    { id:'deck_area',     label:'DECK_AREA',      elementId:'deck-area',    hue:120, desc:'Deck zone: player HP bars + turn indicator + card grid' },
+    { id:'deck_header',   label:'DECK_HEADER',    elementId:'deck-header',  hue:120, desc:'Deck header: player HP progress bars + DECK label' },
+    { id:'deck_whose',    label:'DECK_WHOSE',     elementId:'deck-whose',   hue:60,  desc:'Turn indicator: shows whose turn it is' },
+    { id:'cards_grid',    label:'CARDS_GRID',     elementId:'cards-grid',   hue:280, desc:'Card selection grid: all 5 elemental cards' },
+    { id:'widget_panel',  label:'WIDGET_PANEL',   elementId:'widget-panel', hue:90,  desc:'HP bars widget: floating card health tracker' },
+    { id:'ppr_overlay',   label:'PPR_MODAL',      elementId:'ppr-overlay',  hue:45,  desc:'Rock-Paper-Scissors modal overlay (hidden when inactive)' },
+    { id:'result_toast',  label:'RESULT_TOAST',   elementId:'result-toast', hue:45,  desc:'Round result toast notification' },
+    { id:'gameover',      label:'GAMEOVER_SCREEN',elementId:'gameover-screen',hue:0, desc:'Game over full-screen overlay' },
+  ];
+
+  /* ─────────────────────────────────────────────────────
+     STATE
+  ───────────────────────────────────────────────────── */
+  let active = false;
+  let regions = [];        // resolved: { ...def, el, box, rect, userLabel }
+  let selected = null;     // currently selected region id
+  let exportData = null;   // last export payload
+  const labelStore = {};   // persists userLabels across buildOverlayBoxes() rebuilds
+
+  /* ─────────────────────────────────────────────────────
+     OVERLAY MODULE
+  ───────────────────────────────────────────────────── */
+  const overlayRoot = document.getElementById('seg-overlay-root');
+
+  function buildOverlayBoxes() {
+    overlayRoot.innerHTML = '';
+    regions = [];
+
+    REGION_DEFS.forEach(def => {
+      const el = document.getElementById(def.elementId);
+      if (!el) return; // element doesn't exist in current state
+
+      const r = getRect(el);
+      if (r.width < 4 || r.height < 4) return; // invisible
+
+      // Detect z-index depth for visual stack order
+      const depth = getDepth(el);
+      const borderColor = `hsl(${def.hue}, 65%, 55%)`;
+      const bgColor     = `hsla(${def.hue}, 65%, 55%, 0.0)`;
+
+      const box = document.createElement('div');
+      box.className = 'seg-region';
+      box.dataset.regionId = def.id;
+      box.style.cssText = `
+        left: ${r.left}px;
+        top: ${r.top}px;
+        width: ${r.width}px;
+        height: ${r.height}px;
+        border-color: ${borderColor};
+        background: ${bgColor};
+        z-index: ${8000 + depth};
+      `;
+
+      const label = document.createElement('div');
+      label.className = 'seg-label';
+      label.style.borderColor = borderColor;
+      label.style.color = `hsl(${def.hue}, 80%, 70%)`;
+      label.textContent = labelStore[def.id] || def.label;
+      label.dataset.labelFor = def.id;
+      box.appendChild(label);
+
+      const corner = document.createElement('div');
+      corner.className = 'seg-corner';
+      corner.style.borderColor = borderColor.replace('55%','40%');
+      box.appendChild(corner);
+
+      box.addEventListener('click', e => {
+        e.stopPropagation();
+        selectRegion(def.id);
+      });
+      box.addEventListener('mouseenter', () => {
+        if (selected !== def.id) box.style.background = `hsla(${def.hue}, 65%, 55%, 0.06)`;
+      });
+      box.addEventListener('mouseleave', () => {
+        if (selected !== def.id) box.style.background = `hsla(${def.hue}, 65%, 55%, 0.0)`;
+      });
+
+      overlayRoot.appendChild(box);
+
+      // Restore saved label (survives overlay rebuild)
+      if (!(def.id in labelStore)) labelStore[def.id] = def.label;
+      label.textContent = labelStore[def.id];
+
+      regions.push({
+        ...def,
+        el,
+        box,
+        rect: r,
+        get userLabel() { return labelStore[def.id]; },
+        set userLabel(v) { labelStore[def.id] = v; },
+        depth,
+      });
+    });
+  }
+
+  function getRect(el) {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, width: r.width, height: r.height };
+  }
+
+  function getDepth(el) {
+    let d = 0, cur = el;
+    while (cur && cur !== document.body) { d++; cur = cur.parentElement; }
+    return d;
+  }
+
+  function refreshPositions() {
+    regions.forEach(reg => {
+      if (!reg.el || !reg.box) return;
+      const r = getRect(reg.el);
+      reg.rect = r;
+      reg.box.style.left   = r.left + 'px';
+      reg.box.style.top    = r.top + 'px';
+      reg.box.style.width  = r.width + 'px';
+      reg.box.style.height = r.height + 'px';
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────
+     INTERACTION MODULE
+  ───────────────────────────────────────────────────── */
+  function selectRegion(id) {
+    selected = id;
+
+    // Update box classes
+    regions.forEach(reg => {
+      reg.box.classList.toggle('seg-selected', reg.id === id);
+      if (reg.id !== id) {
+        reg.box.style.background = `hsla(${reg.hue}, 65%, 55%, 0.0)`;
+      } else {
+        reg.box.style.background = `hsla(${reg.hue}, 65%, 55%, 0.1)`;
+      }
+    });
+
+    // Update list
+    document.querySelectorAll('.seg-list-item').forEach(li => {
+      li.classList.toggle('selected', li.dataset.regionId === id);
+    });
+
+    // Update detail panel
+    const reg = regions.find(r => r.id === id);
+    if (!reg) return;
+
+    document.getElementById('seg-detail-empty').style.display = 'none';
+    const form = document.getElementById('seg-detail-form');
+    form.classList.add('show');
+
+    document.getElementById('seg-detail-id').textContent = `#${reg.elementId}`;
+    document.getElementById('seg-name-input').value = reg.userLabel;
+
+    const r = reg.rect;
+    document.getElementById('seg-detail-meta').innerHTML =
+      `x: ${Math.round(r.left)}  y: ${Math.round(r.top)}<br>` +
+      `w: ${Math.round(r.width)}  h: ${Math.round(r.height)}<br>` +
+      `depth: ${reg.depth}  hue: ${reg.hue}°<br>` +
+      `<span style="opacity:0.7">${reg.desc}</span>`;
+
+    // Focus input
+    setTimeout(() => document.getElementById('seg-name-input').focus(), 50);
+  }
+
+  function onNameInput() {
+    if (!selected) return;
+    const val = document.getElementById('seg-name-input').value;
+    const reg = regions.find(r => r.id === selected);
+    if (!reg) return;
+    reg.userLabel = val;  // setter writes to labelStore — survives rebuild
+
+    // Live-update the label badge on the overlay box
+    const lbl = reg.box.querySelector('.seg-label');
+    if (lbl) lbl.textContent = val || reg.label;
+
+    // Live-update the sidebar list item
+    const li = document.querySelector(`.seg-list-item[data-region-id="${selected}"] .seg-list-name`);
+    if (li) li.textContent = val || reg.label;
+  }
+
+  /* ─────────────────────────────────────────────────────
+     SIDEBAR LIST
+  ───────────────────────────────────────────────────── */
+  function renderList() {
+    const list = document.getElementById('seg-region-list');
+    list.innerHTML = '';
+
+    // Group by structural depth
+    const sorted = [...regions].sort((a,b) => a.depth - b.depth);
+
+    sorted.forEach(reg => {
+      const item = document.createElement('div');
+      item.className = 'seg-list-item';
+      item.dataset.regionId = reg.id;
+      item.innerHTML = `
+        <div class="seg-list-dot" style="background:hsl(${reg.hue},65%,55%)"></div>
+        <span class="seg-list-name">${reg.userLabel}</span>
+        <span class="seg-list-elem">#${reg.elementId}</span>
+      `;
+      item.addEventListener('click', () => selectRegion(reg.id));
+      list.appendChild(item);
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────
+     EXPORT MODULE
+  ───────────────────────────────────────────────────── */
+  function buildExportPayload() {
+    const timestamp = new Date().toISOString();
+    const payload = {
+      meta: {
+        tool: 'Elemental Clash — Segmentation Mode v1.0',
+        exported_at: timestamp,
+        region_count: regions.length,
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+      },
+      regions: regions.map(reg => ({
+        id: reg.id,
+        label: reg.userLabel,
+        element_id: reg.elementId,
+        description: reg.desc,
+        rect: {
+          x: Math.round(reg.rect.left),
+          y: Math.round(reg.rect.top),
+          width: Math.round(reg.rect.width),
+          height: Math.round(reg.rect.height),
+        },
+        dom_depth: reg.depth,
+        color_hue: reg.hue,
+      })),
+    };
+    return payload;
+  }
+
+  function showExport() {
+    exportData = buildExportPayload();
+    const json = JSON.stringify(exportData, null, 2);
+    document.getElementById('seg-export-area').textContent = json;
+    document.getElementById('seg-export-modal').classList.add('show');
+  }
+
+  function closeExport() {
+    document.getElementById('seg-export-modal').classList.remove('show');
+  }
+
+  function copyExport() {
+    if (!exportData) return;
+    const json = JSON.stringify(exportData, null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      showToast('JSON copied to clipboard!');
+    }).catch(() => {
+      showToast('Select text manually to copy');
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────
+     TOAST
+  ───────────────────────────────────────────────────── */
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('seg-toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+  }
+
+  /* ─────────────────────────────────────────────────────
+     ACTIVATION
+  ───────────────────────────────────────────────────── */
+  let resizeTimer;
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (active) refreshPositions(); }, 80);
+  }
+
+  function toggle() {
+    active = !active;
+    const fab   = document.getElementById('seg-fab');
+    const panel = document.getElementById('seg-panel');
+
+    fab.classList.toggle('active', active);
+    overlayRoot.classList.toggle('active', active);
+    panel.classList.toggle('active', active);
+
+    if (active) {
+      buildOverlayBoxes();
+      renderList();
+      selected = null;
+      document.getElementById('seg-detail-empty').style.display = '';
+      document.getElementById('seg-detail-form').classList.remove('show');
+      showToast('Segmentation mode ON');
+    } else {
+      overlayRoot.innerHTML = '';
+      regions = [];
+      selected = null;
+      closeExport();
+    }
+  }
+
+  function resetLabels() {
+    regions.forEach(reg => {
+      labelStore[reg.id] = reg.label;  // clear store to default
+      const lbl = reg.box.querySelector('.seg-label');
+      if (lbl) lbl.textContent = reg.label;
+    });
+    renderList();
+    if (selected) {
+      const reg = regions.find(r => r.id === selected);
+      if (reg) document.getElementById('seg-name-input').value = reg.label;
+    }
+    showToast('Labels reset');
+  }
+
+  /* ─────────────────────────────────────────────────────
+     EVENT WIRING
+  ───────────────────────────────────────────────────── */
+  document.getElementById('seg-fab').addEventListener('click', toggle);
+  document.getElementById('seg-name-input').addEventListener('input', onNameInput);
+  window.addEventListener('resize', onResize);
+
+  // Keyboard shortcut: Ctrl+Shift+S
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+      e.preventDefault();
+      toggle();
+    }
+  });
+
+  // Click on overlay backdrop: deselect + blur input
+  overlayRoot.addEventListener('click', e => {
+    document.getElementById('seg-name-input').blur();
+    if (e.target === overlayRoot) {
+      selected = null;
+      document.querySelectorAll('.seg-region').forEach(b => b.classList.remove('seg-selected'));
+      document.querySelectorAll('.seg-list-item').forEach(li => li.classList.remove('selected'));
+      document.getElementById('seg-detail-empty').style.display = '';
+      document.getElementById('seg-detail-form').classList.remove('show');
+    }
+  });
+
+  // Also blur when pressing Enter or Escape in the label input
+  document.getElementById('seg-name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      e.preventDefault();
+      document.getElementById('seg-name-input').blur();
+    }
+  });
+
+  /* ─────────────────────────────────────────────────────
+     PUBLIC API
+  ───────────────────────────────────────────────────── */
+  window.__seg = {
+    toggle,
+    export: showExport,
+    closeExport,
+    copyExport,
+    resetLabels,
+    getRegions: () => buildExportPayload(),
+    refresh: refreshPositions,
+  };
+
+})();
+</script>
+</body>
+</html>

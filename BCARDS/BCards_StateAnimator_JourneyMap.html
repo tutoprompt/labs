@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BCards — StateAnimator + Journey Map Corrigida</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600&family=Crimson+Pro:wght@400;600&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0d0b10;
+  --surface:  #14111a;
+  --raised:   #1c1825;
+  --card-bg:  #211d2c;
+  --gold:     #c9963a;
+  --gold-lt:  #e8be6a;
+  --gold-dk:  #7a5818;
+  --text:     #e2d9c8;
+  --text-dim: #6a6070;
+  --green:    #4ade80;
+  --blue:     #60a5fa;
+  --red:      #f87171;
+  --amber:    #fbbf24;
+  --r:        12px;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Crimson Pro', serif; }
+body { padding: 32px 24px 64px; max-width: 960px; margin: 0 auto; }
+
+/* ── HEADER ── */
+.page-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(14px, 2.2vw, 20px);
+  color: var(--gold-lt);
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+.page-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 40px;
+}
+.section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201,150,58,.2);
+}
+.section { margin-bottom: 56px; }
+
+/* ── CODE BLOCK ── */
+pre {
+  background: #0a0810;
+  border: 1px solid rgba(201,150,58,.18);
+  border-radius: var(--r);
+  padding: 20px 22px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #c8d0e4;
+  tab-size: 2;
+  white-space: pre;
+}
+.comment { color: #5a6070; }
+.keyword { color: #c9963a; }
+.string  { color: #7aca8a; }
+.func    { color: #9dc0ee; }
+.const   { color: #e8be6a; }
+.tag     { color: #f87171; }
+
+/* ── CALLOUT ── */
+.callout {
+  background: rgba(201,150,58,.06);
+  border: 1px solid rgba(201,150,58,.2);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--r) var(--r) 0;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #b8a89a;
+}
+.callout strong { color: var(--gold-lt); font-weight: 600; }
+.callout code {
+  font-family: monospace;
+  font-size: 11px;
+  background: rgba(255,255,255,.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #9dc0ee;
+}
+
+.callout.warn {
+  border-left-color: var(--amber);
+  background: rgba(251,191,36,.05);
+}
+.callout.warn strong { color: var(--amber); }
+.callout.ok {
+  border-left-color: var(--green);
+  background: rgba(74,222,128,.05);
+}
+.callout.ok strong { color: var(--green); }
+
+/* ── INTEGRATION GUIDE ── */
+.step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #b8a89a;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(201,150,58,.15);
+  border: 1px solid rgba(201,150,58,.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--gold-lt);
+  margin-top: 2px;
+}
+
+/* ── JOURNEY MAP ── */
+.journey-map {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.journey-map::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: linear-gradient(to bottom,
+    rgba(74,222,128,.4),
+    rgba(74,222,128,.3) 30%,
+    rgba(96,165,250,.4) 30%,
+    rgba(96,165,250,.3) 75%,
+    rgba(248,113,113,.4) 75%,
+    rgba(248,113,113,.3)
+  );
+  border-radius: 2px;
+}
+
+.journey-moment {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 12px 0;
+  position: relative;
+}
+.jm-marker {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 3px var(--bg);
+}
+.jm-content {
+  flex: 1;
+  background: var(--raised);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.jm-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.jm-name {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.jm-tag {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.jm-tag--inicio  { background: rgba(74,222,128,.12);  color: #4ade80; border: 1px solid rgba(74,222,128,.3); }
+.jm-tag--meio    { background: rgba(96,165,250,.12);  color: #60a5fa; border: 1px solid rgba(96,165,250,.3); }
+.jm-tag--fim     { background: rgba(248,113,113,.12); color: #f87171; border: 1px solid rgba(248,113,113,.3); }
+.jm-time {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+.jm-description {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #9a9090;
+}
+.jm-description ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.jm-description li {
+  padding: 2px 0;
+}
+.jm-description li::before {
+  content: '·';
+  margin-right: 6px;
+  color: var(--text-dim);
+}
+.jm-description code {
+  font-family: monospace;
+  font-size: 10.5px;
+  background: rgba(255,255,255,.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #9dc0ee;
+}
+.jm-fix-badge {
+  font-size: 9px;
+  background: rgba(251,191,36,.12);
+  border: 1px solid rgba(251,191,36,.3);
+  color: var(--amber);
+  padding: 1px 6px;
+  border-radius: 10px;
+  letter-spacing: .5px;
+}
+.jm-new-badge {
+  font-size: 9px;
+  background: rgba(74,222,128,.10);
+  border: 1px solid rgba(74,222,128,.3);
+  color: var(--green);
+  padding: 1px 6px;
+  border-radius: 10px;
+  letter-spacing: .5px;
+}
+
+/* ── DIFF TABLE ── */
+.diff-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+.diff-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--gold);
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(201,150,58,.2);
+}
+.diff-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+.diff-old { color: #f87171; text-decoration: line-through; font-family: monospace; font-size: 11px; }
+.diff-new { color: #4ade80; font-family: monospace; font-size: 11px; }
+.diff-reason { color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">ELEMENTAL CLASH — STATE SYSTEM</h1>
+<p class="page-sub">StateAnimator + Journey Map Corrigida · v29 prep</p>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     SEÇÃO 1 — JOURNEY MAP CORRIGIDA
+══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">① Journey Map Corrigida — 9 momentos</div>
+
+  <div class="callout warn" style="margin-bottom:24px">
+    <strong>O que mudou vs v28:</strong> typo <code>figh03 → fight03</code> corrigido · estado <code>pre-reveal</code> adicionado (gap identificado na análise) · <code>fight02/fight03</code> renomeados para <code>fight-impact/fight-result</code> com semântica explícita · estado <code>round-end</code> adicionado como slot de fim de ciclo.
+  </div>
+
+  <!-- Diff rápido -->
+  <table class="diff-table">
+    <thead><tr><th>Antes</th><th>Depois</th><th>Motivo</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="diff-old">figh03</td>
+        <td class="diff-new">fight03 → fight-result</td>
+        <td class="diff-reason">Typo quebraria seletores CSS e data-attributes</td>
+      </tr>
+      <tr>
+        <td class="diff-old">(ausente)</td>
+        <td class="diff-new">pre-reveal</td>
+        <td class="diff-reason">Gap entre p202 e reveal — overlay "AMBOS JOGARAM" é estado visual distinto</td>
+      </tr>
+      <tr>
+        <td class="diff-old">fight02</td>
+        <td class="diff-new">fight-impact</td>
+        <td class="diff-reason">Semântica: frame do impacto/colisão — pico da animação de soco</td>
+      </tr>
+      <tr>
+        <td class="diff-old">fight03 (era figh03)</td>
+        <td class="diff-new">fight-result</td>
+        <td class="diff-reason">Semântica: vencedor em loop, perdedor saindo, resultado visível</td>
+      </tr>
+      <tr>
+        <td class="diff-old">(ausente)</td>
+        <td class="diff-new">round-end</td>
+        <td class="diff-reason">Toast de resultado + slot para próxima rodada / game over</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Journey Map Visual -->
+  <div class="journey-map" data-total="9">
+
+    <!-- MOMENTO 1 -->
+    <div class="journey-moment" data-phase="inicio" data-index="1">
+      <div class="jm-marker" style="background:#4ade80">1</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">p1-idle · p101</span>
+          <span class="jm-tag jm-tag--inicio">INÍCIO</span>
+          <span class="jm-time">22:43:33</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li><code>#zone-p1</code> com <code>.zone-turn-active</code> (escala + opacidade cheia)</li>
+            <li><code>#zone-p2</code> com <code>.zone-turn-inactive</code> (dimmed + saturate 0.6)</li>
+            <li><code>#ctx-icon-p1</code> visível — <code>Show.svg</code> + <code>.phase-select</code> + <code>.icon-flipped</code></li>
+            <li><code>#ctx-icon-p2</code> oculto (<code>opacity:0</code>)</li>
+            <li>Deck P1: <code>data-face="up"</code>, <code>data-deck-state="active"</code>, cartas <code>.selectable</code></li>
+            <li>Deck P2: <code>data-face="down"</code>, <code>data-deck-state="inactive"</code></li>
+            <li>Hint P1: texto "Escolha uma carta"</li>
+            <li><code>#reveal-focus</code> oculto · <code>#result-toast</code> oculto</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 2 -->
+    <div class="journey-moment" data-phase="inicio" data-index="2">
+      <div class="jm-marker" style="background:#4ade80">2</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">p1-selected · p102</span>
+          <span class="jm-tag jm-tag--inicio">INÍCIO</span>
+          <span class="jm-time">22:44:04</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li><code>#card-focus-overlay</code> com <code>.show</code> — carta selecionada no centro</li>
+            <li>Botões PPR visíveis com stagger fade+scale (<code>--ppr-i</code>)</li>
+            <li><code>#ctx-icon-p1</code> oculto enquanto overlay está aberto (<code>_pprIconLock</code>)</li>
+            <li>ENGINE: <code>state.pending.player = 'p1'</code>, <code>state.pending.cardId</code> preenchido</li>
+            <li>ENGINE: <code>state.phase = 'p1select'</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 3 -->
+    <div class="journey-moment" data-phase="meio" data-index="3">
+      <div class="jm-marker" style="background:#60a5fa">3</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">p2-idle · p201</span>
+          <span class="jm-tag jm-tag--meio">MEIO</span>
+          <span class="jm-time">22:45:02</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li><code>#zone-p2</code> com <code>.zone-turn-active</code> (rotação 180° + scale ativo)</li>
+            <li><code>#zone-p1</code> com <code>.zone-turn-inactive</code></li>
+            <li><code>#ctx-icon-p2</code> visível — <code>Show.svg</code> + <code>.phase-select</code> + <code>.icon-flipped</code> + <code>.icon-flipped-v</code></li>
+            <li>Deck P1: <code>data-face="down"</code> (flipou após confirmação P1)</li>
+            <li>Deck P2: <code>data-face="up"</code>, cartas <code>.selectable</code></li>
+            <li>ENGINE: <code>state.phase = 'p2select'</code></li>
+            <li>ENGINE: <code>state.p1.sel</code> e <code>state.p1.ppr</code> preenchidos</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 4 -->
+    <div class="journey-moment" data-phase="meio" data-index="4">
+      <div class="jm-marker" style="background:#60a5fa">4</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">p2-selected · p202</span>
+          <span class="jm-tag jm-tag--meio">MEIO</span>
+          <span class="jm-time">22:45:19</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li><code>#card-focus-overlay</code> com <code>.show</code> — carta P2 no centro (zona girada)</li>
+            <li>Botões PPR visíveis para P2</li>
+            <li>ENGINE: <code>state.pending.player = 'p2'</code></li>
+            <li>Mesma estrutura de p102, mas na zona superior (rotação 180°)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 5 — NOVO -->
+    <div class="journey-moment" data-phase="meio" data-index="5">
+      <div class="jm-marker" style="background:#60a5fa">5</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">pre-reveal</span>
+          <span class="jm-tag jm-tag--meio">MEIO</span>
+          <span class="jm-new-badge">NOVO</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li><code>#reveal-focus</code> com <code>.show</code> — overlay escuro visível</li>
+            <li><code>#reveal-ok-icon</code> animando (<code>OK.svg</code> pulsando)</li>
+            <li><code>#reveal-label</code> exibindo "AMBOS JOGARAM"</li>
+            <li><code>#btn-reveal</code> visível e bouncing — aguarda clique do jogador</li>
+            <li>Ambos os decks: <code>data-face="down"</code> (P2 flipou ao confirmar)</li>
+            <li>ENGINE: <code>state.phase = 'reveal'</code></li>
+            <li>Ambos os ctx-icons ocultos (<code>updateCtxIcon('reveal')</code> limpou)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 6 -->
+    <div class="journey-moment" data-phase="meio" data-index="6">
+      <div class="jm-marker" style="background:#60a5fa">6</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">reveal</span>
+          <span class="jm-tag jm-tag--meio">MEIO</span>
+          <span class="jm-time">22:45:37</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li><code>#reveal-focus</code> com <code>.hiding</code> → fade out</li>
+            <li>Ambos os decks: <code>revealDeck()</code> chamado — cartas virando face-up simultâneas</li>
+            <li><code>data-face="up"</code> nos dois decks após animação (~520ms)</li>
+            <li>Cartas P1 e P2 selecionadas visíveis com <code>.used</code></li>
+            <li>Ctx-icons ainda ocultos — punch aparece em fight-impact</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 7 — era fight02 -->
+    <div class="journey-moment" data-phase="fim" data-index="7">
+      <div class="jm-marker" style="background:#f87171">7</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">fight-impact</span>
+          <span class="jm-tag jm-tag--fim">FIM</span>
+          <span class="jm-fix-badge">RENOMEADO</span>
+          <span class="jm-time">22:46:50</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li><code>#ctx-icon-{winner}</code> com <code>.punch-winner</code> + <code>.punch-entering</code> (zoom dramático)</li>
+            <li>T+480ms: <code>.punch-striking-p1</code> ou <code>.punch-striking-p2</code> (soco em direção ao rival)</li>
+            <li>Carta atacante: <code>.fx-attacker</code> + <code>.fx-attack</code> (pulse)</li>
+            <li>Carta defensora: <code>.fx-damage</code> + <code>.fx-damage-hit</code> + <code>.fx-shockwave</code></li>
+            <li>Partícula de dano flutuante: <code>−N❤</code> com burst-dots</li>
+            <li>T+580ms: rival (<code>.punch-loser</code>) aparece com <code>.punch-pushed-up/down</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 8 — era figh03 (typo) -->
+    <div class="journey-moment" data-phase="fim" data-index="8">
+      <div class="jm-marker" style="background:#f87171">8</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">fight-result</span>
+          <span class="jm-tag jm-tag--fim">FIM</span>
+          <span class="jm-fix-badge">RENOMEADO + TYPO CORRIGIDO</span>
+          <span class="jm-time">22:47:22</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li>T+1050ms: punch vencedor volta ao <code>punchWinner</code> loop</li>
+            <li>Carta vencedora: <code>.fx-win-beam</code> + partícula "✦ WIN"</li>
+            <li>Carta destruída (se houver): <code>.fx-destroyed</code> + "💀"</li>
+            <li>HP hearts atualizados in-place via <code>_updateCardHpHearts()</code></li>
+            <li>T+1200ms: <code>renderPlayerHpBars()</code> — barras de vida atualizadas</li>
+            <li>ENGINE: <code>state.phase = 'done'</code> ou <code>'gameover'</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOMENTO 9 — NOVO -->
+    <div class="journey-moment" data-phase="fim" data-index="9">
+      <div class="jm-marker" style="background:#f87171">9</div>
+      <div class="jm-content">
+        <div class="jm-header">
+          <span class="jm-name">round-end</span>
+          <span class="jm-tag jm-tag--fim">FIM</span>
+          <span class="jm-new-badge">NOVO</span>
+        </div>
+        <div class="jm-description">
+          <ul>
+            <li>T+1800ms: <code>#result-toast</code> com <code>.show</code> — resultado textual visível</li>
+            <li>Progress bar drenando em <code>durSec</code> segundos (TOAST_CTRL)</li>
+            <li>Se <code>result.gameOver</code>: <code>#gameover-screen</code> com <code>.show</code> após toast</li>
+            <li>Se não game over: <code>ENGINE.nextRound()</code> → <code>RENDERER.render()</code> → volta a p1-idle</li>
+            <li>Slot reservado para animações de transição de rodada</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.journey-map -->
+</div><!-- /.section -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     SEÇÃO 2 — STATE ANIMATOR
+══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">② StateAnimator — módulo de controle por estado</div>
+
+  <div class="callout" style="margin-bottom:24px">
+    <strong>Arquitetura:</strong> o StateAnimator é um módulo passivo que <em>observa</em> o <code>ENGINE.state.phase</code>
+    e dispara callbacks, classes CSS e hooks de animação mapeados por estado. Não substitui RENDERER nem UI —
+    fica numa camada acima, como um roteador de efeitos visuais. Integra com o GPC via <code>GPC.t()</code> para respeitar a velocidade atual.
+  </div>
+
+  <div class="callout ok" style="margin-bottom:24px">
+    <strong>Onde inserir no HTML:</strong> adicionar como <code>&lt;script id="state-animator"&gt;</code>
+    logo após o bloco <code>ctx-icon-system</code> e antes do <code>battle-fx-module</code>.
+    Expor via <code>window.STATE_ANIM</code> para debugging.
+  </div>
+
+<pre><code><span class="comment">/* ════════════════════════════════════════════════════════════════
+   STATE ANIMATOR — Elemental Clash v29
+   ════════════════════════════════════════════════════════════════
+   Módulo de roteamento de efeitos visuais por estado de jogo.
+
+   USO:
+     STATE_ANIM.enter('p1select')   // dispara manualmente (para testes)
+     STATE_ANIM.onEnter('reveal', fn)  // registra hook externo
+     STATE_ANIM.currentPhase()      // lê fase ativa
+   ════════════════════════════════════════════════════════════════ */</span>
+<span class="keyword">'use strict'</span>;
+<span class="keyword">const</span> <span class="const">STATE_ANIM</span> = (<span class="func">() => {</span>
+
+  <span class="comment">// ── Fase atual rastreada internamente ───────────────────────────</span>
+  <span class="keyword">let</span> _phase = <span class="keyword">null</span>;
+
+  <span class="comment">// ── Mapa de hooks externos (plugins / debugging / future use) ───</span>
+  <span class="keyword">const</span> _hooks = {}; <span class="comment">// { phase: [fn, fn, ...] }</span>
+
+  <span class="comment">// ── MAPA DE ESTADOS ─────────────────────────────────────────────
+  // Cada entrada define o que acontece quando o jogo ENTRA naquela fase.
+  // onEnter: chamado imediatamente ao entrar
+  // classes: { selector: [add], [remove] } — aplicadas no DOM
+  // Todos os timers devem usar GPC.t(baseMs) para respeitar a velocidade.</span>
+
+  <span class="keyword">const</span> <span class="const">STATE_MAP</span> = {
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // p1select — P1 ativo, escolhendo carta
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'p1select'</span>: {
+      label: <span class="string">'P1 Selecionando'</span>,
+      <span class="func">onEnter</span>() {
+        <span class="comment">// Zona ênfase já aplicada pelo RENDERER.renderPhase → applyZoneEmphasis
+        // Ctx-icon já aplicado pelo updateCtxIcon('p1select')
+        // Este hook é reservado para efeitos adicionais futuros:</span>
+        _dispatchHooks(<span class="string">'p1select'</span>);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // p2select — P2 ativo, P1 já confirmou
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'p2select'</span>: {
+      label: <span class="string">'P2 Selecionando'</span>,
+      <span class="func">onEnter</span>() {
+        _dispatchHooks(<span class="string">'p2select'</span>);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // pre-reveal — ambos confirmaram, aguardando clique em REVELAR
+    // (estado visual: overlay reveal-focus visível com btn-reveal)
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'pre-reveal'</span>: {
+      label: <span class="string">'Aguardando Revelação'</span>,
+      <span class="func">onEnter</span>() {
+        <span class="comment">// reveal-focus.show já aplicado pelo RENDERER.renderPhase
+        // Este hook permite adicionar sons, hápticos, efeitos de antecipação</span>
+        _dispatchHooks(<span class="string">'pre-reveal'</span>);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // reveal — decks virando, cartas expostas
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'reveal'</span>: {
+      label: <span class="string">'Revelação'</span>,
+      <span class="func">onEnter</span>() {
+        _dispatchHooks(<span class="string">'reveal'</span>);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // fight-impact — pico da animação de combate
+    // T=0 entrada do punch · T=480ms soco · T=580ms empurrão
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'fight-impact'</span>: {
+      label: <span class="string">'Impacto'</span>,
+      <span class="func">onEnter</span>(result) {
+        <span class="comment">// result = objeto de resolveRound() passado pelo chamador</span>
+        <span class="keyword">if</span> (!result) { _dispatchHooks(<span class="string">'fight-impact'</span>); <span class="keyword">return</span>; }
+        <span class="comment">// Transição automática para fight-result após duração do impacto</span>
+        setTimeout(<span class="func">() => {</span>
+          STATE_ANIM.enter(<span class="string">'fight-result'</span>, result);
+        }, GPC.t(<span class="const">1050</span>)); <span class="comment">// punchWinner loop começa em T+1050ms</span>
+        _dispatchHooks(<span class="string">'fight-impact'</span>, result);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // fight-result — vencedor em loop, resultado visível, HP atualizado
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'fight-result'</span>: {
+      label: <span class="string">'Resultado do Combate'</span>,
+      <span class="func">onEnter</span>(result) {
+        <span class="comment">// Transição automática para round-end após apresentação do resultado</span>
+        setTimeout(<span class="func">() => {</span>
+          STATE_ANIM.enter(<span class="string">'round-end'</span>, result);
+        }, GPC.t(<span class="const">750</span>)); <span class="comment">// 1800ms total - 1050ms = 750ms entre fight-result e toast</span>
+        _dispatchHooks(<span class="string">'fight-result'</span>, result);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // round-end — toast visível, aguarda próxima rodada ou game over
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'round-end'</span>: {
+      label: <span class="string">'Fim de Rodada'</span>,
+      <span class="func">onEnter</span>(result) {
+        _dispatchHooks(<span class="string">'round-end'</span>, result);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // gameover — tela de game over visível
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'gameover'</span>: {
+      label: <span class="string">'Game Over'</span>,
+      <span class="func">onEnter</span>(result) {
+        _dispatchHooks(<span class="string">'gameover'</span>, result);
+      }
+    },
+
+    <span class="comment">// ──────────────────────────────────────────────────────────────
+    // done — estado de repouso pós-round (antes de nextRound)
+    // ──────────────────────────────────────────────────────────────</span>
+    <span class="string">'done'</span>: {
+      label: <span class="string">'Aguardando Próxima Rodada'</span>,
+      <span class="func">onEnter</span>() {
+        _dispatchHooks(<span class="string">'done'</span>);
+      }
+    },
+  };
+
+  <span class="comment">// ── DISPATCHER ──────────────────────────────────────────────────</span>
+  <span class="keyword">function</span> <span class="func">_dispatchHooks</span>(phase, payload) {
+    <span class="keyword">const</span> fns = _hooks[phase];
+    <span class="keyword">if</span> (!fns) <span class="keyword">return</span>;
+    fns.forEach(<span class="func">fn => {</span>
+      <span class="keyword">try</span> { fn(payload); }
+      <span class="keyword">catch</span>(e) { console.warn(<span class="string">`[STATE_ANIM] Hook error on "${phase}":`</span>, e); }
+    });
+  }
+
+  <span class="comment">// ── API PÚBLICA ─────────────────────────────────────────────────</span>
+
+  <span class="comment">/**
+   * enter(phase, payload?)
+   * Transiciona para um estado e executa seu onEnter.
+   * payload é passado para hooks (ex: result de resolveRound).
+   */</span>
+  <span class="keyword">function</span> <span class="func">enter</span>(phase, payload) {
+    <span class="keyword">const</span> def = STATE_MAP[phase];
+    <span class="keyword">if</span> (!def) {
+      console.warn(<span class="string">`[STATE_ANIM] Estado desconhecido: "${phase}"`</span>);
+      <span class="keyword">return</span>;
+    }
+    <span class="keyword">if</span> (_phase === phase) <span class="keyword">return</span>; <span class="comment">// idempotente — não re-entra no mesmo estado</span>
+    _phase = phase;
+    <span class="keyword">if</span> (def.onEnter) def.onEnter(payload);
+  }
+
+  <span class="comment">/**
+   * onEnter(phase, fn)
+   * Registra um hook chamado sempre que o estado é ativado.
+   * Pode ser chamado múltiplas vezes para o mesmo estado.
+   * Exemplo:
+   *   STATE_ANIM.onEnter('fight-impact', result => playSound('clash'));
+   */</span>
+  <span class="keyword">function</span> <span class="func">onEnter</span>(phase, fn) {
+    <span class="keyword">if</span> (!_hooks[phase]) _hooks[phase] = [];
+    _hooks[phase].push(fn);
+  }
+
+  <span class="comment">/** Retorna a fase atual rastreada. */</span>
+  <span class="keyword">function</span> <span class="func">currentPhase</span>() { <span class="keyword">return</span> _phase; }
+
+  <span class="comment">/** Lista todos os estados disponíveis com seus labels. */</span>
+  <span class="keyword">function</span> <span class="func">states</span>() {
+    <span class="keyword">return</span> Object.entries(STATE_MAP).map(<span class="func">([id, def]) => ({</span>
+      id,
+      label: def.label,
+    }));
+  }
+
+  <span class="comment">/** Reset — útil em restart() */</span>
+  <span class="keyword">function</span> <span class="func">reset</span>() { _phase = <span class="keyword">null</span>; }
+
+  <span class="keyword">return</span> { enter, onEnter, currentPhase, states, reset };
+<span class="func">})()</span>;
+</code></pre>
+
+</div><!-- /.section -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     SEÇÃO 3 — GUIA DE INTEGRAÇÃO
+══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">③ Guia de integração no BCards_v28.html</div>
+
+  <div class="callout" style="margin-bottom:24px">
+    <strong>Abordagem:</strong> o StateAnimator é aditivo — não reescreve nada do engine existente.
+    Cada ponto de integração é um <strong>call único</strong> adicionado ao final de funções já existentes.
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div>
+      <strong>Inserir o módulo</strong> no HTML após <code>&lt;script id="ctx-icon-system"&gt;</code> e antes de <code>&lt;script id="battle-fx-module"&gt;</code>.
+      O módulo usa <code>GPC.t()</code> que já existe — sem novas dependências.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div>
+      <strong>Em <code>renderPhase()</code> do RENDERER</strong>, adicionar ao final de cada bloco condicional:
+<pre style="margin-top:8px"><code><span class="keyword">if</span> (G.phase === <span class="string">'p1select'</span>) {
+  applyZoneEmphasis(<span class="string">'p1'</span>);
+  STATE_ANIM.enter(<span class="string">'p1select'</span>); <span class="comment">// ← ADICIONAR</span>
+} <span class="keyword">else if</span> (G.phase === <span class="string">'p2select'</span>) {
+  applyZoneEmphasis(<span class="string">'p2'</span>);
+  STATE_ANIM.enter(<span class="string">'p2select'</span>); <span class="comment">// ← ADICIONAR</span>
+} <span class="keyword">else if</span> (G.phase === <span class="string">'reveal'</span>) {
+  STATE_ANIM.enter(<span class="string">'pre-reveal'</span>); <span class="comment">// ← ADICIONAR (overlay visível = pre-reveal)</span>
+} <span class="keyword">else</span> {
+  resetZoneEmphasis();
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div>
+      <strong>Em <code>onReveal()</code> do UI layer</strong>, adicionar após <code>BATTLE_FX.resolveResult(result)</code>:
+<pre style="margin-top:8px"><code><span class="comment">// T+500ms — battle FX dispara</span>
+setTimeout(<span class="func">() => {</span>
+  BATTLE_FX.resolveResult(result);
+  showPunchIcon(result.outcome === <span class="string">'tie'</span> ? <span class="keyword">null</span> : result.outcome);
+  STATE_ANIM.enter(<span class="string">'fight-impact'</span>, result); <span class="comment">// ← ADICIONAR</span>
+}, GPC.t(<span class="const">500</span>));</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div>
+      <strong>No callback do TOAST_CTRL.show()</strong>, o <code>STATE_ANIM.enter('round-end')</code>
+      já é chamado automaticamente pela transição interna de <code>fight-result → round-end</code>.
+      Nenhuma alteração necessária no código do toast.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div>
+      <strong>Em <code>onRestart()</code></strong>, adicionar <code>STATE_ANIM.reset()</code> antes de <code>ENGINE.restart()</code>:
+<pre style="margin-top:8px"><code><span class="keyword">function</span> <span class="func">onRestart</span>() {
+  _pprIconLock = <span class="keyword">false</span>;
+  STATE_ANIM.reset(); <span class="comment">// ← ADICIONAR</span>
+  RENDERER.hideGameOver();
+  <span class="comment">// ... resto igual</span>
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div>
+      <strong>Uso de hooks externos</strong> (exemplo de extensão futura sem tocar no core):
+<pre style="margin-top:8px"><code><span class="comment">// Som de impacto ao entrar em fight-impact</span>
+STATE_ANIM.onEnter(<span class="string">'fight-impact'</span>, <span class="func">(result) => {</span>
+  <span class="keyword">if</span> (result?.outcome !== <span class="string">'tie'</span>) AudioEngine.play(<span class="string">'clash'</span>);
+});
+
+<span class="comment">// Vibração háptica em round-end</span>
+STATE_ANIM.onEnter(<span class="string">'round-end'</span>, <span class="func">() => {</span>
+  navigator.vibrate?.([30, 50, 30]);
+});
+
+<span class="comment">// Debug — loga cada transição de estado</span>
+STATE_ANIM.states().forEach(<span class="func">(s) => {</span>
+  STATE_ANIM.onEnter(s.id, <span class="func">() => {</span>
+    console.log(<span class="string">`[STATE] → ${s.id} (${s.label})`</span>);
+  });
+});</code></pre>
+    </div>
+  </div>
+
+</div><!-- /.section -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     RODAPÉ
+══════════════════════════════════════════════════════════════ -->
+<div style="margin-top:48px;padding-top:20px;border-top:1px solid rgba(201,150,58,.12);font-size:11px;color:var(--text-dim);letter-spacing:.5px;text-align:center;">
+  ELEMENTAL CLASH · StateAnimator + Journey Map · Gerado em 29/03/2026
+</div>
+
+</body>
+</html>
