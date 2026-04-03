@@ -1,498 +1,14 @@
-<html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clauber Rosa — Product Architect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap">
   <link rel="stylesheet" href="styles.css">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
 
-    /* ── Design Token Overrides ── */
-    :root {
-      --accent: rgba(200, 190, 165, 0.55);
-      --accent-line: rgba(200, 190, 165, 0.22);
-      --ink-rgb: 232,230,220;
-      --rule-l: rgba(232,230,220,0.07);
-    }
-
-    
-
-    /* ── Tagline stylization ── */
-    .identity-tagline {
-      font-family: 'Cormorant Garamond', var(--serif) !important;
-      font-size: clamp(16px, 1.65vw, 19px) !important;
-      font-style: italic;
-      font-weight: 300;
-      line-height: 1.72;
-      color: var(--ink2);
-      max-width: 440px;
-      letter-spacing: 0.01em;
-    }
-
-    .identity-tagline .tagline-w {
-      font-size: 1.18em;
-      font-weight: 400;
-      letter-spacing: -0.01em;
-    }
-
-    /* ── Identity / Hero ── */
-    .identity {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 80px 48px 72px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
-      align-items: end;
-      }
-
-    .identity-left {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .identity-eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
-    }
-
-    .identity-eyebrow-line {
-      width: 20px;
-      height: 1px;
-      background: var(--ink4);
-    }
-
-    .identity-eyebrow-text {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 300;
-      letter-spacing: 0.26em;
-      text-transform: uppercase;
-      color: var(--ink4);
-    }
-
-    .identity-name {
-      font-family: var(--serif);
-      font-size: clamp(42px, 5.5vw, 72px);
-      font-weight: 300;
-      line-height: 1.04;
-      letter-spacing: -0.025em;
-      color: var(--ink);
-      margin-bottom: 6px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .identity-name em {
-      font-style: italic;
-      color: var(--ink2);
-    }
-
-    .identity-role {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 300;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink3);
-      margin-top: 18px;
-    }
-
-    .identity-right {
-      padding-left: 56px;
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-      padding-bottom: 4px;
-    }
-
-    .identity-tagline {
-      font-family: var(--serif);
-      font-size: clamp(15px, 1.5vw, 17px);
-      font-style: italic;
-      font-weight: 300;
-      line-height: 1.68;
-      color: var(--ink2);
-      max-width: 440px;
-    }
-
-    .identity-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .identity-meta-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .identity-meta-icon {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-      opacity: 0.3;
-    }
-
-    .identity-meta-text {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 300;
-      color: var(--ink3);
-      letter-spacing: 0.04em;
-    }
-
-    .identity-meta-text a {
-      color: var(--ink3);
-      text-decoration: none;
-      border-bottom: 1px solid var(--border);
-      transition: color var(--ease), border-color var(--ease);
-    }
-
-    .identity-meta-text a:hover {
-      color: var(--ink2);
-      border-color: var(--border-hover);
-    }
-
-    /* ── Section Label ── */
-    .section-label {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 40px;
-    }
-
-    .section-label-line {
-      width: 20px;
-      height: 1px;
-      background: var(--ink4);
-      flex-shrink: 0;
-    }
-
-    .section-label-text {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 300;
-      letter-spacing: 0.26em;
-      text-transform: uppercase;
-      color: var(--ink4);
-    }
-
-    .section-label-count {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 300;
-      color: var(--ink4);
-      opacity: 0.5;
-    }
-
-    /* ── Work Section ── */
-    .work-section {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 64px 48px 72px;
-    }
-
-    /* ── Profile Section ── */
-    .profile-section {
-      border-top: 1px solid var(--border);
-      padding: 72px 0 0;
-    }
-
-    .profile-inner {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 48px 80px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: start;
-    }
-
-    .profile-left {}
-
-    .profile-heading {
-      font-family: var(--serif);
-      font-size: clamp(24px, 2.5vw, 34px);
-      font-weight: 300;
-      line-height: 1.2;
-      letter-spacing: -0.015em;
-      color: var(--ink);
-      margin-bottom: 32px;
-    }
-
-    .profile-heading em {
-      font-style: italic;
-      color: var(--ink2);
-    }
-
-    .profile-text {
-      font-family: var(--sans);
-      font-size: 13.5px;
-      font-weight: 300;
-      line-height: 1.9;
-      color: var(--ink3);
-    }
-
-    .profile-text p {
-      margin-bottom: 16px;
-    }
-
-    .profile-text p:last-child {
-      margin-bottom: 0;
-    }
-
-    .profile-text strong {
-      font-weight: 400;
-      color: var(--ink2);
-    }
-
-    .profile-text a {
-      color: var(--ink3);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      text-decoration-color: var(--border-hover);
-      transition: color 0.2s ease;
-    }
-
-    .profile-text a:hover { color: var(--ink2); }
-
-    .profile-right {
-      display: flex;
-      flex-direction: column;
-      gap: 40px;
-    }
-
-    /* ── Workflow intro note ── */
-    .workflow-intro-note {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 300;
-      line-height: 1.72;
-      color: var(--ink4);
-      margin-top: -24px;
-      margin-bottom: 8px;
-      letter-spacing: 0.02em;
-    }
-
-    /* ── Workflow Grid ── */
-    .workflow-block {}
-
-    .workflow-block-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .workflow-block-label-text {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 300;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink4);
-    }
-
-    .workflow-block-label svg {
-      opacity: 0.3;
-    }
-
-    .workflow-tools {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .workflow-tool-row {
-      display: flex;
-      align-items: baseline;
-      gap: 12px;
-      padding: 9px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .workflow-tool-row:last-child {
-      border-bottom: none;
-    }
-
-    .workflow-tool-name {
-      font-family: var(--serif);
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--ink2);
-      min-width: 100px;
-      flex-shrink: 0;
-    }
-
-    .workflow-tool-desc {
-      font-family: var(--mono);
-      font-size: 10px;
-      font-weight: 300;
-      color: var(--ink4);
-      line-height: 1.5;
-    }
-
-    /* ── Process Note (formerly Manifesto) ── */
-    .process-block {
-      border: 1px solid var(--border);
-      padding: 28px;
-    }
-
-    .process-block-label {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 300;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink4);
-      margin-bottom: 14px;
-    }
-
-    .process-block-body {
-      font-family: var(--sans);
-      font-size: 13px;
-      font-weight: 300;
-      line-height: 1.78;
-      color: var(--ink3);
-    }
-
-    .process-block-body p {
-      margin-bottom: 12px;
-    }
-
-    .process-block-body p:last-child { margin-bottom: 0; }
-
-    /* ── Insight callout ── */
-    .insight {
-      margin-top: 40px;
-      padding-top: 28px;
-      border-top: 1px solid var(--border);
-    }
-
-    .insight-label {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 300;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--ink4);
-      margin-bottom: 14px;
-    }
-
-    .insight-quote {
-      font-family: var(--serif);
-      font-size: clamp(16px, 1.6vw, 20px);
-      font-weight: 300;
-      font-style: italic;
-      color: var(--ink2);
-      line-height: 1.48;
-      border: none;
-      padding: 0;
-    }
-
-    /* ── Footer decoration ── */
-    .footer-sep {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 48px 56px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .footer-sep-line {
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    .footer-sep-dot {
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: var(--ink4);
-    }
-
-    /* ── Responsive ── */
-    @media (max-width: 800px) {
-      .identity {
-        grid-template-columns: 1fr;
-        gap: 40px;
-        padding: 48px 24px 56px;
-      }
-
-      .identity-right {
-        padding-left: 0;
-        border-left: none;
-        border-top: 1px solid var(--border);
-        padding-top: 32px;
-      }
-
-      .profile-inner {
-        grid-template-columns: 1fr;
-        gap: 48px;
-        padding: 0 24px 64px;
-      }
-
-      .work-section {
-        padding: 48px 24px 56px;
-      }
-
-      .footer-sep {
-        padding: 0 24px 48px;
-      }
-    }
-
-
-    /* ── Identity Prims — separador full-width entre hero e grid ── */
-    .identity-prims {
-      width: 100%;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      padding: 20px 48px;
-      display: flex;
-      align-items: center;
-      gap: 32px;
-      background: var(--bg);
-      will-change: transform;
-    }
-
-    .identity-prim {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .identity-prim svg {
-      display: block;
-      overflow: visible;
-    }
-
-    @media (max-width: 600px) {
-      .identity-prims {
-        padding: 16px 24px;
-        gap: 20px;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .header-inner {
-        padding: 20px 24px;
-      }
-
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
 </head>
 <body>
 
@@ -549,11 +65,10 @@
 
     </section>
 
-    <!-- ══ PRIMITIVES STRIP ══════════════════════════════ -->
-    <div class="identity-prims" aria-label="Design primitives">
+    <!-- ══ PRIMITIVES STRIP ══════════════════════════ -->
+    <div class="identity-prims">
       <div class="prims-row">
 
-        <!-- PONTO -->
         <div class="prim prim-dot">
           <svg width="52" height="52" viewBox="0 0 36 36" overflow="visible">
             <circle cx="18" cy="18" r="11" stroke="rgba(var(--ink-rgb),0.20)" stroke-width="0.6" fill="none"/>
@@ -563,7 +78,6 @@
           <span class="prim-label">Ponto</span>
         </div>
 
-        <!-- LINHA -->
         <div class="prim prim-line">
           <svg width="52" height="52" viewBox="0 0 36 36" overflow="visible">
             <line x1="4" y1="14" x2="32" y2="14" stroke="rgba(var(--ink-rgb),0.22)" stroke-width="0.5" stroke-dasharray="6 4"/>
@@ -575,7 +89,6 @@
           <span class="prim-label">Linha</span>
         </div>
 
-        <!-- CÍRCULO -->
         <div class="prim prim-circle">
           <svg width="52" height="52" viewBox="0 0 36 36" overflow="visible">
             <circle cx="18" cy="18" r="15" stroke="rgba(var(--ink-rgb),0.18)" stroke-width="0.5" fill="none"/>
@@ -591,7 +104,6 @@
           <span class="prim-label">Círculo</span>
         </div>
 
-        <!-- TRIÂNGULO -->
         <div class="prim prim-tri">
           <svg width="52" height="52" viewBox="0 0 36 36" overflow="visible">
             <g>
@@ -606,7 +118,6 @@
           <span class="prim-label">Triângulo</span>
         </div>
 
-        <!-- QUADRADO -->
         <div class="prim prim-rect">
           <svg width="52" height="52" viewBox="0 0 36 36" overflow="visible">
             <rect x="4" y="4" width="28" height="28" stroke="rgba(var(--ink-rgb),0.28)" stroke-width="0.6" fill="none"/>
@@ -620,7 +131,6 @@
           <span class="prim-label">Quadrado</span>
         </div>
 
-        <!-- GRID -->
         <div class="prim prim-grid">
           <svg width="52" height="52" viewBox="0 0 36 36" overflow="visible">
             <line x1="4"  y1="4"  x2="4"  y2="32" stroke="rgba(var(--ink-rgb),0.14)" stroke-width="0.4"/>
