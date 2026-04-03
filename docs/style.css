@@ -204,6 +204,105 @@ header {
   border-color: var(--border-hover);
 }
 
+/* ── Identity Primitives Strip ── */
+.identity-prims {
+  width: 100%;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.prims-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 20px 48px;
+}
+
+.prim {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  padding: 16px 0;
+}
+
+.prim + .prim::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12%;
+  bottom: 12%;
+  width: 1px;
+  background: var(--border);
+}
+
+.prim svg {
+  display: block;
+  overflow: visible;
+}
+
+.prim-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  white-space: nowrap;
+}
+
+/* ── Prim Animations ── */
+@keyframes pulse-r {
+  0%, 100% { r: 3; opacity: 0.9; }
+  50%       { r: 5; opacity: 0.4; }
+}
+@keyframes stroke-dash {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -40; }
+}
+@keyframes orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes orbit-rev {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+@keyframes tri-breath {
+  0%, 100% { transform: scale(1);    opacity: 0.90; }
+  50%       { transform: scale(0.88); opacity: 0.50; }
+}
+@keyframes rect-scan {
+  0%   { transform: translateY(-6px); opacity: 0; }
+  20%  { opacity: 0.7; }
+  80%  { opacity: 0.7; }
+  100% { transform: translateY(6px);  opacity: 0; }
+}
+@keyframes grid-fade {
+  0%, 100% { opacity: 0.18; }
+  50%       { opacity: 0.55; }
+}
+
+.prim-dot circle.core        { animation: pulse-r 2.8s ease-in-out infinite; transform-origin: center; }
+.prim-line line              { stroke-dasharray: 6 4; animation: stroke-dash 1.8s linear infinite; }
+.prim-circle .orbit-ring     { transform-origin: 26px 26px; animation: orbit 6s linear infinite; }
+.prim-circle .orbit-ring-rev { transform-origin: 26px 26px; animation: orbit-rev 9s linear infinite; }
+.prim-tri g                  { transform-origin: 26px 26px; animation: tri-breath 3.2s ease-in-out infinite; }
+.prim-rect .scan             { animation: rect-scan 2.4s ease-in-out infinite; }
+.prim-grid .gc               { animation: grid-fade 2s ease-in-out infinite; }
+.prim-grid .gc:nth-child(1)  { animation-delay: 0s; }
+.prim-grid .gc:nth-child(2)  { animation-delay: 0.18s; }
+.prim-grid .gc:nth-child(3)  { animation-delay: 0.36s; }
+.prim-grid .gc:nth-child(4)  { animation-delay: 0.54s; }
+.prim-grid .gc:nth-child(5)  { animation-delay: 0.72s; }
+.prim-grid .gc:nth-child(6)  { animation-delay: 0.90s; }
+.prim-grid .gc:nth-child(7)  { animation-delay: 1.08s; }
+.prim-grid .gc:nth-child(8)  { animation-delay: 1.26s; }
+.prim-grid .gc:nth-child(9)  { animation-delay: 1.44s; }
+
 /* ── Empty state ── */
 .empty {
   grid-column: 1 / -1;
