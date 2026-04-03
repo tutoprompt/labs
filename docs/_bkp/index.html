@@ -14,8 +14,10 @@
 
   <!-- ══ HEADER ══════════════════════════════════════ -->
   <header>
-    <span class="header-label">clauber rosa</span>
-    <span class="header-count" id="project-count">10</span>
+    <div class="header-inner">
+      <span class="header-label">clauber rosa</span>
+      <span class="header-count" id="project-count">10</span>
+    </div>
   </header>
 
   <main>
@@ -73,6 +75,7 @@
             <circle cx="18" cy="18" r="6"  stroke="rgba(var(--ink-rgb),0.28)" stroke-width="0.5" fill="none"/>
             <circle class="core" cx="18" cy="18" r="3" fill="rgba(var(--ink-rgb),0.70)"/>
           </svg>
+          <span class="prim-label">Ponto</span>
         </div>
 
         <div class="prim prim-line">
@@ -83,6 +86,7 @@
             <circle cx="4" cy="18" r="1.4" fill="rgba(var(--ink-rgb),0.50)"/>
             <circle cx="32" cy="18" r="1.4" fill="rgba(var(--ink-rgb),0.30)"/>
           </svg>
+          <span class="prim-label">Linha</span>
         </div>
 
         <div class="prim prim-circle">
@@ -97,6 +101,7 @@
             </g>
             <circle cx="18" cy="18" r="2" fill="rgba(var(--ink-rgb),0.60)"/>
           </svg>
+          <span class="prim-label">Círculo</span>
         </div>
 
         <div class="prim prim-tri">
@@ -110,6 +115,7 @@
               <circle cx="3"  cy="30" r="1.2" fill="rgba(var(--ink-rgb),0.30)"/>
             </g>
           </svg>
+          <span class="prim-label">Triângulo</span>
         </div>
 
         <div class="prim prim-rect">
@@ -122,6 +128,7 @@
             <circle cx="4"  cy="32" r="1.2" fill="rgba(var(--ink-rgb),0.40)"/>
             <circle cx="32" cy="32" r="1.2" fill="rgba(var(--ink-rgb),0.40)"/>
           </svg>
+          <span class="prim-label">Quadrado</span>
         </div>
 
         <div class="prim prim-grid">
@@ -142,6 +149,7 @@
             <circle class="gc" cx="18" cy="32" r="2" fill="rgba(var(--ink-rgb),0.55)"/>
             <circle class="gc" cx="32" cy="32" r="2" fill="rgba(var(--ink-rgb),0.55)"/>
           </svg>
+          <span class="prim-label">Grid</span>
         </div>
 
       </div>
@@ -364,38 +372,6 @@
     if (projectCountEl) {
       observer.observe(projectCountEl, { childList: true, characterData: true, subtree: true });
     }
-
-    // Make entire card clickable (same action as the Open button)
-    document.querySelectorAll('.card').forEach(card => {
-      const link = card.querySelector('.card-link');
-      if (!link) return;
-      card.style.cursor = 'pointer';
-      card.addEventListener('click', e => {
-        // Don't double-fire if the click was directly on the link
-        if (e.target.closest('.card-link')) return;
-        window.open(link.href, link.target || '_blank', 'noopener,noreferrer');
-      });
-    });
-
-    // Video previews: static (first frame) by default, play only on hover
-    document.querySelectorAll('.card-video').forEach(video => {
-      // Remove autoplay so the video is paused at load
-      video.removeAttribute('autoplay');
-      video.pause();
-      video.currentTime = 0;
-
-      const card = video.closest('.card');
-      if (!card) return;
-
-      card.addEventListener('mouseenter', () => {
-        video.play().catch(() => {});
-      });
-
-      card.addEventListener('mouseleave', () => {
-        video.pause();
-        video.currentTime = 0;
-      });
-    });
   </script>
 
 
