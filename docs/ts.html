@@ -194,10 +194,10 @@
     z-index: 1;
     max-width: 480px;
     margin: 0 auto;
-    padding: 40px 24px 0;
+    padding: 40px 24px 20px;
   }
 
-  /* Second hero-inner (below image) gets less top padding */
+  /* Second hero-inner (below image) */
   .hero-placeholder + .hero-inner {
     padding-top: 24px;
   }
@@ -222,15 +222,7 @@
     object-fit: cover;
     object-position: center top;
     display: block;
-  }
-
-  .hero-placeholder::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 80px;
-    background: linear-gradient(to bottom, transparent, #DAECff);
-    pointer-events: none;
+    opacity: 1;
   }
 
   /* Badge segurança */
@@ -1445,10 +1437,6 @@
       Sua rotina clínica,<br>
       <em>sem planilhas</em>, sem papel e sem bagunça.
     </h1>
-
-    <p class="hero-desc">
-      Prontuários, agenda, confirmações via WhatsApp e dashboards. Tudo em um lugar seguro e simples.
-    </p>
   </div>
 
   <!-- Hero Image -->
@@ -1457,6 +1445,9 @@
   </div>
 
   <div class="hero-inner">
+    <p class="hero-desc">
+      Prontuários, agenda, confirmações via WhatsApp e dashboards. Tudo em um lugar seguro e simples.
+    </p>
     <div class="security-badge">
       <span class="badge-icon">
         <svg width="12" height="13" viewBox="0 0 12 13" fill="none">
