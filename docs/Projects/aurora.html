@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Northern Lights - Realistic Aurora Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(to bottom, #0a0e27 0%, #1a0033 50%, #0a0e27 100%);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            filter: blur(8px); /* Suaviza as bordas e melhora o degradê */
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 14, 39, 0.85);
+            border: 2px solid rgba(0, 255, 156, 0.3);
+            border-radius: 50px;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            box-shadow: 0 8px 32px rgba(0, 255, 156, 0.1);
+        }
+
+        .controls label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 180px;
+            height: 6px;
+            border-radius: 5px;
+            background: linear-gradient(to right, rgba(0, 255, 156, 0.2), rgba(0, 207, 255, 0.2));
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00ff9c;
+            cursor: pointer;
+            box-shadow: 0 0 15px #00ff9c, 0 0 30px rgba(0, 255, 156, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00ff9c;
+            cursor: pointer;
+            box-shadow: 0 0 15px #00ff9c, 0 0 30px rgba(0, 255, 156, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .speed-display {
+            color: #00ff9c;
+            font-weight: bold;
+            font-size: 16px;
+            min-width: 50px;
+            text-align: right;
+            text-shadow: 0 0 10px rgba(0, 255, 156, 0.5);
+        }
+
+        .info-text {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="auroraCanvas"></canvas>
+    </div>
+
+    <div class="info-text">Northern Lights Simulation</div>
+
+    <div class="controls">
+        <label for="speedSlider">Timelapse:</label>
+        <div class="slider-wrapper">
+            <input type="range" id="speedSlider" min="0.1" max="5.0" step="0.1" value="1.0">
+            <span class="speed-display" id="speedDisplay">1.0x</span>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('auroraCanvas');
+        const ctx = canvas.getContext('2d', { alpha: true });
+        const speedSlider = document.getElementById('speedSlider');
+        const speedDisplay = document.getElementById('speedDisplay');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        let time = 0;
+        let timeScale = 1.0;
+
+        // Perlin Noise simplificado
+        class PerlinNoise {
+            constructor(seed = 0) {
+                this.permutation = [];
+                this.p = [];
+                this.seed = seed;
+                this.init();
+            }
+
+            init() {
+                const values = [];
+                for (let i = 0; i < 256; i++) {
+                    values[i] = i;
+                }
+                // Shuffle com seed
+                for (let i = 255; i > 0; i--) {
+                    const j = Math.floor((Math.sin(this.seed + i) * 10000) % (i + 1));
+                    [values[i], values[j]] = [values[j], values[i]];
+                }
+                this.p = values.concat(values);
+            }
+
+            fade(t) {
+                return t * t * t * (t * (t * 6 - 15) + 10);
+            }
+
+            lerp(t, a, b) {
+                return a + t * (b - a);
+            }
+
+            grad(hash, x, y) {
+                const h = hash & 15;
+                const u = h < 8 ? x : y;
+                const v = h < 8 ? y : x;
+                return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+            }
+
+            noise(x, y) {
+                const xi = Math.floor(x) & 255;
+                const yi = Math.floor(y) & 255;
+                const xf = x - Math.floor(x);
+                const yf = y - Math.floor(y);
+                const u = this.fade(xf);
+                const v = this.fade(yf);
+
+                const n00 = this.grad(this.p[this.p[xi] + yi], xf, yf);
+                const n10 = this.grad(this.p[this.p[xi + 1] + yi], xf - 1, yf);
+                const n01 = this.grad(this.p[this.p[xi] + yi + 1], xf, yf - 1);
+                const n11 = this.grad(this.p[this.p[xi + 1] + yi + 1], xf - 1, yf - 1);
+
+                const nx0 = this.lerp(u, n00, n10);
+                const nx1 = this.lerp(u, n01, n11);
+                return this.lerp(v, nx0, nx1);
+            }
+        }
+
+        const perlin = new PerlinNoise(42);
+
+        // Aurora colors with realistic saturation
+        const auroraColors = [
+            { r: 0, g: 255, b: 156 },    // Vibrant green
+            { r: 0, g: 255, b: 162 },    // Green-cyan
+            { r: 102, g: 255, b: 204 },  // Water-green
+            { r: 0, g: 207, b: 255 },    // Bright cyan
+            { r: 100, g: 150, b: 255 },  // Blue-purple
+            { r: 153, g: 51, b: 255 },   // Purple
+        ];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+
+        // Renderizar fundo
+        function drawBackground() {
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, '#0a0e27');
+            grad.addColorStop(0.3, '#1a0033');
+            grad.addColorStop(0.7, '#0a0e27');
+            grad.addColorStop(1, '#000000');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Adicionar estrelas
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            for (let i = 0; i < 200; i++) {
+                const x = Math.sin(i * 12.9898) * width * 0.5 + width * 0.5;
+                const y = Math.cos(i * 78.233) * height * 0.4 + height * 0.3;
+                const size = Math.sin(i * 45.164 + time * 0.5) * 0.5 + 1;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        // Render aurora with light curtain technique
+        function drawAurora() {
+            ctx.globalCompositeOperation = 'lighter';
+
+            const numBands = 6; // Bands of color
+            for (let b = 0; b < numBands; b++) {
+                const color = auroraColors[b % auroraColors.length];
+                const yBase = height * 0.2 + (b * 50);
+                
+                // Draw curtain using multiple thin vertical segments
+                const segments = 200;
+                for (let i = 0; i <= segments; i++) {
+                    const xPercent = i / segments;
+                    const x = xPercent * width;
+                    
+                    // Wavy movement using noise and sine
+                    const n1 = perlin.noise(xPercent * 3.0 + time * 0.05, b * 0.5);
+                    const n2 = perlin.noise(xPercent * 5.0 - time * 0.03, b * 0.8);
+                    
+                    const xOffset = n1 * 100;
+                    const yOffset = n2 * 150 + Math.sin(xPercent * 10 + time * 0.1) * 30;
+                    
+                    const finalX = x + xOffset;
+                    const finalY = yBase + yOffset;
+                    
+                    // Curtain height varies with noise
+                    const curtainHeight = 300 + (n1 + n2) * 150;
+                    
+                    // Create vertical gradient for each segment
+                    const grad = ctx.createLinearGradient(finalX, finalY, finalX, finalY + curtainHeight);
+                    const alpha = (0.15 + n1 * 0.2) * (1.0 - b / numBands);
+                    
+                    grad.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+                    grad.addColorStop(0.2, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
+                    grad.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha * 0.4})`);
+                    grad.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+                    
+                    ctx.fillStyle = grad;
+                    
+                    // Segment width to fill space without gaps
+                    const segWidth = (width / segments) * 3;
+                    ctx.fillRect(finalX - segWidth/2, finalY, segWidth, curtainHeight);
+                }
+            }
+
+            // Atmospheric glow layer
+            const atmosGrad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+            atmosGrad.addColorStop(0, 'rgba(0, 255, 156, 0.05)');
+            atmosGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = atmosGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // Aplicar glow effect
+        function applyGlow() {
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.filter = 'blur(20px)';
+            
+            // Desenhar uma versão desfocada para intensificar o brilho
+            const imageData = ctx.getImageData(0, 0, width, height);
+            ctx.putImageData(imageData, 0, 0);
+            
+            ctx.filter = 'none';
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function animate() {
+            // Limpar canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Desenhar fundo
+            drawBackground();
+
+            // Desenhar aurora
+            drawAurora();
+
+            // Incrementar tempo
+            time += 0.016 * timeScale; // ~60fps
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        speedSlider.addEventListener('input', (e) => {
+            const sliderValue = parseFloat(e.target.value);
+            timeScale = sliderValue * 5; // 5x intensity on speed
+            speedDisplay.textContent = sliderValue.toFixed(1) + 'x';
+        });
+
+        // Iniciar animação
+        animate();
+    </script>
+</body>
+</html>
