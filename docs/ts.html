@@ -194,7 +194,12 @@
     z-index: 1;
     max-width: 480px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 40px 24px 0;
+  }
+
+  /* Second hero-inner (below image) gets less top padding */
+  .hero-placeholder + .hero-inner {
+    padding-top: 24px;
   }
 
   /* ── HERO IMAGE ─────────────────────────────── */
@@ -203,17 +208,27 @@
     margin: 0 -24px;
     padding: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     background: transparent;
     overflow: hidden;
+    max-height: 320px;
+  }
+
+  .hero-placeholder img {
+    width: 100%;
+    max-width: 100%;
+    height: 320px;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
   }
 
   .hero-placeholder::after {
     content: '';
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    height: 60px;
+    height: 80px;
     background: linear-gradient(to bottom, transparent, #DAECff);
     pointer-events: none;
   }
@@ -291,7 +306,7 @@
     font-weight: 300;
     line-height: 1.65;
     color: var(--text-mid);
-    margin-bottom: 32px;
+    margin-bottom: 20px;
     animation: fadeUp 0.55s ease both 0.25s;
   }
 
@@ -370,12 +385,12 @@
   }
 
   .metric-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: linear-gradient(145deg, rgba(255,255,255,0.92) 0%, rgba(255,240,255,0.75) 100%);
+    border: 1px solid rgba(212,70,247,0.14);
     border-radius: var(--radius-lg);
     padding: 16px 14px;
     backdrop-filter: blur(14px);
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 4px 20px rgba(43,127,255,0.10), 0 1px 4px rgba(212,70,247,0.08);
     transition: transform 0.2s, box-shadow 0.2s;
     position: relative;
     overflow: hidden;
@@ -386,11 +401,11 @@
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, var(--rose), transparent);
-    opacity: 0;
+    background: linear-gradient(90deg, var(--rose), rgba(43,127,255,0.5), transparent);
+    opacity: 0.7;
     transition: opacity 0.2s;
   }
-  .metric-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-soft); }
+  .metric-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(43,127,255,0.16), 0 2px 8px rgba(212,70,247,0.12); }
   .metric-card:hover::before { opacity: 1; }
 
   /* marca d'água do ícone: SVG absolutamente posicionado */
@@ -398,17 +413,17 @@
     position: absolute;
     bottom: -4px; right: -2px;
     width: 42px; height: 42px;
-    opacity: 0.07;
+    opacity: 0.10;
     pointer-events: none;
     transition: opacity 0.2s;
   }
-  .metric-card:hover .metric-watermark { opacity: 0.13; }
+  .metric-card:hover .metric-watermark { opacity: 0.18; }
 
   .metric-val {
     font-family: 'Comfortaa', cursive;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
-    color: var(--blue-primary);
+    color: var(--blue-deep);
     line-height: 1;
     margin-bottom: 5px;
     position: relative; z-index: 1;
@@ -416,8 +431,8 @@
 
   .metric-label {
     font-size: 11.5px;
-    font-weight: 400;
-    color: var(--text-soft);
+    font-weight: 500;
+    color: var(--text-mid);
     line-height: 1.4;
     position: relative; z-index: 1;
   }
@@ -674,14 +689,14 @@
     line-height: 1.5;
   }
 
-  /* CTA final button — white bg with dark text for max contrast */
+  /* CTA final button — gradiente violeta+rosa, consistente com seção Como Funciona */
   .section-cta-final .btn-cta-white {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     font-family: 'DM Sans', sans-serif;
     font-size: 15.5px;
     font-weight: 700;
-    color: var(--blue-brand);
-    background: #ffffff;
+    color: #ffffff;
+    background: linear-gradient(135deg, #9B30E8 0%, #C040F5 50%, #A020D0 100%);
     border: none;
     border-radius: var(--radius-pill);
     padding: 16px 28px;
@@ -690,15 +705,17 @@
     margin-top: 28px;
     width: 100%;
     box-shadow:
-      0 4px 24px rgba(0,0,0,0.22),
-      inset 0 1px 0 rgba(255,255,255,0.95);
+      0 4px 24px rgba(180,50,240,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.22);
     transition: all 0.22s ease;
     letter-spacing: 0.01em;
   }
   .section-cta-final .btn-cta-white:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 36px rgba(0,0,0,0.28);
-    background: #f0f5ff;
+    box-shadow:
+      0 8px 36px rgba(180,50,240,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.28);
+    background: linear-gradient(135deg, #A835F0 0%, #D446F7 50%, #B025E0 100%);
   }
 
   /* section-rotina CTA button — violet gradient */
@@ -768,37 +785,35 @@
   }
 
   .testimonial-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-xl);
-    padding: 22px 20px;
-    margin-bottom: 14px;
-    backdrop-filter: blur(14px);
-    box-shadow: var(--shadow-card);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0 0 36px;
+    margin-bottom: 0;
+    backdrop-filter: none;
+    box-shadow: none;
     position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .testimonial-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--rose), var(--blue-primary), transparent);
-    opacity: 0.5;
-  }
-  .testimonial-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-soft);
+    overflow: visible;
+    transition: none;
   }
 
+  /* separador sutil entre depoimentos */
+  .testimonial-card + .testimonial-card {
+    padding-top: 32px;
+    border-top: 1px solid rgba(43,127,255,0.08);
+  }
+
+  .testimonial-card::before { display: none; }
+  .testimonial-card:hover { transform: none; box-shadow: none; }
+
   .testimonial-quote {
-    font-size: 22px;
+    font-size: 48px;
     color: var(--rose);
-    opacity: 0.4;
-    line-height: 1;
-    margin-bottom: 10px;
+    opacity: 0.25;
+    line-height: 0.8;
+    margin-bottom: 12px;
     font-family: Georgia, serif;
+    letter-spacing: -2px;
   }
 
   .testimonial-text {
@@ -965,10 +980,10 @@
 
   .pricing-card {
     background: #ffffff;
-    border: 1.5px solid rgba(43,127,255,0.18);
+    border: 1px solid rgba(43,127,255,0.12);
     border-radius: var(--radius-xl);
-    padding: 28px 24px 32px;
-    box-shadow: 0 8px 40px rgba(43,127,255,0.13), 0 2px 8px rgba(0,42,221,0.07);
+    padding: 0;
+    box-shadow: 0 12px 48px rgba(43,127,255,0.14), 0 2px 8px rgba(0,42,221,0.06);
     position: relative;
     overflow: hidden;
   }
@@ -979,94 +994,241 @@
     top: 0; left: 0; right: 0;
     height: 3px;
     background: var(--grad-brand);
+    z-index: 1;
+  }
+
+  /* Layout 2 colunas: info esquerda | preço direita — fundo escuro unificado */
+  .pricing-layout {
+    display: flex;
+    gap: 0;
+    background: linear-gradient(135deg, #1A1060 0%, #2A1880 35%, #3B2A9E 60%, #2855B8 85%, #1E6AD4 100%);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* blob decorativo sutil no topo */
+  .pricing-layout::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: radial-gradient(ellipse, rgba(212,70,247,0.22) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .pricing-col-info {
+    flex: 1;
+    padding: 28px 24px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
   }
 
   .pricing-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: linear-gradient(135deg, rgba(212,70,247,0.12), rgba(43,127,255,0.08));
-    border: 1px solid rgba(212,70,247,0.22);
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
     border-radius: var(--radius-pill);
-    padding: 4px 12px;
-    font-size: 11px;
+    padding: 3px 10px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--blue-deep);
-    margin-bottom: 18px;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 10px;
+    width: fit-content;
   }
 
   .pricing-name {
     font-family: 'Comfortaa', cursive;
-    font-size: 20px;
+    font-size: 17px;
     font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 6px;
+    color: #ffffff;
+    margin-bottom: 4px;
+    line-height: 1.2;
   }
 
   .pricing-desc {
-    font-size: 13.5px;
-    color: var(--text-soft);
-    margin-bottom: 22px;
-    line-height: 1.5;
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.55;
+  }
+
+  /* ── PREÇO — bloco premium ──────────────────── */
+
+  /* Coluna do preço: área dedicada com separator vertical sutil */
+  .pricing-col-price {
+    width: 160px;
+    flex-shrink: 0;
+    padding: 24px 20px 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    border-left: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Pill de destaque acima do preço */
+  .pricing-price-eyebrow {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(212,70,247,0.85);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .pricing-price-eyebrow::before,
+  .pricing-price-eyebrow::after {
+    content: '';
+    display: inline-block;
+    width: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,70,247,0.50));
+  }
+  .pricing-price-eyebrow::after {
+    background: linear-gradient(90deg, rgba(212,70,247,0.50), transparent);
+  }
+
+  /* Container do valor com respiro generoso */
+  .pricing-price-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0 8px;
+    position: relative;
+  }
+
+  /* Halo rosa sutil atrás do número */
+  .pricing-price-badge::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    background: radial-gradient(ellipse at center, rgba(212,70,247,0.18) 0%, transparent 70%);
+    pointer-events: none;
   }
 
   .pricing-price {
     display: flex;
-    align-items: baseline;
-    gap: 4px;
-    margin-bottom: 6px;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .pricing-price-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 3px;
+    line-height: 1;
+    padding: 0 4px;
   }
 
   .pricing-currency {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-mid);
-    margin-top: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: #ffffff;
+    padding-top: 11px;
+    letter-spacing: 0;
+    flex-shrink: 0;
   }
 
   .pricing-amount {
-    font-family: 'Comfortaa', cursive;
-    font-size: 48px;
-    font-weight: 700;
-    color: var(--blue-deep);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 58px;
+    font-weight: 300;
+    letter-spacing: -2px;
+    background: linear-gradient(170deg, #ffffff 10%, #f0c8ff 55%, #D446F7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
     line-height: 1;
+    display: inline-block;
+    padding-right: 4px;
   }
+
+  .pricing-amount::after { display: none; }
 
   .pricing-period {
-    font-size: 13px;
-    color: var(--text-soft);
-    align-self: flex-end;
-    padding-bottom: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.38);
+    margin-top: 4px;
+    display: block;
+    letter-spacing: 0.06em;
+    text-align: center;
+    text-transform: lowercase;
   }
 
+  /* Linha decorativa abaixo do preço */
+  .pricing-price-divider {
+    width: 32px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,70,247,0.55), transparent);
+    margin: 10px auto 0;
+  }
+
+  /* Nota discreta abaixo do divider */
+  .pricing-price-note {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.70);
+    margin-top: 8px;
+    text-align: center;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+  }
+
+  /* Âncora maior abaixo do layout 2 colunas */
   .pricing-anchor {
     font-size: 13px;
     color: var(--text-mid);
     font-style: italic;
-    margin-bottom: 22px;
-    padding: 12px 16px;
-    background: rgba(43,127,255,0.07);
-    border-left: 3px solid rgba(212,70,247,0.55);
-    border-radius: 0 10px 10px 0;
+    margin: 0;
+    padding: 14px 24px;
+    background: rgba(43,127,255,0.04);
+    border-left: 3px solid rgba(212,70,247,0.5);
     line-height: 1.55;
     font-weight: 400;
   }
 
+  /* Features e CTA abaixo */
+  .pricing-bottom {
+    padding: 20px 24px 28px;
+    border-top: 1px solid rgba(43,127,255,0.08);
+  }
+
   .pricing-features {
     list-style: none;
-    margin-bottom: 26px;
+    margin-bottom: 22px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 9px;
   }
 
   .pricing-features li {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 13.5px;
+    font-size: 13px;
     color: var(--text-dark);
     font-weight: 400;
   }
@@ -1074,8 +1236,8 @@
   .pricing-check {
     width: 18px; height: 18px;
     border-radius: 50%;
-    background: linear-gradient(135deg, rgba(43,127,255,0.15), rgba(212,70,247,0.10));
-    border: 1px solid rgba(43,127,255,0.20);
+    background: linear-gradient(135deg, rgba(43,127,255,0.13), rgba(212,70,247,0.09));
+    border: 1px solid rgba(43,127,255,0.18);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
@@ -1103,26 +1265,33 @@
     margin-top: 28px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   .faq-item {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.82);
+    border: 1px solid rgba(43,127,255,0.10);
     border-radius: var(--radius-lg);
     overflow: hidden;
     backdrop-filter: blur(12px);
-    box-shadow: var(--shadow-card);
-    transition: box-shadow 0.2s;
+    box-shadow: 0 2px 12px rgba(43,127,255,0.06);
+    transition: box-shadow 0.2s, border-color 0.2s;
   }
-  .faq-item:hover { box-shadow: var(--shadow-soft); }
+  .faq-item:hover {
+    box-shadow: 0 4px 20px rgba(43,127,255,0.10);
+    border-color: rgba(212,70,247,0.18);
+  }
+  .faq-item.open {
+    border-color: rgba(212,70,247,0.20);
+    box-shadow: 0 4px 20px rgba(43,127,255,0.10);
+  }
 
   .faq-question {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 16px 18px;
+    padding: 15px 18px;
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
@@ -1130,7 +1299,7 @@
 
   .faq-question-text {
     font-family: 'Comfortaa', cursive;
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-dark);
     line-height: 1.4;
@@ -1138,10 +1307,10 @@
   }
 
   .faq-chevron {
-    width: 20px; height: 20px;
+    width: 22px; height: 22px;
     border-radius: 50%;
-    background: rgba(212,70,247,0.10);
-    border: 1px solid rgba(212,70,247,0.20);
+    background: linear-gradient(135deg, rgba(43,127,255,0.08), rgba(212,70,247,0.06));
+    border: 1px solid rgba(212,70,247,0.18);
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
     transition: transform 0.28s ease, background 0.2s;
@@ -1149,7 +1318,7 @@
 
   .faq-item.open .faq-chevron {
     transform: rotate(180deg);
-    background: rgba(212,70,247,0.18);
+    background: linear-gradient(135deg, rgba(212,70,247,0.18), rgba(43,127,255,0.10));
   }
 
   .faq-answer {
@@ -1157,17 +1326,19 @@
     overflow: hidden;
     transition: max-height 0.32s ease, padding 0.28s ease;
     padding: 0 18px;
+    border-top: 0px solid rgba(212,70,247,0.08);
   }
 
   .faq-item.open .faq-answer {
-    max-height: 200px;
-    padding: 0 18px 16px;
+    max-height: 240px;
+    padding: 12px 18px 16px;
+    border-top-width: 1px;
   }
 
   .faq-answer p {
     font-size: 13px;
     color: var(--text-mid);
-    line-height: 1.65;
+    line-height: 1.7;
     font-weight: 300;
   }
 
@@ -1267,9 +1438,22 @@
   <div class="blob-blue"></div>
   <div class="blob-rose"></div>
 
+  <div class="hero-inner">
+    <span class="hero-eyebrow">Para psicólogos</span>
+
+    <h1 class="hero-title">
+      Sua rotina clínica,<br>
+      <em>sem planilhas</em>, sem papel e sem bagunça.
+    </h1>
+
+    <p class="hero-desc">
+      Prontuários, agenda, confirmações via WhatsApp e dashboards. Tudo em um lugar seguro e simples.
+    </p>
+  </div>
+
   <!-- Hero Image -->
   <div class="hero-placeholder">
-    <img src="https://agora.facilresultado.com.br/meet/head.webp" alt="" class="placeholder-icon" style="width:100%; max-width:480px; height:auto; border-radius:0; object-fit:cover; filter:none; animation:floatIcon 6s ease-in-out infinite;" />
+    <img src="https://agora.facilresultado.com.br/meet/head.webp" alt="" />
   </div>
 
   <div class="hero-inner">
@@ -1282,17 +1466,6 @@
       </span>
       Criptografado no seu navegador. Só você acessa seus prontuários.
     </div>
-
-    <span class="hero-eyebrow">Para psicólogos</span>
-
-    <h1 class="hero-title">
-      Sua rotina clínica,<br>
-      <em>sem planilhas</em>, sem papel e sem bagunça.
-    </h1>
-
-    <p class="hero-desc">
-      Prontuários, agenda, confirmações via WhatsApp e dashboards. Tudo em um lugar seguro e simples.
-    </p>
 
     <div class="hero-ctas">
       <a href="#" class="btn-primary">
@@ -1588,20 +1761,35 @@
     <p class="section-desc">Um plano único com tudo incluído. Sem tiers confusos.</p>
 
     <div class="pricing-card">
-      <div class="pricing-badge">
-        <span class="testimonial-metric-dot"></span>
-        Plano completo
+      <!-- Bloco superior: info esquerda + preço direita — fundo escuro unificado -->
+      <div class="pricing-layout">
+        <div class="pricing-col-info">
+          <div class="pricing-badge">
+            <span class="testimonial-metric-dot"></span>
+            Plano completo
+          </div>
+          <div class="pricing-name">Therasoft Pro</div>
+          <div class="pricing-desc">Tudo que você precisa para atender com foco e segurança.</div>
+        </div>
+        <div class="pricing-col-price">
+          <div class="pricing-price-eyebrow">valor</div>
+          <div class="pricing-price-badge">
+            <div class="pricing-price">
+              <div class="pricing-price-row">
+                <span class="pricing-currency">R$</span>
+                <span class="pricing-amount" data-val="59">59</span>
+              </div>
+              <span class="pricing-period">,90 / mês</span>
+            </div>
+            <div class="pricing-price-divider"></div>
+            <div class="pricing-price-note">por psicólogo</div>
+          </div>
+        </div>
       </div>
-      <div class="pricing-name">Therasoft Pro</div>
-      <div class="pricing-desc">Tudo que você precisa para atender com foco e segurança.</div>
-      <div class="pricing-price">
-        <span class="pricing-currency">R$</span>
-        <span class="pricing-amount">59</span>
-        <span class="pricing-period">,90/mês</span>
-      </div>
-      <div class="pricing-anchor">Menos do que uma sessão perdida por falta. Paga-se sozinho no primeiro mês.</div>
 
-      <ul class="pricing-features">
+      <!-- Features e CTA -->
+      <div class="pricing-bottom">
+        <ul class="pricing-features">
         <li>
           <span class="pricing-check">
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#D446F7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1644,6 +1832,7 @@
         Começar 7 dias grátis
       </a>
       <p class="pricing-extra">Sem cartão de crédito. Cancele quando quiser.<br><a href="#">Precisa de plano personalizado para clínica?</a></p>
+      </div><!-- /pricing-bottom -->
     </div>
   </div>
 </section>
@@ -1756,8 +1945,8 @@
       <span class="testimonial-metric-dot"></span>
       Comece hoje
     </div>
-    <h2 class="cta-final-title">Organize seu consultório em minutos</h2>
-    <p class="cta-final-desc">Junte-se a psicólogos em 8 estados que já simplificaram sua rotina clínica.</p>
+    <h2 class="cta-final-title">Menos burocracia. Mais presença com seus pacientes.</h2>
+    <p class="cta-final-desc">Agenda, prontuários e confirmações no mesmo lugar. Psicólogos em 8 estados já simplificaram sua rotina clínica com o Therasoft.</p>
     <a href="#" class="btn-cta-white">Quero organizar meu consultório</a>
     <p class="cta-final-hint">7 dias grátis. Sem cartão. Cancele quando quiser.</p>
   </div>
