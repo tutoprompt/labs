@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Perfil Gamer v23</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,700;1,900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ═══════════════════════════════════════════════
+   THEME SYSTEM — cada tema tem identidade própria
+   ═══════════════════════════════════════════════ */
+
+/* ── PS5: azul royal frio, formas arredondadas,
+         tipografia suave, brilho de plasma ── */
+:root,[data-theme="ps5"]{
+  --bg:#060810;--bg2:#0b0e1a;--bg3:#0f1220;
+  --border:#1a1f35;--border2:#242840;
+  --text:#dde4ff;--text2:#5a6899;--text3:#303858;
+  --green:#00c5a5;--blue:#0096ff;--amber:#f0a030;--red:#ff3366;--purple:#9966ff;
+  --accent:#0096ff;--accent2:#00c5a5;
+  --pill-bg:#06091acc;--pill-border:#0c1840;--pill-color:#2a58a8;
+  --pill-hover-border:#0096ff;--pill-hover-color:#60b8ff;--pill-hover-bg:#040a22ee;
+  --tip-bg:#07091cf0;--tip-border:#0c1e50;
+  --status-dot-bg:#00c5a5;
+  --sbtn-bg:#06091acc;--sbtn-border:#0c1640;--sbtn-color:#4060a8;
+  /* PS5-specific shape vars */
+  --radius-pill:20px;--radius-card:14px;--radius-btn:8px;
+  --topbar-accent:linear-gradient(90deg,#0096ff22 0%,transparent 60%);
+  --border-style:0.5px solid;
+  --card-accent-top:3px solid #0096ff;
+  --font-ui:'DM Sans',sans-serif;
+  --sc-header-bg:#08101ecc;
+}
+
+/* ── STEAM: grafite-aço escuro, cantos cortados (clip-path),
+            azul aço + teal, UI densa tipo client Steam ── */
+[data-theme="steam"]{
+  --bg:#0c0d10;--bg2:#15171e;--bg3:#1c1f28;
+  --border:#252832;--border2:#2e3240;
+  --text:#b8c5d0;--text2:#5a6878;--text3:#303848;
+  --green:#4ab8a8;--blue:#4fa8d8;--amber:#a87820;--red:#d04040;--purple:#8060b8;
+  --accent:#4fa8d8;--accent2:#4ab8a8;
+  --pill-bg:#101420cc;--pill-border:#1a2430;--pill-color:#3a5870;
+  --pill-hover-border:#4fa8d8;--pill-hover-color:#7ac0e8;--pill-hover-bg:#0c1820ee;
+  --tip-bg:#101520f0;--tip-border:#1a2838;
+  --status-dot-bg:#4ab8a8;
+  --sbtn-bg:#101420cc;--sbtn-border:#182030;--sbtn-color:#405878;
+  /* Steam-specific: cantos cortados, bordas mais pesadas */
+  --radius-pill:3px;--radius-card:4px;--radius-btn:2px;
+  --topbar-accent:linear-gradient(90deg,#4fa8d822 0%,transparent 50%);
+  --border-style:1px solid;
+  --card-accent-top:0px;
+  --font-ui:'DM Sans',sans-serif;
+  --sc-header-bg:#101420cc;
+}
+
+/* ── XBOX: verde neon vivo sobre preto profundo,
+            formas angulares, sem bordas arredondadas,
+            linguagem militar/HUD ── */
+[data-theme="xbox"]{
+  --bg:#050805;--bg2:#080f08;--bg3:#0c150c;
+  --border:#142014;--border2:#1c2c1c;
+  --text:#c8e8c0;--text2:#486848;--text3:#284028;
+  --green:#52d052;--blue:#40c0f0;--amber:#e0a020;--red:#e04040;--purple:#8858c8;
+  --accent:#52d052;--accent2:#40e040;
+  --pill-bg:#050e05cc;--pill-border:#0c1e0c;--pill-color:#286828;
+  --pill-hover-border:#52d052;--pill-hover-color:#90e880;--pill-hover-bg:#030c03ee;
+  --tip-bg:#050e05f0;--tip-border:#0e200e;
+  --status-dot-bg:#52d052;
+  --sbtn-bg:#050e05cc;--sbtn-border:#0c1a0c;--sbtn-color:#386838;
+  /* Xbox-specific: sem cantos, bordas marcadas */
+  --radius-pill:0px;--radius-card:2px;--radius-btn:0px;
+  --topbar-accent:linear-gradient(90deg,#52d05230 0%,transparent 50%);
+  --border-style:1px solid;
+  --card-accent-top:0px;
+  --font-ui:'Space Mono',monospace;
+  --sc-header-bg:#080f08cc;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-ui,'DM Sans',sans-serif)}
+#app{display:flex;flex-direction:column;width:100%;height:100%;margin-right:380px}
+#main-row{display:flex;flex:1;overflow:hidden;min-height:0;position:relative}
+
+/* TOP BAR — accent gradient per theme */
+#top-bar{height:40px;flex-shrink:0;background:var(--bg);border-bottom:var(--border-style) var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:20;position:relative;background-image:var(--topbar-accent)}
+#top-bar-left{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#status-btn{font-family:'Space Mono',monospace;font-size:8px;padding:4px 12px;border-radius:var(--radius-btn);border:var(--border-style) var(--sbtn-border);background:var(--sbtn-bg);color:var(--sbtn-color);cursor:pointer;transition:all .18s;letter-spacing:.06em;display:flex;align-items:center;gap:6px;white-space:nowrap}
+#status-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--pill-hover-bg)}
+#status-dot{width:5px;height:5px;border-radius:50%;background:var(--status-dot-bg);animation:blink 2.4s ease-in-out infinite}
+#top-bar-divider{width:1px;height:18px;background:var(--border2);flex-shrink:0}
+#protocol-pills{display:flex;gap:4px;align-items:center;flex:1;justify-content:center}
+.prot-pill{font-family:'Space Mono',monospace;font-size:8px;padding:4px 10px;border-radius:var(--radius-pill);border:var(--border-style) var(--pill-border);background:var(--pill-bg);color:var(--pill-color);letter-spacing:.06em;cursor:pointer;transition:all .18s;white-space:nowrap;position:relative}
+.prot-pill:hover,.prot-pill.on{border-color:var(--pill-hover-border);color:var(--pill-hover-color);background:var(--pill-hover-bg)}
+#prot-tip{position:fixed;top:48px;left:50%;transform:translateX(-50%);background:var(--tip-bg);border:var(--border-style) var(--tip-border);border-radius:var(--radius-card);padding:13px 16px;width:260px;pointer-events:none;opacity:0;transition:opacity .15s;backdrop-filter:blur(10px);z-index:100}
+#prot-tip.show{opacity:1}
+#prot-tip-title{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:5px}
+#prot-tip-body{font-size:11px;color:var(--pill-color);line-height:1.65}
+#prot-tip-tag{display:inline-block;margin-top:8px;font-size:8px;font-family:'Space Mono',monospace;padding:2px 7px;border-radius:var(--radius-btn);background:var(--pill-bg);color:var(--pill-color)}
+#top-bar-right{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.ctrl{font-family:'Space Mono',monospace;font-size:8px;padding:4px 10px;border-radius:var(--radius-btn);border:var(--border-style) var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;transition:all .12s;letter-spacing:.05em}
+.ctrl:hover{background:var(--border);color:var(--text2)}
+
+/* Font scale slider */
+#font-scale-wrap{
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+  border-left:var(--border-style) var(--border2);
+  padding-left:8px;
+}
+#font-scale-label{
+  font-family:'Space Mono',monospace;font-size:7px;
+  color:var(--text3);letter-spacing:.06em;white-space:nowrap;
+}
+#font-scale-slider{
+  -webkit-appearance:none;appearance:none;
+  width:60px;height:2px;
+  background:var(--border2);border-radius:1px;
+  outline:none;cursor:pointer;
+}
+#font-scale-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--accent);cursor:pointer;
+  transition:box-shadow .12s;
+}
+#font-scale-slider::-webkit-slider-thumb:hover{
+  box-shadow:0 0 8px var(--accent)88;
+}
+#font-scale-val{
+  font-family:'Space Mono',monospace;font-size:7px;
+  color:var(--accent);letter-spacing:.04em;min-width:18px;
+}
+
+/* THEME SWITCHER — botões com identidade */
+.theme-btn{font-family:'Space Mono',monospace;font-size:7px;padding:4px 9px;border-radius:var(--radius-btn);border:var(--border-style) var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;transition:all .2s;letter-spacing:.08em;position:relative;overflow:hidden}
+.theme-btn:hover{background:var(--border);color:var(--text2)}
+.theme-btn.active{color:var(--bg);border-color:var(--accent);font-weight:700;background:var(--accent)}
+/* PS: botão arredondado com glow suave */
+[data-theme="ps5"] .theme-btn.active{box-shadow:0 0 10px var(--accent)55;border-radius:8px}
+/* Steam: botão reto, sem arredondamento */
+[data-theme="steam"] .theme-btn{border-radius:2px}
+[data-theme="steam"] .theme-btn.active{box-shadow:inset 0 -2px 0 rgba(255,255,255,.15)}
+/* Xbox: sem cantos, borda mais grossa no ativo */
+[data-theme="xbox"] .theme-btn{border-radius:0;font-size:8px}
+[data-theme="xbox"] .theme-btn.active{border-left:3px solid var(--accent);padding-left:6px}
+
+/* ── PS5 specific: glow effects ── */
+[data-theme="ps5"] .prot-pill:hover{box-shadow:0 0 8px var(--accent)44}
+[data-theme="ps5"] #top-bar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,#0096ff44 0%,transparent 50%)}
+[data-theme="ps5"] #ob-enter-btn{border-radius:20px}
+[data-theme="ps5"] #ob-title{letter-spacing:-.03em}
+
+/* ── STEAM specific: cantos cortados ── */
+[data-theme="steam"] #fw-footer{border-top:1px solid #4fa8d820}
+[data-theme="steam"] #panel-badge{border-radius:2px}
+
+/* ── XBOX specific: sem arredondamento, marcador lateral verde, HUD ── */
+[data-theme="xbox"] *{font-family:'Space Mono',monospace!important}
+[data-theme="xbox"] #top-bar{border-bottom:1px solid var(--accent)30}
+[data-theme="xbox"] #top-bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+[data-theme="xbox"] .prot-pill{border-radius:0}
+[data-theme="xbox"] .ctrl{border-radius:0}
+[data-theme="xbox"] #panel-header-bar{border-left:3px solid var(--accent)}
+[data-theme="xbox"] #panel-badge{border-radius:0}
+[data-theme="xbox"] #ob-title::before{content:'▶ ';color:var(--accent);font-size:22px}
+
+/* ── RANKING SIDEBAR ── */
+#rank-sidebar{
+  width:380px;
+  background:var(--bg);
+  border-left:1px solid var(--border2);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:fixed;
+  right:0;
+  top:40px;
+  bottom:34px;
+  z-index:18;
+  box-shadow:-6px 0 32px #00000066;
+  transition:opacity .25s, transform .25s;
+}
+#rank-header{
+  padding:22px 26px 18px;
+  border-bottom:1px solid var(--border2);
+  flex-shrink:0;
+}
+#rank-header-label{
+  font-family:'Space Mono',monospace;font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--accent);
+  display:flex;align-items:center;gap:8px;
+}
+#rank-header-label::before{content:'▲';font-size:9px;}
+#rank-title{
+  font-family:'Space Mono',monospace;font-size:16px;font-weight:700;
+  color:var(--text);margin-top:6px;letter-spacing:.02em;
+}
+#rank-list{
+  flex:1;overflow-y:auto;
+  padding:8px 0;
+}
+#rank-list::-webkit-scrollbar{width:3px;}
+#rank-list::-webkit-scrollbar-track{background:transparent;}
+#rank-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.rank-item{
+  display:grid;
+  grid-template-columns:48px 1fr auto;
+  align-items:center;
+  gap:0 14px;
+  padding:12px 20px;
+  cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:background .12s;
+  position:relative;
+}
+.rank-item:hover{background:var(--bg2);}
+.rank-item:last-child{border-bottom:none;}
+
+/* top 3 */
+.rank-item[data-pos="1"]{
+  padding:18px 20px;
+  background:color-mix(in srgb,var(--accent) 8%,var(--bg));
+}
+.rank-item[data-pos="1"]::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--accent);
+}
+.rank-item[data-pos="2"]{background:color-mix(in srgb,var(--accent) 4%,var(--bg));}
+.rank-item[data-pos="2"]::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--accent);opacity:.6;
+}
+.rank-item[data-pos="3"]{background:color-mix(in srgb,var(--accent) 2%,var(--bg));}
+.rank-item[data-pos="3"]::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--accent);opacity:.3;
+}
+
+.rank-pos{
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:11px;
+  color:var(--text3);flex-shrink:0;
+}
+.rank-pos-trophy{font-size:22px;line-height:1;}
+.rank-item[data-pos="1"] .rank-pos{color:var(--amber);}
+.rank-item[data-pos="2"] .rank-pos{color:var(--text2);}
+.rank-item[data-pos="3"] .rank-pos{color:var(--amber);opacity:.7;}
+
+.rank-info{min-width:0;overflow:hidden;}
+.rank-name{
+  font-family:'Space Mono',monospace;font-size:13px;font-weight:700;
+  color:var(--text);letter-spacing:.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  line-height:1.3;
+}
+.rank-item[data-pos="1"] .rank-name{font-size:15px;}
+.rank-meta{
+  font-family:'Space Mono',monospace;font-size:10px;
+  color:var(--text2);letter-spacing:.03em;margin-top:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rank-pct{
+  font-family:'Playfair Display',Georgia,serif;
+  font-style:italic;font-weight:900;
+  font-size:22px;
+  flex-shrink:0;
+  letter-spacing:-.02em;
+}
+.rank-item[data-pos="1"] .rank-pct{font-size:28px;}
+.rank-item[data-pos="2"] .rank-pct{font-size:24px;}
+.rank-item[data-pos="3"] .rank-pct{font-size:22px;}
+
+/* type colors for rank pct */
+.rank-pct.type-ok{color:var(--green);}
+.rank-pct.type-next{color:var(--blue);}
+.rank-pct.type-maybe{color:var(--amber);}
+
+#rank-divider{
+  height:1px;background:var(--border2);margin:0 20px;
+  flex-shrink:0;
+}
+
+/* rank footer note */
+#rank-footer{
+  padding:12px 20px;flex-shrink:0;
+  border-top:1px solid var(--border2);
+  font-family:'Space Mono',monospace;font-size:10px;
+  color:var(--text2);letter-spacing:.05em;
+  line-height:1.6;
+}
+
+/* GRAPH */
+#graph-area{flex:1;position:relative;overflow:hidden;transition:flex .32s cubic-bezier(.4,0,.2,1)}
+#graph-area.panel-open{flex:0 0 56%}
+svg{width:100%;height:100%;display:block;cursor:grab}
+svg:active{cursor:grabbing}
+#graph-hint{position:absolute;bottom:50px;left:14px;font-size:9px;font-family:'Space Mono',monospace;color:var(--text3);letter-spacing:.04em;pointer-events:none}
+
+/* ══════════════════════════════════════════════════
+   ONBOARDING SCREEN — tela imersiva de boas-vindas
+   ══════════════════════════════════════════════════ */
+#status-overlay{
+  position:fixed;inset:0;z-index:200;
+  display:none;flex-direction:column;
+  background:var(--bg);
+  overflow-y:auto;
+}
+#status-overlay.open{display:flex}
+
+/* Animated noise grain overlay */
+#status-overlay::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.03;
+}
+
+/* Accent glow behind content */
+#status-overlay::after{
+  content:'';position:fixed;
+  top:-200px;left:50%;transform:translateX(-50%);
+  width:800px;height:500px;
+  background:radial-gradient(ellipse at center, var(--accent)18 0%, transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+#ob-inner{
+  position:relative;z-index:1;
+  width:100%;max-width:1120px;
+  margin:0 auto;
+  padding:40px 44px 52px;
+  display:flex;flex-direction:column;gap:0;
+}
+
+/* ── HEADER ── */
+#ob-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:36px;
+}
+#ob-kicker{
+  font-family:'Space Mono',monospace;font-size:8px;
+  color:var(--accent);letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+#ob-kicker::before{content:'';display:block;width:20px;height:1px;background:var(--accent)}
+#ob-title{
+  font-size:clamp(22px,3.5vw,32px);font-weight:700;
+  color:var(--text);line-height:1.15;letter-spacing:-.02em;
+  margin-bottom:10px;
+}
+#ob-sub{
+  font-size:13px;color:var(--text2);line-height:1.65;
+  max-width:520px;
+}
+#ob-close{
+  width:36px;height:36px;flex-shrink:0;
+  border-radius:var(--radius-pill);
+  border:var(--border-style) var(--border2);
+  background:transparent;color:var(--text2);
+  cursor:pointer;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;margin-top:4px;
+}
+#ob-close:hover{background:var(--border);color:var(--text)}
+
+/* ── SECTION LABEL ── */
+.ob-section-label{
+  font-family:'Space Mono',monospace;font-size:8px;
+  color:var(--text3);letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:12px;
+}
+.ob-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── MAIN BODY: journey left + sidebar right ── */
+#ob-body{
+  display:grid;
+  grid-template-columns:1fr 320px;
+  gap:0 40px;
+  align-items:start;
+}
+
+/* ── LEFT: journey column ── */
+#ob-journey-col{display:flex;flex-direction:column;}
+
+/* Journey steps — vertical stack */
+#ob-journey{
+  display:flex;flex-direction:column;gap:0;
+  position:relative;
+  margin-bottom:0;
+}
+
+/* Vertical connector line through bubbles */
+#ob-journey::before{
+  content:'';position:absolute;
+  left:25px;top:52px;bottom:52px;
+  width:1px;background:var(--border2);
+  z-index:0;
+}
+
+.ob-step{
+  position:relative;z-index:1;
+  padding:18px 0;
+  display:grid;
+  grid-template-columns:52px 1fr;
+  grid-template-rows:auto auto auto;
+  gap:0 20px;
+  border-bottom:var(--border-style) var(--border);
+}
+.ob-step:last-child{border-bottom:none}
+.ob-step:hover .ob-step-bubble{transform:scale(1.06)}
+
+.ob-step-bubble{
+  width:52px;height:52px;
+  border-radius:var(--radius-card);
+  border:var(--border-style);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  transition:transform .2s;
+  grid-row:1/3;grid-column:1;
+  align-self:center;flex-shrink:0;
+}
+.ob-step-num-label{
+  position:absolute;top:-7px;right:-7px;
+  width:16px;height:16px;border-radius:50%;
+  font-family:'Space Mono',monospace;font-size:7px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);border:1px solid;
+}
+.ob-step-tool{
+  font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:.12em;text-transform:uppercase;
+  opacity:.6;grid-column:2;align-self:end;padding-bottom:2px;
+}
+.ob-step-name{
+  font-size:13px;font-weight:700;
+  color:var(--text);
+  font-family:'Space Mono',monospace;letter-spacing:.04em;
+  grid-column:2;align-self:start;
+}
+.ob-step-text{
+  font-size:10.5px;color:var(--text2);line-height:1.6;
+  grid-column:2;margin-top:7px;
+}
+
+/* Step color themes */
+.ob-step-1 .ob-step-bubble{border-color:#4a4f6088;background:#0a0c1588;color:#6a7090}
+.ob-step-1 .ob-step-num-label{border-color:#4a4f60;color:#6a7090}
+.ob-step-1 .ob-step-tool{color:#6a7090}
+.ob-step-2 .ob-step-bubble{border-color:var(--accent)88;background:color-mix(in srgb,var(--accent) 8%,transparent);color:var(--accent);box-shadow:0 0 20px color-mix(in srgb,var(--accent) 18%,transparent)}
+.ob-step-2 .ob-step-num-label{border-color:var(--accent);color:var(--accent)}
+.ob-step-2 .ob-step-tool{color:var(--accent)}
+.ob-step-3 .ob-step-bubble{border-color:var(--amber)88;background:color-mix(in srgb,var(--amber) 8%,transparent);color:var(--amber);box-shadow:0 0 20px color-mix(in srgb,var(--amber) 14%,transparent)}
+.ob-step-3 .ob-step-num-label{border-color:var(--amber);color:var(--amber)}
+.ob-step-3 .ob-step-tool{color:var(--amber)}
+.ob-step-4 .ob-step-bubble{border-color:var(--purple)88;background:color-mix(in srgb,var(--purple) 8%,transparent);color:var(--purple);box-shadow:0 0 20px color-mix(in srgb,var(--purple) 14%,transparent)}
+.ob-step-4 .ob-step-num-label{border-color:var(--purple);color:var(--purple)}
+.ob-step-4 .ob-step-tool{color:var(--purple)}
+
+/* ── RIGHT: sidebar column ── */
+#ob-sidebar{
+  display:flex;flex-direction:column;gap:20px;
+  border-left:var(--border-style) var(--border);
+  padding-left:32px;
+}
+
+/* Groups compact */
+#ob-groups{display:flex;flex-direction:column;gap:5px;}
+.ob-group{
+  border-radius:var(--radius-card);
+  border:var(--border-style);
+  overflow:hidden;
+  position:relative;
+  transition:transform .18s;
+  cursor:default;
+}
+.ob-group:hover{transform:translateX(3px)}
+.ob-group-bar{height:2px;opacity:.5;}
+.ob-group-inner{
+  display:flex;align-items:center;gap:12px;
+  padding:9px 12px;
+}
+.ob-group-num{
+  font-family:'Space Mono',monospace;
+  font-size:22px;font-weight:700;
+  line-height:1;opacity:.25;
+  flex-shrink:0;width:26px;text-align:right;
+}
+.ob-group-name{
+  font-family:'Space Mono',monospace;font-size:8px;
+  font-weight:700;letter-spacing:.15em;margin-bottom:3px;
+}
+.ob-group-desc{font-size:9.5px;color:var(--text2);line-height:1.4}
+
+/* Pills 2-col */
+#ob-pills-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.ob-pill-card{
+  border-radius:var(--radius-btn);
+  border:var(--border-style) var(--border);
+  background:var(--bg2);
+  padding:9px 10px 8px;
+  transition:border-color .15s,background .15s;
+  display:flex;flex-direction:column;gap:3px;
+}
+.ob-pill-card:hover{border-color:var(--accent);background:var(--bg3)}
+.ob-pill-card--hint{opacity:.55}
+.ob-pill-card--hint:hover{opacity:1}
+.ob-pill-icon{font-size:11px;color:var(--accent);line-height:1;margin-bottom:1px;}
+.ob-pill-tag{
+  font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:.1em;padding:2px 6px;
+  border-radius:var(--radius-pill);
+  border:var(--border-style) var(--pill-hover-border);
+  color:var(--pill-hover-color);
+  background:var(--pill-hover-bg);
+  display:inline-block;width:fit-content;
+}
+.ob-pill-label{font-size:9px;font-weight:600;color:var(--text)}
+.ob-pill-desc{font-size:8px;color:var(--text2);line-height:1.45}
+
+/* ── ENTER BUTTON ── */
+#ob-enter{
+  margin-top:28px;
+  display:flex;align-items:center;justify-content:center;gap:20px;
+}
+#ob-enter-btn{
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.15em;
+  padding:13px 34px;border-radius:var(--radius-btn);
+  border:1.5px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
+  color:var(--accent);cursor:pointer;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+#ob-enter-btn::before{
+  content:'';position:absolute;inset:0;
+  background:var(--accent);opacity:0;transition:opacity .2s;
+}
+#ob-enter-btn:hover::before{opacity:.12}
+#ob-enter-btn:hover{box-shadow:0 0 28px color-mix(in srgb,var(--accent) 28%,transparent)}
+#ob-enter-hint{font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:.1em}
+
+/* Stagger animation */
+@keyframes obFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+#ob-inner > *{animation:obFadeUp .4s ease both}
+#ob-header{animation-delay:.05s}
+#ob-body{animation-delay:.12s}
+#ob-enter{animation-delay:.28s}
+
+/* SVG icons in bubbles */
+.ob-step-bubble svg{width:24px;height:24px;flex-shrink:0}
+
+/* Theme overrides */
+[data-theme="steam"] .ob-step-bubble{border-radius:2px}
+[data-theme="steam"] .ob-group{border-radius:2px}
+[data-theme="xbox"] .ob-step-bubble{border-radius:0}
+[data-theme="xbox"] .ob-group{border-radius:0}
+[data-theme="xbox"] #ob-enter-btn{border-radius:0;border-left:3px solid var(--accent)}
+
+/* SIDE PANEL */
+#side-panel{width:0;overflow:hidden;background:var(--bg2);border-left:var(--border-style) var(--border);display:flex;flex-direction:column;transition:width .32s cubic-bezier(.4,0,.2,1);flex-shrink:0}
+#side-panel.open{width:44%}
+
+/* PANEL HEADER */
+#panel-header-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 10px 16px;border-bottom:var(--border-style) var(--border);flex-shrink:0;background:var(--bg)}
+#panel-close{width:26px;height:26px;border-radius:var(--radius-pill);background:transparent;border:var(--border-style) var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:14px;transition:all .15s;flex-shrink:0}
+#panel-close:hover{background:var(--border);color:var(--text)}
+#panel-title-bar{display:flex;align-items:center;gap:10px;min-width:0}
+#panel-title{font-size:16px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#panel-badge{font-family:'Space Mono',monospace;font-size:8px;padding:3px 9px;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:.1em;flex-shrink:0}
+
+/* VIDEO AREA — sempre visível, 16/9 */
+#panel-video-wrap{width:100%;aspect-ratio:16/9;flex-shrink:0;background:#000;position:relative}
+#panel-video-wrap iframe{width:100%;height:100%;border:0;display:block}
+
+/* PANEL BODY */
+#panel-body{flex:1;overflow-y:auto;padding:14px 16px 24px}
+#panel-body::-webkit-scrollbar{width:2px}
+#panel-body::-webkit-scrollbar-thumb{background:var(--border2)}
+#panel-sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--text2);margin-bottom:10px;letter-spacing:.04em}
+#panel-when{font-size:13px;font-family:'Space Mono',monospace;color:var(--amber);background:#18100a;border-left:2px solid var(--amber);padding:7px 12px;border-radius:0 5px 5px 0;line-height:1.5;margin-bottom:12px}
+#panel-when::before{content:'jogue quando · ';color:#7a5a20;font-size:10px}
+#panel-desc{font-size:14px;color:#9a9fb5;line-height:1.75;margin-bottom:16px}
+
+/* TAGS */
+.sec-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:7px}
+#panel-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.p-tag{font-size:11px;font-family:'Space Mono',monospace;padding:3px 9px;border-radius:4px;background:var(--bg3);border:0.5px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .14s}
+.p-tag:hover{border-color:var(--text2);color:var(--text)}
+.p-tag.active-tag{border-color:var(--amber);color:var(--amber);background:#1a1208}
+
+/* CONNECTIONS — trilha horizontal de proximidade */
+#panel-conn-sec{margin-top:14px}
+#panel-conn-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+#panel-conn-track{
+  position:relative;
+  display:flex;flex-direction:row;align-items:stretch;
+  gap:0;
+  overflow-x:auto;padding-bottom:6px;
+  scrollbar-width:thin;
+}
+#panel-conn-track::-webkit-scrollbar{height:2px}
+#panel-conn-track::-webkit-scrollbar-thumb{background:var(--border2)}
+/* proximity line behind cards */
+#panel-conn-track::before{
+  content:'';
+  position:absolute;top:50%;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--accent)80,var(--border)40,transparent);
+  transform:translateY(-50%);pointer-events:none;z-index:0;
+}
+.conn-item{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:flex-start;
+  padding:9px 11px 8px;
+  min-width:100px;max-width:130px;flex-shrink:0;
+  border-radius:var(--radius-card);
+  background:var(--bg3);
+  border:0.5px solid var(--border);
+  border-top:2px solid transparent;
+  cursor:pointer;
+  transition:all .14s;
+  margin-right:6px;
+}
+.conn-item:hover{
+  background:var(--bg);
+  transform:translateY(-3px);
+  box-shadow:0 6px 20px #0006;
+}
+/* proximity rank fades — 1st is brightest */
+.conn-item[data-rank="0"]{opacity:1;border-color:var(--accent)55;border-top-color:var(--accent)}
+.conn-item[data-rank="1"]{opacity:.88}
+.conn-item[data-rank="2"]{opacity:.72}
+.conn-item[data-rank="3"]{opacity:.55}
+.conn-item[data-rank="4"]{opacity:.40}
+.conn-rank{
+  font-family:'Space Mono',monospace;font-size:7px;
+  color:var(--text3);letter-spacing:.1em;
+  margin-bottom:4px;
+}
+.conn-name{
+  font-size:11px;font-weight:700;
+  line-height:1.25;color:var(--text);
+  white-space:normal;word-break:break-word;
+}
+.conn-dir-label{
+  font-size:8px;font-family:'Space Mono',monospace;
+  color:var(--text3);margin-top:5px;
+  padding:2px 5px;border-radius:2px;
+  background:var(--bg2);white-space:nowrap;
+}
+.conn-match-bar{
+  width:100%;height:2px;border-radius:1px;
+  margin-top:6px;background:var(--border);
+  overflow:hidden;
+}
+.conn-match-fill{height:100%;border-radius:1px;}
+
+/* PANTEÃO */
+#pantheon-overlay{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:50;overflow:hidden}
+#pantheon-overlay.visible{display:flex}
+#po-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:16px}
+#po-header h2{font-family:'Space Mono',monospace;font-size:11px;color:var(--green);letter-spacing:.12em}
+#po-sub{font-size:11px;color:var(--text2);font-style:italic;flex:1}
+.ov-back{font-family:'Space Mono',monospace;font-size:9px;padding:5px 12px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;flex-shrink:0}
+.ov-back:hover{background:var(--border);color:var(--text)}
+#pantheon-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;padding:16px;align-content:start}
+#pantheon-grid::-webkit-scrollbar{width:2px}
+.p-card{border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg3);border:0.5px solid var(--border);transition:all .18s;position:relative}
+.p-card:hover{border-color:var(--green);transform:translateY(-2px);box-shadow:0 8px 20px #0005}
+.p-card-thumb{width:100%;height:90px;background:var(--bg2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.p-card-thumb iframe{width:100%;height:100%;border:0;pointer-events:none;transform:scale(1.05)}
+.p-card-body{padding:8px 10px}
+.p-card-name{font-size:11px;font-weight:600;color:var(--green);line-height:1.3;margin-bottom:2px}
+.p-card-studio{font-family:'Space Mono',monospace;font-size:8px;color:var(--text3)}
+.p-card-badge{position:absolute;top:6px;right:6px;font-size:7px;font-family:'Space Mono',monospace;padding:2px 5px;border-radius:3px;background:#06120aee;color:var(--green);border:0.5px solid #2a6a4a}
+
+/* FIREWALL FOOTER */
+#fw-footer{height:36px;flex-shrink:0;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;overflow:hidden}
+#fw-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--red);padding:0 13px;border-right:1px solid var(--border);white-space:nowrap;letter-spacing:.1em;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.fw-dot{width:5px;height:5px;border-radius:50%;background:var(--red);opacity:.7;animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:.9}}
+#fw-ticker{flex:1;overflow:hidden;cursor:pointer;position:relative}
+#fw-ticker-inner{display:flex;white-space:nowrap;animation:scroll-ticker 28s linear infinite}
+#fw-ticker:hover #fw-ticker-inner{animation-play-state:paused}
+@keyframes scroll-ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.fw-item{display:inline-flex;align-items:center;gap:10px;padding:0 18px;border-right:1px solid var(--border);height:36px}
+.fw-rule{font-family:'Space Mono',monospace;font-size:8px;color:#6a3030;letter-spacing:.06em}
+.fw-sep{color:var(--border2);font-size:9px}
+.fw-games{font-size:10px;color:#b06060}
+#fw-detail-btn{flex-shrink:0;padding:0 13px;font-family:'Space Mono',monospace;font-size:8px;color:var(--red);border-left:1px solid var(--border);cursor:pointer;height:100%;display:flex;align-items:center;gap:5px;transition:background .12s;letter-spacing:.04em}
+#fw-detail-btn:hover{background:#180808}
+
+/* EVITO hover badge */
+#evito-badge{
+  position:fixed;z-index:80;
+  background:#0e0505ee;
+  border:0.5px solid var(--red)55;
+  border-radius:var(--radius-btn);
+  padding:6px 10px;
+  transform:translateX(-50%) translateY(-100%);
+  pointer-events:none;
+  display:none;opacity:0;
+  transition:opacity .2s;
+  white-space:nowrap;
+  backdrop-filter:blur(6px);
+}
+#evito-badge-title{
+  font-family:'Space Mono',monospace;font-size:8px;
+  color:var(--red);letter-spacing:.1em;margin-bottom:3px;
+}
+#evito-badge-items{
+  font-size:9px;color:#aa6060;line-height:1.5;
+}
+
+#fw-modal{position:fixed;inset:0;background:#07080bdd;z-index:100;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+#fw-modal.open{display:flex}
+#fw-modal-box{width:100%;max-width:760px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:12px 12px 0 0;padding:22px;max-height:65vh;overflow-y:auto}
+#fw-modal-box::-webkit-scrollbar{width:2px}
+#fw-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+#fw-modal-hdr h2{font-family:'Space Mono',monospace;font-size:11px;color:var(--red);letter-spacing:.1em}
+.fw-close-btn{font-family:'Space Mono',monospace;font-size:9px;padding:5px 12px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
+.fw-close-btn:hover{background:var(--border)}
+#fw-cards{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fw-card{border-radius:8px;padding:14px 16px;background:var(--bg);border-left:2px solid var(--red);position:relative}
+.fw-card-title{font-size:13px;font-weight:600;margin-bottom:5px;color:#ff8888}
+.fw-card-body{font-size:12px;color:#7a5050;line-height:1.65;margin-bottom:10px}
+.fw-tags{display:flex;flex-wrap:wrap;gap:4px}
+.fw-tag{font-size:9px;font-family:'Space Mono',monospace;padding:2px 7px;border-radius:3px;background:#140808;border:0.5px solid #ff5a5a1a;color:#aa6060}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ONBOARDING SCREEN -->
+  <div id="status-overlay">
+    <div id="ob-inner">
+
+      <!-- HEADER -->
+      <div id="ob-header">
+        <div>
+          <div id="ob-kicker">mapa mental gamer</div>
+          <div id="ob-title">Um retrato de gosto,<br>não uma lista de tendências.</div>
+          <div id="ob-sub">Este mapa foi construído — não gerado. Três IAs, décadas de memória lúdica e um processo de curadoria humano produziram este grafo de jogos ajustado para o seu estado de espírito.</div>
+        </div>
+        <button id="ob-close" onclick="closeStatus()">×</button>
+      </div>
+
+      <!-- BODY: journey (left) + sidebar (right) -->
+      <div id="ob-body">
+
+        <!-- LEFT: A JORNADA -->
+        <div id="ob-journey-col">
+          <div class="ob-section-label">a jornada · como foi construído</div>
+          <div id="ob-journey">
+
+            <div class="ob-step ob-step-1">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="10" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".4"/>
+                  <path d="M8 11 Q14 7 20 11 L20 17 Q14 21 8 17 Z" stroke="currentColor" stroke-width="1" fill="none" opacity=".7"/>
+                  <circle cx="11" cy="14" r="1.2" fill="currentColor"/>
+                  <circle cx="17" cy="14" r="1.2" fill="currentColor"/>
+                  <path d="M11 17.5 Q14 19.5 17 17.5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+                </svg>
+                <div class="ob-step-num-label">1</div>
+              </div>
+              <div class="ob-step-tool">ChatGPT · Memória</div>
+              <div class="ob-step-name">Memória</div>
+              <div class="ob-step-text">Conversa longa com o ChatGPT listando tudo do Atari ao PlayStation — o que zerei, enjoei, parei. Hardware real (GT 730) definiu o teto dos títulos viáveis. Só dump de memória bruta.</div>
+            </div>
+
+            <div class="ob-step ob-step-2">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".4"/>
+                  <path d="M9 14 Q9 9 14 9 Q19 9 19 14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".9"/>
+                  <circle cx="14" cy="17" r="2.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".7"/>
+                  <line x1="14" y1="19.5" x2="14" y2="21.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+                </svg>
+                <div class="ob-step-num-label">2</div>
+              </div>
+              <div class="ob-step-tool">Claude · Artefato Quiz</div>
+              <div class="ob-step-name">Critérios</div>
+              <div class="ob-step-text">Prompt gerou um artefato interativo na interface do Claude — checkboxes de 10 títulos por rodada. Eu classificava em tempo real. Emergiram os critérios reais: narrativa visual, ritmo, 8–15h, sem roguelike.</div>
+            </div>
+
+            <div class="ob-step ob-step-3">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <rect x="6" y="5" width="12" height="16" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".5"/>
+                  <line x1="9" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="1" opacity=".6"/>
+                  <line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1" opacity=".6"/>
+                  <line x1="9" y1="15" x2="13" y2="15" stroke="currentColor" stroke-width="1" opacity=".6"/>
+                  <path d="M19 10 Q21 14 19 18" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".8"/>
+                  <path d="M21 8 Q24 14 21 20" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
+                </svg>
+                <div class="ob-step-num-label">3</div>
+              </div>
+              <div class="ob-step-tool">Google NotebookLM</div>
+              <div class="ob-step-name">Estrutura</div>
+              <div class="ob-step-text">Os resultados do quiz foram exportados como documento e indexados no NotebookLM. Lá pedi busca das URLs de gameplay no YouTube para cada título curado.</div>
+            </div>
+
+            <div class="ob-step ob-step-4">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".4"/>
+                  <path d="M9 14 Q9 9 14 9 Q19 9 19 14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".9"/>
+                  <circle cx="14" cy="17" r="2.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".7"/>
+                  <line x1="14" y1="19.5" x2="14" y2="21.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+                </svg>
+                <div class="ob-step-num-label">4</div>
+              </div>
+              <div class="ob-step-tool">Claude</div>
+              <div class="ob-step-name">Interface</div>
+              <div class="ob-step-text">Documento com URLs e critérios enviado ao Claude. Grafo, painéis laterais, previews de gameplay e anéis de match — cada jogo com filtro humano.</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT: SIDEBAR — grupos + navegar -->
+        <div id="ob-sidebar">
+
+          <div>
+            <div class="ob-section-label">os grupos · onde cada jogo está</div>
+            <div id="ob-groups">
+              <div class="ob-group" style="border-color:var(--green)44;background:color-mix(in srgb,var(--green) 5%,var(--bg2));color:var(--green)">
+                <div class="ob-group-bar" style="background:var(--green);width:100%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">16</div>
+                  <div><div class="ob-group-name">JÁ CURTI</div><div class="ob-group-desc">Deram o clique. A régua de tudo que vem depois.</div></div>
+                </div>
+              </div>
+              <div class="ob-group" style="border-color:var(--blue)44;background:color-mix(in srgb,var(--blue) 5%,var(--bg2));color:var(--blue)">
+                <div class="ob-group-bar" style="background:var(--blue);width:75%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">12</div>
+                  <div><div class="ob-group-name">VOU JOGAR</div><div class="ob-group-desc">Alta probabilidade. Combinam com critérios e estão na fila real.</div></div>
+                </div>
+              </div>
+              <div class="ob-group" style="border-color:var(--amber)44;background:color-mix(in srgb,var(--amber) 5%,var(--bg2));color:var(--amber)">
+                <div class="ob-group-bar" style="background:var(--amber);width:75%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">12</div>
+                  <div><div class="ob-group-name">TALVEZ</div><div class="ob-group-desc">Curiosidade com ressalvas. Vale assistir antes de decidir.</div></div>
+                </div>
+              </div>
+              <div class="ob-group" style="border-color:var(--red)44;background:color-mix(in srgb,var(--red) 5%,var(--bg2));color:var(--red)">
+                <div class="ob-group-bar" style="background:var(--red);width:25%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">4</div>
+                  <div><div class="ob-group-name">EVITO</div><div class="ob-group-desc">Padrões que quebram a experiência: loops, texto pesado, punição sem ritmo.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="ob-section-label">como navegar · dicas rápidas</div>
+            <div id="ob-pills-row">
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">♫</div>
+                <div class="ob-pill-tag">trilha</div>
+                <div class="ob-pill-label">Narrativa sonora</div>
+                <div class="ob-pill-desc">Trilha que amplifica o estado emocional em tempo real</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">◈</div>
+                <div class="ob-pill-tag">visual</div>
+                <div class="ob-pill-label">Show, don't tell</div>
+                <div class="ob-pill-desc">A história acontece no ambiente e na arte</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">⟳</div>
+                <div class="ob-pill-tag">ritmo</div>
+                <div class="ob-pill-label">Loop satisfatório</div>
+                <div class="ob-pill-desc">Flow justo — desafio sem punição aleatória</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">◷</div>
+                <div class="ob-pill-tag">8–15h</div>
+                <div class="ob-pill-label">Janela de ouro</div>
+                <div class="ob-pill-desc">Suficiente para aprofundar, curto pra não inchar</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">→</div>
+                <div class="ob-pill-tag">linear</div>
+                <div class="ob-pill-label">Arco com fim claro</div>
+                <div class="ob-pill-desc">Começo, meio e fim — a conclusão importa</div>
+              </div>
+              <div class="ob-pill-card ob-pill-card--hint">
+                <div class="ob-pill-icon" style="color:var(--text3)">↔</div>
+                <div class="ob-pill-tag" style="border-color:var(--border2);color:var(--text3);background:transparent">grafo</div>
+                <div class="ob-pill-label" style="color:var(--text2)">Navegação livre</div>
+                <div class="ob-pill-desc">Arraste · scroll zoom · clique nos nós</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ENTER BUTTON -->
+      <div id="ob-enter">
+        <div id="ob-enter-hint">↓ &nbsp; explore o mapa &nbsp; ↓</div>
+        <button id="ob-enter-btn" onclick="closeStatus()">ENTRAR NO MAPA</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div id="top-bar">
+    <div id="top-bar-left">
+      <button id="status-btn" onclick="openStatus()">
+        <div id="status-dot"></div>
+        perfil gamer · como usar
+      </button>
+    </div>
+    <div id="top-bar-divider"></div>
+    <div id="protocol-pills">
+      <div class="prot-pill" onmouseenter="showProt(0)" onmouseleave="hideProt()">trilha</div>
+      <div class="prot-pill" onmouseenter="showProt(1)" onmouseleave="hideProt()">visual</div>
+      <div class="prot-pill" onmouseenter="showProt(2)" onmouseleave="hideProt()">ritmo</div>
+      <div class="prot-pill" onmouseenter="showProt(3)" onmouseleave="hideProt()">8–15h</div>
+      <div class="prot-pill" onmouseenter="showProt(4)" onmouseleave="hideProt()">linear</div>
+    </div>
+    <div id="prot-tip">
+      <div id="prot-tip-title"></div>
+      <div id="prot-tip-body"></div>
+      <div id="prot-tip-tag"></div>
+    </div>
+    <div id="top-bar-divider"></div>
+    <div id="top-bar-right">
+      <div id="theme-switcher" style="display:flex;gap:3px;margin-right:6px;align-items:center">
+        <button class="theme-btn active" data-theme="ps5" onclick="setTheme('ps5')" title="PlayStation — azul royal">PS5</button>
+        <button class="theme-btn" data-theme="steam" onclick="setTheme('steam')" title="Steam — grafite aço">STM</button>
+        <button class="theme-btn" data-theme="xbox" onclick="setTheme('xbox')" title="Xbox — verde HUD">XBX</button>
+      </div>
+      <div style="width:1px;height:14px;background:var(--border2);margin-right:2px"></div>
+      <button class="ctrl" onclick="resetZoom()">reset</button>
+      <button class="ctrl" onclick="toggleLabels()">labels</button>
+      <button class="ctrl" id="dna-btn" onclick="toggleDNA()" title="DNA mecânico">dna</button>
+      <div id="font-scale-wrap">
+        <span id="font-scale-label">Aa</span>
+        <input id="font-scale-slider" type="range" min="1" max="2" step="0.05" value="1" oninput="applyFontScale(this.value)">
+        <span id="font-scale-val">1×</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-row">
+
+    <!-- GRAPH AREA -->
+    <div id="graph-area">
+      <svg id="canvas"></svg>
+
+      <div id="graph-hint">arraste · scroll zoom · clique nos nós</div>
+    <div id="dna-legend" style="position:absolute;bottom:50px;right:12px;display:none;flex-direction:column;gap:4px;z-index:10">
+      <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--text3);letter-spacing:.1em;margin-bottom:2px">DNA MECÂNICO</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:16px;height:1px;background:#ff6a3d;border-top:1px dashed #ff6a3d"></div><span style="font-family:'Space Mono',monospace;font-size:8px;color:#cc5030">dança do ritmo</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:16px;height:1px;border-top:1px dashed #7ecfff"></div><span style="font-family:'Space Mono',monospace;font-size:8px;color:#4a90bb">catarse visual</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:16px;height:1px;border-top:1px dashed #ffe066"></div><span style="font-family:'Space Mono',monospace;font-size:8px;color:#aa9020">linearidade polida</span></div>
+    </div>
+
+      <!-- PANTEÃO OVERLAY -->
+      <div id="pantheon-overlay">
+        <div id="po-header">
+          <h2>JÁ CURTI — O CLIQUE</h2>
+          <span id="po-sub">A régua de tudo que vem depois.</span>
+          <button class="ov-back" onclick="closePantheon()">← voltar</button>
+        </div>
+        <div id="pantheon-grid"></div>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div id="side-panel">
+      <div id="panel-header-bar">
+        <div id="panel-title-bar">
+          <div id="panel-title"></div>
+          <div id="panel-badge"></div>
+        </div>
+        <div id="panel-close" onclick="closePanel()">×</div>
+      </div>
+      <div id="panel-video-wrap">
+        <!-- iframe inserted by loadVideo() on panel open -->
+      </div>
+      <div id="panel-body">
+        <div id="panel-sub"></div>
+        <div id="panel-when" style="display:none;margin-bottom:10px"></div>
+        <div id="panel-desc"></div>
+        <div id="panel-tags-sec" style="display:none">
+          <div class="sec-label">tags</div>
+          <div id="panel-tags"></div>
+        </div>
+        <div id="panel-conn-sec" style="display:none">
+          <div class="sec-label" style="margin-top:14px">conexões · proximidade →</div>
+          <div id="panel-conn-track"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING SIDEBAR -->
+    <div id="rank-sidebar">
+      <div id="rank-header">
+        <div id="rank-header-label">ranking · análise</div>
+        <div id="rank-title">PRÓXIMO A JOGAR</div>
+      </div>
+      <div id="rank-list">
+        <!-- built by buildRanking() -->
+      </div>
+      <div id="rank-footer">score = match% · peso editorial · fit de critérios</div>
+    </div>
+  </div>
+
+  <!-- FIREWALL FOOTER -->
+  <div id="fw-footer">
+    <div id="fw-label"><div class="fw-dot"></div>EVITO</div>
+    <div id="fw-ticker"><div id="fw-ticker-inner"></div></div>
+    <div id="fw-detail-btn" onclick="document.getElementById('fw-modal').classList.add('open')">análise ↑</div>
+  </div>
+</div>
+
+<!-- EVITO hover badge -->
+<div id="evito-badge">
+  <div id="evito-badge-title">EVITO · 4 padrões</div>
+  <div id="evito-badge-items">texto pesado · roguelike · open world · soulslike genérico</div>
+</div>
+
+<!-- FIREWALL MODAL -->
+<div id="fw-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div id="fw-modal-box">
+    <div id="fw-modal-hdr">
+      <h2>EVITO — CRITÉRIOS DE REJEIÇÃO</h2>
+      <button class="fw-close-btn" onclick="document.getElementById('fw-modal').classList.remove('open')">× fechar</button>
+    </div>
+    <div id="fw-cards">
+      <div class="fw-card">
+        <div class="fw-card-title">Burocracia textual</div>
+        <div class="fw-card-body">Ler como mecânica central. Você já consome muito conteúdo fora — não quer replicar dentro. Paredes de texto quebram o flow antes de começar.</div>
+        <div class="fw-tags"><span class="fw-tag">Disco Elysium</span><span class="fw-tag">Control</span></div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-card-title">Loop procedural / roguelike</div>
+        <div class="fw-card-body">Sem arco narrativo — só giro. Variabilidade que não constrói progressão real. Você quer início, meio e fim, não runs infinitas.</div>
+        <div class="fw-tags"><span class="fw-tag">Hades</span><span class="fw-tag">Transistor</span></div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-card-title">Mundo aberto inchado</div>
+        <div class="fw-card-body">Missões geradas para adicionar horas. A sensação de "onde eu estava?" é sinal de que o jogo não respeita seu tempo.</div>
+        <div class="fw-tags"><span class="fw-tag">Elden Ring tardio</span><span class="fw-tag">Horizon 2</span></div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-card-title">Soulslike genérico</div>
+        <div class="fw-card-body">Punitivo sem ritmo próprio. Você fechou esse ciclo — um clone sem DNA original só traz frustração familiar.</div>
+        <div class="fw-tags"><span class="fw-tag">Nine Sols</span><span class="fw-tag">Lies of P</span><span class="fw-tag">Cyber Shadow</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+// ── PROTOCOL ──
+const PROT=[
+  {t:'Trilha que ancora',b:'A música amplifica o estado emocional em tempo real. Não é decorativa — é funcional. Quando trilha e ação se fundem, o jogo vira outra coisa.',tag:'obrigatório'},
+  {t:'Show, don\'t tell',b:'A história acontece no espaço, no movimento, na arte. Você lê o ambiente — não um manual. Impacto emocional sem peso cognitivo.',tag:'obrigatório'},
+  {t:'A dança do ritmo',b:'O momento em que mecânica vira linguagem. O parry de Sekiro, o flow de Katana Zero. Desafio justo que recompensa atenção — não punição aleatória.',tag:'obrigatório'},
+  {t:'Janela de ouro: 8–15h',b:'Suficiente para aprofundar, curto o bastante para não inchar. 20h é o limite absoluto — e só se o jogo justificar cada hora.',tag:'filtro duro'},
+  {t:'Linear com fim claro',b:'Uma jornada com arco. Missões paralelas só se enriquecerem — nunca se inflarem. A sensação de conclusão importa tanto quanto o percurso.',tag:'filtro estrutural'},
+];
+function showProt(i){
+  const p=PROT[i];
+  document.getElementById('prot-tip-title').textContent=p.t;
+  document.getElementById('prot-tip-body').textContent=p.b;
+  document.getElementById('prot-tip-tag').textContent=p.tag;
+  document.getElementById('prot-tip').classList.add('show');
+}
+function hideProt(){document.getElementById('prot-tip').classList.remove('show');}
+
+// ── FIREWALL TICKER ──
+const FW=[
+  {r:'BUROCRACIA TEXTUAL',g:'Disco Elysium · Control'},
+  {r:'ROGUELIKE',g:'Hades · Transistor'},
+  {r:'OPEN WORLD INCHADO',g:'Horizon 2 · Elden Ring tardio'},
+  {r:'SOULSLIKE GENÉRICO',g:'Nine Sols · Lies of P · Cyber Shadow'},
+];
+const ti=document.getElementById('fw-ticker-inner');
+ti.innerHTML=[...FW,...FW].map(f=>`<div class="fw-item"><span class="fw-rule">${f.r}</span><span class="fw-sep">→</span><span class="fw-games">${f.g}</span></div>`).join('');
+
+// ── GAME DATA ──
+// yt: YouTube search query for embed
+const TYPE_COLOR={ok:'#3de08a',next:'#4da8ff',maybe:'#ffb340',fw:'#ff5a5a'};
+const TYPE_LABEL={ok:'já curti',next:'vou jogar',maybe:'talvez',fw:'evito'};
+const TYPE_BG={ok:'#08180ecc',next:'#080e1acc',maybe:'#18100acc',fw:'#180a0acc'};
+
+// DNA categories for cross-links: 'ritmo' | 'visual' | 'linear'
+const DNA_COLOR={'ritmo':'#ff6a3d','visual':'#7ecfff','linear':'#ffe066'};
+const DNA_LABEL={'ritmo':'dança do ritmo','visual':'catarse visual','linear':'linearidade polida'};
+
+const GD={
+  ok1:{name:'Inside',ytId:'d7TGchyu2aU',match:98,score:'10/10',dur:'~3h',studio:'Playdead',desc:'Narrativa visual pura — zero texto. Angústia e beleza simultâneas. Cada frame é intencional.',when:'fadiga mental — quer só ver, sem ler uma linha',tags:['narrativa visual','puzzle','dark','plataforma'],to:['ok14','ok6','n5','n3','ok7'],dna:'visual',type:'ok'},
+  ok2:{name:'Celeste',ytId:'gBByzDmJFgU',match:97,score:'10/10',dur:'~8h',studio:'Maddy Thorson',desc:'Desafio preciso com saúde mental como mecânica central. Cada tela é um argumento emocional.',when:'quer superar algo difícil com alma — desafio que tem propósito',tags:['plataforma','saúde mental','pixel art','precisão'],to:['n1','ok8','n3','ok13','ok9'],dna:'visual',type:'ok'},
+  ok3:{name:'Katana Zero',ytId:'Q-0vHulV5uY',match:96,score:'10/10',dur:'~5h',studio:'Askiisoft',desc:'Ritmo, trilha sonora e narrativa psicológica em equilíbrio perfeito. Coerência total entre forma e conteúdo.',when:'sessão curta e intensa — quer entrar em flow imediato',tags:['ação','trilha sonora','neo-noir','narrativa'],to:['ok4','m1','ok15','ok11','m3'],dna:'ritmo',type:'ok'},
+  ok4:{name:'Hotline Miami',ytId:'xb1Pd4ZUkZ4',match:94,score:'10/10',dur:'~6h',studio:'Dennaton',desc:'Violência como poesia. Loop viciante com propósito narrativo real. Som e estética únicos.',when:'quer adrenalina pura — trilha no ouvido, mãos no controle',tags:['ação','top-down','trilha sonora','estilizado'],to:['ok3','ok12','m1','ok15','m3'],dna:'ritmo',type:'ok'},
+  ok5:{name:'Sekiro',ytId:'2N2jjHliYD0',match:92,score:'10/10',dur:'~40h',studio:'FromSoftware',desc:'"Dominar o parry foi transformador." O ritmo virou linguagem. A maestria aqui é única na história dos jogos.',when:'busca foco total — desafio técnico puro, estado de maestria',tags:['soulslike','samurai','maestria','ritmo'],to:['n4','ok11','ok13','m3','ok3'],dna:'ritmo',type:'ok'},
+  ok6:{name:'Journey',ytId:'rgSlZ_lQZ8k',match:91,score:'10/10',dur:'~2h',studio:'thatgamecompany',desc:'Arte, trilha e emoção sem uma palavra. O padrão de narrativa visual contemplativa.',when:'modo descanso — antes de dormir, paz e estética',tags:['contemplativo','narrativa visual','atmosfera'],to:['ok7','ok1','m6','m7','ok14'],dna:'visual',type:'ok'},
+  ok7:{name:'Abzu',ytId:'JvQdKqHcQGo',match:88,score:'10/10',dur:'~2h',studio:'Giant Squid',desc:'Mesma linguagem de Journey no oceano. Contemplação e beleza como propósito único.',when:'modo descanso — mindfulness interativo, sem exigência',tags:['contemplativo','exploração','visual','oceano'],to:['ok6','m6','m7'],dna:'visual',type:'ok'},
+  ok8:{name:'The Messenger',ytId:'6e29UYpsh1c',match:93,score:'10/10',dur:'~10h',studio:'Sabotage',desc:'A virada 8-bit→16-bit foi uma jogada de design elegante e ousada. Encantador do início ao fim.',when:'quer plataforma polida com surpresa narrativa — fim de semana',tags:['plataforma','metroidvania','pixel art','narrativa'],to:['m4','ok13','n6','ok2','n1'],dna:'linear',type:'ok'},
+  ok9:{name:'Undertale',ytId:'NvCwtStdQkc',match:89,score:'10/10',dur:'~8h',studio:'Toby Fox',desc:'Ousadia narrativa única. Zerou rindo. Subverte o RPG de uma forma que nenhum outro conseguiu repetir.',when:'quer ser surpreendido — humor, emoção e meta ao mesmo tempo',tags:['rpg','meta','humor','pixel art'],to:['n3','ok16','m6','ok1','m2'],dna:'linear',type:'ok'},
+  ok10:{name:'A Plague Tale',ytId:'QPonrUZwvHM',match:90,score:'10/10',dur:'~12h',studio:'Asobo',desc:'Cinematográfico, linear, emocionalmente denso sem ser burocrático. A relação Amicia-Hugo é o coração.',when:'quer narrativa cinematográfica — como assistir e jogar ao mesmo tempo',tags:['aventura','cinematográfico','linear','narrativo'],to:['ok16','n3','ok9','m2','ok6'],dna:'linear',type:'ok'},
+  ok11:{name:'Tails of Iron',ytId:'rpqyQEDOsaE',match:93,score:'10/10',dur:'~12h',studio:'Odd Bug',desc:'Zerado em 3-4 dias com prazer constante. Desafiador sem injustiça — curva de dificuldade honesta.',when:'quer combate justo e direto — sem enrolação',tags:['ação','rpg','pixel art','desafiador'],to:['n2','ok5','ok13','m4','ok3'],dna:'linear',type:'ok'},
+  ok12:{name:'Broforce',ytId:'2-YRr3W20KI',match:85,score:'10/10',dur:'~8h',studio:'Free Lives',desc:'Caos cooperativo com alma. Simples, preciso e genial. Sabe exatamente o que é.',when:'tem alguém do lado — sessão de caos com risada',tags:['ação','cooperativo','pixel art','destrutível'],to:['ok4','ok3','m3','m1'],dna:'ritmo',type:'ok'},
+  // ── Panteão extra ──
+  ok13:{name:'Hollow Knight',ytId:'G1atkq4C1KU',match:87,score:'10/10',dur:'~25h',studio:'Team Cherry',desc:'Atmosfera densa, exploração orgânica, combate preciso. Um dos metroidvanias mais bem construídos já feitos.',when:'quer explorar sem pressa — mundo que respira',tags:['metroidvania','exploração','atmosfera','desafiador'],to:['n5','m4','n6','ok5','ok8'],dna:'visual',type:'ok'},
+  ok14:{name:'Limbo',ytId:'2UImhljNUo0',match:95,score:'10/10',dur:'~3h',studio:'Playdead',desc:'Ancestral direto de Inside. Silêncio, penumbra e puzzles que não explicam nada — só mostram.',when:'fadiga total — mesma viagem de Inside, 3 horas, zero custo cognitivo',tags:['narrativa visual','puzzle','dark','atmosfera'],to:['ok1','ok6','n5','m7','m6'],dna:'visual',type:'ok'},
+  ok15:{name:'Mark of the Ninja',ytId:'FuiAnX2rf_o',match:91,score:'10/10',dur:'~8h',studio:'Klei',desc:'Stealth 2D perfeito. Você lê o espaço — cada sombra tem função. Amaste pela agilidade e precisão.',when:'quer ser invisível — stealth que recompensa paciência e leitura',tags:['stealth','plataforma','precisão','linear'],to:['m5','ok3','n6','ok13','ok11'],dna:'linear',type:'ok'},
+  ok16:{name:'Detroit: Become Human',ytId:'JVywqFx0GdE',match:88,score:'10/10',dur:'~12h',studio:'Quantic Dream',desc:'Excelência no equilíbrio entre narrativa e agência. Cada escolha tem peso real — cinema interativo que funciona.',when:'quer narrativa pesada — filme que você controla',tags:['narrativo','escolhas','cinematográfico','sci-fi'],to:['m2','ok10','ok9','n3','m6'],dna:'linear',type:'ok'},
+
+  n1:{name:'Neva',match:94,ytId:'2C7Bfi3Jx_Y',score:'alta prioridade',dur:'~8h',studio:'Devolver Digital',desc:'Do criador de Celeste. Pixel art precisa, combate fluido, narrativa emocional sem texto pesado.',when:'quer Celeste mas com mais ação — mesmo coração, outra linguagem',tags:['ação','plataforma','pixel art','narrativa visual'],from:['ok2','ok8','ok14','ok1','ok3'],to:[],dna:'visual',type:'next'},
+  n2:{name:'Tails of Iron 2',match:92,ytId:'WcZbd1cXNLs',score:'alta prioridade',dur:'~12h',studio:'Odd Bug',desc:'Continuação direta do que você zerou com prazer em 3-4 dias. O estúdio sabe o que está fazendo.',when:'quer o mesmo prazer de Tails 1 — sem risco',tags:['ação','rpg','sequência','pixel art'],from:['ok11','ok5','ok3','ok15','ok13'],to:[],dna:'linear',type:'next'},
+  n3:{name:'Psychonauts 2',match:88,ytId:'8sT3W45G7VY',score:'alta prioridade',dur:'~14h',studio:'Double Fine',desc:'Cada fase é a mente de um personagem. Emocional como Celeste, criativo como Inside.',when:'quer plataforma 3D com profundidade psicológica — não tem em outro lugar',tags:['plataforma 3D','psicológico','humor','narrativo'],from:['ok2','ok1','ok9','ok10','ok16'],to:[],dna:'visual',type:'next'},
+  n4:{name:'Tunic',match:82,ytId:'7ozwLHxw33Q',score:'alta prioridade',dur:'~15h',studio:'Andrew Shouldice',desc:'Soulslike com raposa. Você lê o mundo — descoberta orgânica. O manual está dentro do jogo e você o monta.',when:'quer descobrir sem ser guiado — exploração como linguagem',tags:['soulslike','exploração','puzzle','descoberta'],from:['ok5','ok13','ok1','ok15','n5'],to:[],dna:'visual',type:'next'},
+  n5:{name:'Animal Well',match:86,ytId:'hdBpAOv877I',score:'alta prioridade',dur:'~10h',studio:'Bigmode',desc:'Mistério visual puro. Sem texto, sem tutorial. A camada superficial é metroidvania — o que está embaixo é muito mais estranho.',when:'quer Inside mas com mais jogo — mesmo silêncio, mais profundidade',tags:['exploração','metroidvania','mistério','pixel art'],from:['ok1','ok13','ok14','ok6','ok2'],to:[],dna:'visual',type:'next'},
+  n6:{name:'Prince of Persia: TLC',match:85,ytId:'3J6ui7hNG7o',score:'alta prioridade',dur:'~12h',studio:'Ubisoft',desc:'Metroidvania moderno e polido — raridade da Ubisoft. Combate fluido, mapa denso, sem inchaço.',when:'quer metroidvania polido e direto — sem surpresa negativa',tags:['metroidvania','ação','plataforma','combate'],from:['ok13','ok8','ok15','ok11','ok2'],to:[],dna:'linear',type:'next'},
+  n7:{name:'Sifu',match:91,ytId:'k7CzXMVzBFk',score:'alta prioridade',dur:'~10h',studio:'Sloclap',desc:'Artes marciais com envelhecimento como mecânica de risco. O "clique" do domínio técnico é exatamente o que você sentiu em Sekiro — a dança do ritmo quando tudo encaixa.',when:'quer o mesmo clique do parry de Sekiro — kung fu preciso, punição justa',tags:['combate','artes marciais','domínio técnico','rhythmic'],from:['ok5','ok3','ok4','ok11','ok15'],to:[],dna:'ritmo',type:'next'},
+  n8:{name:'Sea of Stars',match:83,ytId:'TJvCp19Jifs',score:'alta prioridade',dur:'~35h',studio:'Sabotage Studio',desc:'JRPG com combate ativo e estética HD pixel art que remete ao prazer visceral de Chrono Trigger. Trilha de Yasunori Mitsuda.',when:'quer RPG com coração retrô — se tiver disposição pra narrativa longa',tags:['rpg','pixel art','turn-based','nostalgia'],from:['ok9','ok7','ok6','ok2','ok10'],to:[],dna:'visual',type:'next'},
+  n9:{name:'Little Nightmares 2',match:84,ytId:'h-3fW0w2ayg',score:'alta prioridade',dur:'~6h',studio:'Tarsier Studios',desc:'Expand a narrativa visual do 1 com escala e variedade. O universo ficou mais perturbador e mais bonito. Inside com mais carne.',when:'quer Inside de novo — atmosfera densa sem texto',tags:['narrativa visual','horror','plataforma','atmosfera'],from:['ok1','ok14','ok6','ok7','ok10'],to:[],dna:'visual',type:'next'},
+  n10:{name:'Nine Sols',match:80,ytId:'0j4OuU3eSMg',score:'alta prioridade',dur:'~15h',studio:'Red Candle Games',desc:'Soulslike de parry em pixel art taopunk — samurai xeno em cenário sci-fi mítico. Ritmo próximo de Sekiro se o timing for seu.',when:'quer Sekiro em 2D — só se gostar de parry preciso como linguagem',tags:['soulslike','parry','pixel art','taopunk'],from:['ok5','ok13','ok15','ok8','ok11'],to:[],dna:'ritmo',type:'next'},
+  n11:{name:'Braid',match:79,ytId:'vgmL9ZMG2uo',score:'alta prioridade',dur:'~6h',studio:'Jonathan Blow',desc:'Clássico conceitual de puzzle com manipulação do tempo. Narrativa fragmentada que só faz sentido no final. Fundação do indie narrativo.',when:'quer puzzle filosófico — sem ação, só tempo e lógica',tags:['puzzle','tempo','conceitual','narrativo'],from:['ok1','ok6','ok14','ok9','ok7'],to:[],dna:'visual',type:'next'},
+  n12:{name:'Ghostrunner',match:87,ytId:'GKV3Q3LvB5k',score:'alta prioridade',dur:'~8h',studio:'One More Level',desc:'Agilidade e ritmo puros — cyberpunk em first person, death-loop de movimento como Katana Zero em 3D. Um hit, você morre, recomeça em segundos.',when:'quer Katana Zero mas em 3D — ritmo frenético sem burocracia',tags:['ação','first person','flow','cyberpunk'],from:['ok3','ok4','ok12','ok15','ok5'],to:[],dna:'ritmo',type:'next'},
+
+  m1:{name:'Aragami',match:70,ytId:'fccxIlcEers',score:'curiosidade',dur:'~8h',studio:'Lince Works',desc:'Stealth puro em 3D japonês. Você é uma sombra — só furtividade e teletransporte. Herdeiro da agilidade de Mark of the Ninja.',when:'quer Mark of the Ninja mas em 3D — elegante quando funciona',tags:['stealth','japonês','furtividade','3D'],from:['ok15','ok3','ok13','ok5','n6'],to:[],dna:'linear',type:'maybe'},
+  m2:{name:'Oxenfree',match:72,ytId:'9TkichNtpBk',score:'curiosidade',dur:'~5h',studio:'Night School',desc:'Thriller sobrenatural com diálogos durante o gameplay — sem pausar. Atmosfera única.',when:'quer narrativa leve e estranha — sem compromisso de horas',tags:['narrativo','thriller','sobrenatural','diálogo'],from:['ok16','ok9','ok10','ok6','m6'],to:[],dna:'linear',type:'maybe'},
+  m3:{name:'Cuphead',match:74,ytId:'b3dpdPr8gIQ',score:'curiosidade',dur:'~8h',studio:'Studio MDHR',desc:'Arte dos anos 30 em movimento real. Cada boss é um puzzle de padrões. Beleza visual incomparável.',when:'quer desafio visual — sabe que vai morrer muito, mas vale a cena',tags:['ação','boss rush','arte histórica','difícil'],from:['ok4','ok3','ok5','ok12','ok11'],to:[],dna:'ritmo',type:'maybe'},
+  m4:{name:'Iconoclasts',match:76,ytId:'FlSRCJScoUg',score:'curiosidade',dur:'~10h',studio:'Joakim Sandberg',desc:'Metroidvania com história forte. Um dev solo, 7 anos. Similar a The Messenger mas com mais peso emocional.',when:'quer The Messenger com mais história — dev solo que deu tudo',tags:['metroidvania','narrativo','pixel art','solo dev'],from:['ok8','ok13','ok2','ok15','ok11'],to:[],dna:'linear',type:'maybe'},
+  m5:{name:'Pentiment',match:62,ytId:'OSBCrRICpTk',score:'curiosidade',dur:'~10h',studio:'Obsidian',desc:'Narrativa visual medieval contada como iluminura animada do séc. XV. Zero combate. Só escolhas.',when:'quer algo completamente diferente — arte como jogo',tags:['narrativo','medieval','visual','sem combate'],from:['ok9','ok16','ok6','ok1','ok7'],to:[],dna:'visual',type:'maybe'},
+  m6:{name:'Norco',match:60,ytId:'nfZcSYLz250',score:'curiosidade',dur:'~5h',studio:'Geography of Robots',desc:'Sci-fi lo-fi no sul dos EUA. Atmosfera densa, arte única, contemplativo.',when:'quer atmosfera estranha em 5 horas — sem compromisso',tags:['sci-fi','atmosfera','arte','contemplativo'],from:['ok6','ok1','ok14','ok7','m5'],to:[],dna:'visual',type:'maybe'},
+  m7:{name:'11-11: Memories Retold',match:68,ytId:'9KjPgJU5ZPM',score:'curiosidade',dur:'~5h',studio:'Aardman/Digixart',desc:'Guerra emocional pintada como aquarela impressionista. Dois lados opostos na WWI, sem combate — só escolhas e arte.',when:'quer Inside mas sobre guerra — beleza visual extrema em 5 horas',tags:['narrativo','guerra','impressionista','sem combate'],from:['ok10','ok6','ok1','ok7','ok9'],to:[],dna:'visual',type:'maybe'},
+  m8:{name:'This War of Mine',match:55,ytId:'wVKJtQoFHgk',score:'curiosidade',dur:'~10h',studio:'11 bit studios',desc:'Sobrevivência civil em guerra. Sem heróis — só escolhas morais pesadas com consequências reais. Impacto humano.',when:'quer narrativa pesada e moral — não vá cansado',tags:['sobrevivência','moral','guerra','narrativo'],from:['ok10','ok16','ok9','m7','ok7'],to:[],dna:'linear',type:'maybe'},
+  m9:{name:'The Wolf Among Us',match:66,ytId:'xMFHC3bhlKM',score:'curiosidade',dur:'~10h',studio:'Telltale',desc:'Noir urbano com personagens de fábula. Investigação, atmosfera densa e escolhas que importam. Melhor obra da Telltale.',when:'quer Detroit mas noir — investigação visual sem combate',tags:['narrativo','noir','investigação','escolhas'],from:['ok16','ok9','ok10','ok6','m2'],to:[],dna:'linear',type:'maybe'},
+  m10:{name:'Octopath Traveler 2',match:58,ytId:'hYUX_FvR4Ic',score:'curiosidade',dur:'~60h',studio:'Square Enix',desc:'Estética HD-2D única e trilha sonora de Yasunori Mitsuda. RPG clássico com visual moderno — só entra se amar JRPG longo.',when:'quer RPG belo e profundo — apenas com disposição pra maratona',tags:['rpg','HD-2D','trilha','clássico'],from:['ok9','n8','ok7','ok6','ok10'],to:[],dna:'visual',type:'maybe'},
+  m11:{name:'Moonlighter',match:63,ytId:'KXVOGMxLJoU',score:'curiosidade',dur:'~12h',studio:'Digital Sun',desc:'Gerenciar uma loja de dia, explorar masmorras de noite. Loop leve sem pressão. Pixel art agradável.',when:'quer algo relaxado com loop satisfatório — sem narrativa pesada',tags:['roguelite','loja','pixel art','loop leve'],from:['ok12','ok11','ok3','ok8','ok4'],to:[],dna:'ritmo',type:'maybe'},
+  m12:{name:'Life is Strange: True Colors',match:65,ytId:'TbFrF3UeSH0',score:'curiosidade',dur:'~9h',studio:'Deck Nine',desc:'Evolução da fórmula de escolhas com empatia como mecânica. A melhor entrada da série — flui como Detroit mas mais íntimo.',when:'quer Detroit mas menor e mais emocional — empatia como superpoder',tags:['narrativo','escolhas','emocional','empatia'],from:['ok16','ok9','ok10','m2','m9'],to:[],dna:'linear',type:'maybe'},
+};
+
+// ── NODES & LINKS ──
+// ── THEME-AWARE COLORS ──
+function getThemeColors(){
+  const s=getComputedStyle(document.documentElement);
+  const g=s.getPropertyValue('--green').trim();
+  const b=s.getPropertyValue('--blue').trim();
+  const a=s.getPropertyValue('--amber').trim();
+  const r=s.getPropertyValue('--red').trim();
+  const g_col=s.getPropertyValue('--green').trim();
+  const b_col=s.getPropertyValue('--blue').trim();
+  const a_col=s.getPropertyValue('--amber').trim();
+  const r_col=s.getPropertyValue('--red').trim();
+  return {
+    root:{fill:'#0d0f18',stroke:'#4a4f60',text:'#c0c4d0',r:46},
+    // Group hubs — solid filled with their accent color, inverted text
+    fw:{fill:r_col,stroke:r_col,text:'#0a0404',r:40},
+    ok:{fill:g_col,stroke:g_col,text:'#010a04',r:40},
+    next:{fill:b_col,stroke:b_col,text:'#010408',r:40},
+    maybe:{fill:a_col,stroke:a_col,text:'#0a0600',r:40},
+    // leaf nodes — fill computed dynamically per match%, stored as base
+    fw_l:{fill:'#100606',stroke:r_col+'66',text:'#ffffff',r:32},
+    ok_l:{fill:'#040c06',stroke:g_col+'66',text:'#ffffff',r:32},
+    next_l:{fill:'#04060e',stroke:b_col+'66',text:'#ffffff',r:32},
+    maybe_l:{fill:'#0d0a02',stroke:a_col+'66',text:'#ffffff',r:32},
+  };
+}
+const COLORS=getThemeColors();
+
+const rawNodes=[
+  {id:'root',label:'PERFIL\nGAMER',type:'root'},
+  // EVITO — single node only, no children in graph
+  {id:'fw',label:'EVITO',type:'fw',parent:'root'},
+  {id:'ok',label:'JÁ\nCURTI',type:'ok',parent:'root'},
+  {id:'next',label:'VOU\nJOGAR',type:'next',parent:'root'},
+  {id:'maybe',label:'TALVEZ',type:'maybe',parent:'root'},
+  // fw leaf nodes removed from graph — EVITO is annotation only
+  ...['ok1','ok2','ok3','ok4','ok5','ok6','ok7','ok8','ok9','ok10','ok11','ok12','ok13','ok14','ok15','ok16'].map(id=>({id,label:GD[id].name.replace(' ','\n').split(' ')[0],type:'ok_l',parent:'ok'})),
+  ...['n1','n2','n3','n4','n5','n6','n7','n8','n9','n10','n11','n12'].map(id=>({id,label:GD[id].name.split(':')[0].trim(),type:'next_l',parent:'next'})),
+  ...['m1','m2','m3','m4','m5','m6','m7','m8','m9','m10','m11','m12'].map(id=>({id,label:GD[id].name,type:'maybe_l',parent:'maybe'})),
+];
+
+// Build proper labels
+const labelMap={
+  ok1:'Inside',ok2:'Celeste',ok3:'Katana\nZero',ok4:'Hotline\nMiami',ok5:'Sekiro',
+  ok6:'Journey',ok7:'Abzu',ok8:'The\nMessenger',ok9:'Undertale',ok10:'A Plague\nTale',
+  ok11:'Tails of\nIron',ok12:'Broforce',ok13:'Hollow\nKnight',ok14:'Limbo',
+  ok15:'Mark of\nthe Ninja',ok16:'Detroit',
+  n1:'Neva',n2:'Tails of\nIron 2',n3:'Psycho-\nnaut 2',n4:'Tunic',n5:'Animal\nWell',n6:'PoP: TLC',
+  n7:'Sifu',n8:'Sea of\nStars',n9:'Little\nNight. 2',n10:'Nine\nSols',n11:'Braid',n12:'Ghost-\nrunner',
+  m1:'Aragami',m2:'Oxenfree',m3:'Cuphead',m4:'Iconoclasts',m5:'Pentiment',m6:'Norco',
+  m7:'11-11\nMemories',m8:'This War\nof Mine',m9:'Wolf\nAmong Us',m10:'Octopath\n2',m11:'Moon-\nlighter',m12:'Life is\nStrange TC',
+};
+rawNodes.forEach(n=>{if(labelMap[n.id])n.label=labelMap[n.id];});
+
+const parentLinks=rawNodes.filter(n=>n.parent).map(n=>({source:n.parent,target:n.id,cross:false,dna:null}));
+// curated cross-links (from/to in GD)
+const crossLinks=[];
+Object.entries(GD).forEach(([id,gd])=>{
+  (gd.to||[]).forEach(tid=>{if(GD[tid])crossLinks.push({source:id,target:tid,cross:true,dna:null});});
+});
+// DNA similarity links — same dna across different parent clusters
+const dnaLinks=[];
+const dnaGroups={};
+Object.entries(GD).forEach(([id,gd])=>{
+  if(gd.dna){if(!dnaGroups[gd.dna])dnaGroups[gd.dna]=[];dnaGroups[gd.dna].push(id);}
+});
+// Only add dna links between panteão nodes (ok*) — keeps graph readable
+Object.entries(dnaGroups).forEach(([dna,ids])=>{
+  const okIds=ids.filter(id=>GD[id].type==='ok');
+  for(let i=0;i<okIds.length;i++){
+    for(let j=i+1;j<okIds.length;j++){
+      // avoid duplicating existing cross-links
+      const a=okIds[i],b=okIds[j];
+      const already=crossLinks.find(l=>(l.source===a&&l.target===b)||(l.source===b&&l.target===a));
+      if(!already)dnaLinks.push({source:a,target:b,cross:false,dna});
+    }
+  }
+});
+let showDNA=false;
+const allLinks=[...parentLinks,...crossLinks,...dnaLinks];
+
+// ── ARC HELPER ──
+function polarToCartesian(r,angleDeg){
+  const a=(angleDeg-90)*Math.PI/180;
+  return{x:r*Math.cos(a),y:r*Math.sin(a)};
+}
+function describeArc(r,startAngle,endAngle){
+  if(endAngle>=360)endAngle=359.999;
+  const s=polarToCartesian(r,startAngle);
+  const e=polarToCartesian(r,endAngle);
+  const large=endAngle-startAngle>180?1:0;
+  return`M${s.x},${s.y}A${r},${r},0,${large},1,${e.x},${e.y}`;
+}
+
+// ── D3 SETUP ──
+const W=()=>Math.max(document.getElementById('graph-area').clientWidth,100);
+const H=()=>Math.max(document.getElementById('graph-area').clientHeight,100);
+const svg=d3.select('#canvas');
+const g=svg.append('g');
+const zoom=d3.zoom().scaleExtent([0.1,5]).on('zoom',e=>g.attr('transform',e.transform));
+svg.call(zoom);
+
+const sim=d3.forceSimulation(rawNodes)
+  .force('link',d3.forceLink(allLinks).id(d=>d.id).distance(d=>{
+    const t=typeof d.target==='object'?d.target.type:d.target;
+    const s=typeof d.source==='object'?d.source.type:d.source;
+    if(d.cross)return 160;
+    // root → group hub: bem espaçado
+    if(['fw','ok','next','maybe'].includes(t)&&s==='root')return 420;
+    // group hub → leaf: afasta os filhos do hub
+    if(['fw_l','ok_l','next_l','maybe_l'].includes(t))return 160;
+    return 220;
+  }).strength(d=>{
+    const t=typeof d.target==='object'?d.target.type:d.target;
+    const s=typeof d.source==='object'?d.source.type:d.source;
+    if(d.cross)return 0.04; // cross-links bem fracos — não puxam clusters
+    if(['fw','ok','next','maybe'].includes(t)&&s==='root')return 0.8;
+    return 0.45;
+  }))
+  .force('charge',d3.forceManyBody().strength(d=>{
+    if(d.type==='root')return -4000;
+    if(['fw','ok','next','maybe'].includes(d.type))return -3500;
+    return -600;
+  }))
+  .force('center',d3.forceCenter(W()/2,H()/2))
+  .force('collision',d3.forceCollide().radius(d=>(COLORS[d.type]?.r||32)*2.8))
+  .alphaDecay(0.010);
+
+const linkEl=g.append('g').selectAll('line').data(allLinks).join('line')
+  .attr('stroke',d=>{
+    if(d.dna)return DNA_COLOR[d.dna]||'#555';
+    return d.cross?'#2a3348':'#161820';
+  })
+  .attr('stroke-width',d=>{const t=typeof d.target==='object'?d.target.type:'';return d.dna?0.6:d.cross?0.8:(['fw','ok','next','maybe'].includes(t)?1.2:0.5);})
+  .attr('stroke-dasharray',d=>d.dna?'1,5':d.cross?'2,4':null)
+  .attr('stroke-opacity',d=>{
+    const t=typeof d.target==='object'?d.target.type:'';
+    if(d.dna)return showDNA?0.35:0;
+    return d.cross?0.5:(['fw','ok','next','maybe'].includes(t)?0.8:0.3);
+  });
+
+const nodeG=g.append('g').selectAll('g').data(rawNodes).join('g')
+  .attr('cursor','pointer')
+  .call(d3.drag()
+    .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;})
+    .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;})
+    .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;})
+  );
+
+nodeG.append('circle')
+  .attr('r',d=>COLORS[d.type]?.r||20)
+  .attr('fill',d=>{
+    // Group hubs — solid accent fill
+    if(['fw','ok','next','maybe','root'].includes(d.type)) return COLORS[d.type]?.fill||'#111';
+    // Leaf nodes — tint fill based on match%
+    const gd=GD[d.id];
+    if(!gd?.match) return COLORS[d.type]?.fill||'#111';
+    const pct=gd.match/100;
+    const col=d.type==='ok_l'?'#3de08a':d.type==='next_l'?'#4da8ff':'#ffb340';
+    // opacity scales: 60%=3%, 80%=10%, 98%=28%
+    const tintA=Math.round((pct*pct*0.30)*255).toString(16).padStart(2,'0');
+    return col+tintA;
+  })
+  .attr('stroke',d=>COLORS[d.type]?.stroke||'#333')
+  .attr('stroke-width',d=>['fw','ok','next','maybe','root'].includes(d.type)?0:1.0)
+  .attr('stroke-opacity',d=>['fw','ok','next','maybe','root'].includes(d.type)?0:0.55);
+
+// Match % arc ring — only for leaf game nodes (ok_l, next_l, maybe_l)
+const LEAF_TYPES=['ok_l','next_l','maybe_l'];
+nodeG.filter(d=>LEAF_TYPES.includes(d.type)&&GD[d.id]?.match!=null)
+  .append('path')
+  .attr('class','match-arc')
+  .attr('fill','none')
+  .attr('stroke-linecap','round')
+  .attr('pointer-events','none')
+  .each(function(d){
+    const gd=GD[d.id];
+    const r=(COLORS[d.type]?.r||28)+5;
+    const pct=gd.match/100;
+    const col=d.type==='ok_l'?'#3de08a':d.type==='next_l'?'#4da8ff':'#ffb340';
+    // base ring (dim track)
+    d3.select(this.parentNode).insert('path','path.match-arc')
+      .attr('fill','none').attr('stroke',col).attr('stroke-opacity',0.10)
+      .attr('stroke-width',2).attr('pointer-events','none')
+      .attr('d',describeArc(r,0,360));
+    // active arc — thickness scales with match %
+    const arcW=pct>=0.9?5:pct>=0.75?3.5:2.5;
+    d3.select(this)
+      .attr('stroke',col)
+      .attr('stroke-opacity',0.6+(pct*0.4))
+      .attr('stroke-width',arcW)
+      .attr('d',describeArc(r,0,pct*360));
+    // no glow — contrast via size/opacity only
+  });
+
+// % label — OUTSIDE circle, RPG dramatic size scaling
+nodeG.filter(d=>LEAF_TYPES.includes(d.type)&&GD[d.id]?.match!=null)
+  .append('text')
+  .attr('class','match-pct')
+  .attr('text-anchor','middle')
+  .attr('dominant-baseline','auto')
+  .attr('pointer-events','none')
+  .each(function(d){
+    const gd=GD[d.id];
+    const pct=gd.match/100;
+    const r=COLORS[d.type]?.r||28;
+    const col=d.type==='ok_l'?'#3de08a':d.type==='next_l'?'#4da8ff':'#ffb340';
+    // RPG Persona-style: cubic scale — 98%=big, 62%=whisper
+    // Range: 6px (60%) → 26px (98%) — dramatic spread, no glow, size-only contrast
+    const fSize=(6+(pct*pct*pct*20))*0.7;
+    // Position: above the arc ring
+    const arcR=r+5;
+    const yOff=-(arcR+4+(fSize*0.55));
+    const el=d3.select(this);
+    el.attr('y',yOff)
+      .attr('fill',col)
+      .attr('font-family','"Playfair Display",Georgia,serif')
+      .attr('font-size',fSize)
+      .attr('font-weight','900')
+      .attr('font-style','italic')
+      .attr('opacity', pct>=0.9 ? 1 : pct>=0.75 ? 0.62 : 0.35)
+      .attr('letter-spacing','-.02em')
+      .attr('filter',null)
+      .text(`${gd.match}%`);
+  });
+
+let showLbls=true;
+const lbls=nodeG.append('text')
+  .attr('text-anchor','middle').attr('dominant-baseline','middle')
+  .attr('fill',d=>COLORS[d.type]?.text||'#888')
+  .attr('font-family','Space Mono,monospace')
+  .attr('font-size',d=>['fw','ok','next','maybe','root'].includes(d.type)?12:10.5)
+  .attr('font-weight',d=>'700')
+  .attr('pointer-events','none')
+  .each(function(d){
+    const el=d3.select(this);
+    const lines=d.label.split('\n');
+    // Name centered — % is now outside so no y-offset needed
+    if(lines.length===1){
+      el.text(d.label);
+    }else{
+      lines.forEach((l,i)=>el.append('tspan')
+        .attr('x',0)
+        .attr('dy',i===0?`-${(lines.length-1)*0.55}em`:'1.1em')
+        .text(l));
+    }
+  });
+
+nodeG.on('click',(e,d)=>{
+  e.stopPropagation();
+  if(d.type==='ok'){openPantheon();return;}
+  if(d.type==='fw'){document.getElementById('fw-modal').classList.add('open');return;}
+  if(d.type==='root')return;
+  if(GD[d.id])openPanel(d.id);
+  pulse(e.currentTarget,COLORS[d.type]?.r||22);
+});
+
+// EVITO node — show/hide annotation badge on hover
+nodeG.filter(d=>d.type==='fw')
+  .on('mouseenter.fw',function(e,d){
+    const tip=document.getElementById('evito-badge');
+    const rect=this.getBoundingClientRect();
+    tip.style.left=(rect.left+rect.width/2)+'px';
+    tip.style.top=(rect.top-12)+'px';
+    tip.style.display='block';
+    setTimeout(()=>tip.style.opacity='1',10);
+  })
+  .on('mouseleave.fw',function(){
+    const tip=document.getElementById('evito-badge');
+    tip.style.opacity='0';
+    setTimeout(()=>tip.style.display='none',200);
+  });
+
+function pulse(el,r){
+  d3.select(el).select('circle')
+    .transition().duration(80).attr('r',r*1.35)
+    .transition().duration(200).attr('r',r);
+}
+
+sim.on('tick',()=>{
+  linkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+  nodeG.attr('transform',d=>`translate(${d.x},${d.y})`);
+});
+
+// ── TAG FILTER ──
+let activeTag=null;
+function filterByTag(tag){
+  if(activeTag===tag){activeTag=null;clearFilter();return;}
+  activeTag=tag;
+  nodeG.select('circle').transition().duration(200)
+    .attr('opacity',d=>{
+      if(d.type==='root'||['fw','ok','next','maybe'].includes(d.type))return 1;
+      const gd=GD[d.id];
+      return gd&&gd.tags&&gd.tags.includes(tag)?1:0.15;
+    });
+  lbls.transition().duration(200)
+    .attr('opacity',d=>{
+      if(d.type==='root'||['fw','ok','next','maybe'].includes(d.type))return 1;
+      const gd=GD[d.id];
+      return gd&&gd.tags&&gd.tags.includes(tag)?1:0.15;
+    });
+  // highlight tags in panel
+  document.querySelectorAll('.p-tag').forEach(el=>{
+    el.classList.toggle('active-tag',el.dataset.tag===tag);
+  });
+}
+function clearFilter(){
+  nodeG.select('circle').transition().duration(200).attr('opacity',1);
+  lbls.transition().duration(200).attr('opacity',1);
+  document.querySelectorAll('.p-tag').forEach(el=>el.classList.remove('active-tag'));
+}
+
+// ── SIDE PANEL ──
+let currentGame=null;
+
+function openPanel(id){
+  const gd=GD[id];
+  currentGame=gd;
+  videoEmbedded=false;
+
+  // reset video — stop previous iframe
+  const videoWrap=document.getElementById('panel-video-wrap');
+  videoWrap.innerHTML='';
+
+  const panel=document.getElementById('side-panel');
+  const ga=document.getElementById('graph-area');
+  panel.classList.add('open');
+  ga.classList.add('panel-open');
+  // hide rank sidebar — painel ocupa esse espaço
+  document.getElementById('rank-sidebar').style.display='none';
+  setTimeout(()=>sim.force('center',d3.forceCenter(ga.clientWidth/2,H()/2)).alpha(0.15).restart(),60);
+
+  // badge
+  const badge=document.getElementById('panel-badge');
+  badge.textContent=TYPE_LABEL[gd.type]||gd.type;
+  badge.style.background=TYPE_BG[gd.type]||'#111';
+  badge.style.color=TYPE_COLOR[gd.type]||'#888';
+  badge.style.border=`0.5px solid ${TYPE_COLOR[gd.type]||'#333'}55`;
+
+  const titleEl=document.getElementById('panel-title');
+  titleEl.textContent=gd.name;
+  titleEl.style.color=TYPE_COLOR[gd.type]||'#e8eaf0';
+
+  document.getElementById('panel-sub').textContent=`${gd.dur} · ${gd.studio}`;
+
+  const whenEl=document.getElementById('panel-when');
+  if(gd.when){whenEl.style.display='block';whenEl.textContent=gd.when;}
+  else{whenEl.style.display='none';}
+
+  document.getElementById('panel-desc').textContent=gd.desc;
+
+  // tags
+  if(gd.tags&&gd.tags.length){
+    document.getElementById('panel-tags-sec').style.display='block';
+    document.getElementById('panel-tags').innerHTML=gd.tags.map(t=>`<span class="p-tag${activeTag===t?' active-tag':''}" data-tag="${t}" onclick="filterByTag('${t}')">${t}</span>`).join('');
+  }else{document.getElementById('panel-tags-sec').style.display='none';}
+
+  // connections — trilha horizontal ordenada por proximidade (rank 0 = mais próximo)
+  const froms=(gd.from||[]).map((fid,i)=>({dir:'from',id:fid,rank:i}));
+  const tos=(gd.to||[]).map((tid,i)=>({dir:'to',id:tid,rank:i}));
+  // merge: froms first (inspira = mais relevante), depois tos (conecta = derivados)
+  // re-rank globally so 0 = closest overall
+  const conns=[...froms,...tos].map((c,i)=>({...c,rank:i}));
+  if(conns.length){
+    document.getElementById('panel-conn-sec').style.display='block';
+    document.getElementById('panel-conn-track').innerHTML=conns.map(c=>{
+      const o=GD[c.id];if(!o)return'';
+      const col=TYPE_COLOR[o.type]||'#666';
+      const dirLabel=c.dir==='from'?'← inspira':'→ conecta';
+      const matchPct=o.match||70;
+      const rankLabel=`#${c.rank+1}`;
+      return`<div class="conn-item" data-rank="${Math.min(c.rank,4)}" style="border-top-color:${col}" onclick="openPanel('${c.id}')">
+        <span class="conn-rank">${rankLabel} · ${matchPct}%</span>
+        <span class="conn-name" style="color:${col}">${o.name}</span>
+        <span class="conn-dir-label">${dirLabel}</span>
+        <div class="conn-match-bar"><div class="conn-match-fill" style="width:${matchPct}%;background:${col}88"></div></div>
+      </div>`;
+    }).filter(Boolean).join('');
+  }else{document.getElementById('panel-conn-sec').style.display='none';}
+
+  // embed video automatically on panel open
+  loadVideo();
+}
+
+// ── TAB SWITCH ──
+let currentTab='info';
+let videoEmbedded=false;
+
+function loadVideo(){
+  if(!currentGame||!currentGame.ytId||videoEmbedded) return;
+  videoEmbedded=true;
+  const wrap=document.getElementById('panel-video-wrap');
+  wrap.innerHTML='';
+  const iframe=document.createElement('iframe');
+  iframe.src=`https://www.youtube.com/embed/${currentGame.ytId}`;
+  iframe.title='YouTube video player';
+  iframe.setAttribute('frameborder','0');
+  iframe.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+  iframe.setAttribute('allowfullscreen','');
+  iframe.style.cssText='width:100%;height:100%;border:0;display:block';
+  wrap.appendChild(iframe);
+}
+
+function closePanel(){
+  const videoWrap=document.getElementById('panel-video-wrap');
+  videoWrap.innerHTML='';
+  videoEmbedded=false;
+  document.getElementById('side-panel').classList.remove('open');
+  document.getElementById('graph-area').classList.remove('panel-open');
+  // reexibir sidebar de ranking
+  document.getElementById('rank-sidebar').style.display='flex';
+  setTimeout(()=>sim.force('center',d3.forceCenter(W()/2,H()/2)).alpha(0.1).restart(),360);
+}
+
+// ── PANTEÃO ──
+let panthBuilt=false;
+function openPantheon(){
+  if(!panthBuilt){buildPantheon();panthBuilt=true;}
+  document.getElementById('pantheon-overlay').classList.add('visible');
+}
+function closePantheon(){document.getElementById('pantheon-overlay').classList.remove('visible');}
+
+function buildPantheon(){
+  const grid=document.getElementById('pantheon-grid');
+  ['ok1','ok2','ok3','ok4','ok5','ok6','ok7','ok8','ok9','ok10','ok11','ok12','ok13','ok14','ok15','ok16'].forEach(id=>{
+    const gd=GD[id];
+    const card=document.createElement('div');
+    card.className='p-card';
+    const thumb=gd.ytId?`<img src="https://img.youtube.com/vi/${gd.ytId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;opacity:.8" loading="lazy">`
+      :`<div style="font-family:Space Mono,monospace;font-size:8px;color:#2a3048;text-align:center;padding:8px">${gd.studio}</div>`;
+    card.innerHTML=`
+      <div class="p-card-thumb" style="background:#050505">${thumb}</div>
+      <div class="p-card-body">
+        <div class="p-card-name">${gd.name}</div>
+        <div class="p-card-studio">${gd.studio} · ${gd.dur}</div>
+      </div>
+      <div class="p-card-badge">10/10</div>`;
+    card.onclick=()=>{closePantheon();openPanel(id);};
+    grid.appendChild(card);
+  });
+}
+
+// ── RANKING SIDEBAR ──
+function buildRanking(){
+  // Rank all non-ok (not-yet-played) games by match%, include 'next' and 'maybe'
+  // Sort by match desc; within same match, 'next' > 'maybe'
+  const candidates=Object.entries(GD)
+    .filter(([id,gd])=>gd.type==='next'||gd.type==='maybe')
+    .map(([id,gd])=>({id,gd}))
+    .sort((a,b)=>{
+      const diff=b.gd.match-a.gd.match;
+      if(diff!==0)return diff;
+      // next before maybe
+      if(a.gd.type===b.gd.type)return 0;
+      return a.gd.type==='next'?-1:1;
+    });
+
+  const trophies=['🏆','🥈','🥉'];
+  const list=document.getElementById('rank-list');
+  list.innerHTML=candidates.map(({id,gd},i)=>{
+    const pos=i+1;
+    const col=gd.type==='next'?'type-next':'type-maybe';
+    const posDisplay=pos<=3
+      ?`<span class="rank-pos-trophy">${trophies[i]}</span>`
+      :`<span style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3)">#${pos}</span>`;
+    // divider after pos 3 and pos 6
+    const divider=(pos===3||pos===6)?'<div id="rank-divider"></div>':'';
+    return`${divider}<div class="rank-item" data-pos="${Math.min(pos,4)}" onclick="openPanel('${id}')">
+      <div class="rank-pos">${posDisplay}</div>
+      <div class="rank-info">
+        <div class="rank-name">${gd.name}</div>
+        <div class="rank-meta">${gd.type==='next'?'vou jogar':'talvez'} · ${gd.dur}</div>
+      </div>
+      <div class="rank-pct ${col}">${gd.match}%</div>
+    </div>`;
+  }).join('');
+}
+buildRanking();
+
+// ── FONT SCALE ACCESSIBILITY ──
+let currentScale=1;
+function applyFontScale(val){
+  currentScale=parseFloat(val);
+  const pct=Math.round(currentScale*100);
+  document.getElementById('font-scale-val').textContent=currentScale.toFixed(2).replace('.00','')+'×';
+
+  // Scale all SVG text labels proportionally
+  const baseLeaf=10.5*currentScale;
+  const baseGroup=12*currentScale;
+
+  // Name labels
+  lbls.attr('font-size',d=>(['fw','ok','next','maybe','root'].includes(d.type)?baseGroup:baseLeaf));
+
+  // % labels — keep relative dramatic scaling, multiply by scale
+  nodeG.selectAll('text.match-pct').each(function(d){
+    const gd=GD[d.id]; if(!gd) return;
+    const pct2=gd.match/100;
+    const fSize=(6+(pct2*pct2*pct2*20))*0.7*currentScale;
+    const r=COLORS[d.type]?.r||28;
+    const arcR=r+5;
+    const yOff=-(arcR+4+(fSize*0.55));
+    d3.select(this).attr('font-size',fSize).attr('y',yOff).attr('filter',null);
+  });
+
+  // Scale UI font sizes via CSS custom property
+  document.documentElement.style.setProperty('--ui-scale', currentScale);
+  // Apply to key UI elements
+  const uiEls=document.querySelectorAll('#panel-body, #panel-title, #panel-sub, #panel-when, #panel-desc, .p-tag, .conn-item, .sec-label, #ob-title, #ob-sub, .ob-step-text, .ob-step-name, .ob-group-desc, .ob-pill-desc, .ob-pill-label');
+  uiEls.forEach(el=>{
+    // read original data-size or compute from current
+    if(!el.dataset.origSize){
+      const cs=parseFloat(getComputedStyle(el).fontSize);
+      el.dataset.origSize=cs;
+    }
+    el.style.fontSize=(parseFloat(el.dataset.origSize)*currentScale)+'px';
+  });
+  localStorage.setItem('gamer-fontscale',val);
+}
+function toggleLabels(){showLbls=!showLbls;lbls.attr('display',showLbls?null:'none');}
+function toggleDNA(){
+  showDNA=!showDNA;
+  linkEl.filter(d=>!!d.dna).transition().duration(300)
+    .attr('stroke-opacity',d=>showDNA?0.35:0);
+  const btn=document.getElementById('dna-btn');
+  if(btn){btn.style.color=showDNA?'var(--amber)':'';btn.style.borderColor=showDNA?'var(--amber)':'';}
+  const legend=document.getElementById('dna-legend');
+  if(legend)legend.style.display=showDNA?'flex':'none';
+}
+function openStatus(){document.getElementById('status-overlay').classList.add('open');}
+function closeStatus(){document.getElementById('status-overlay').classList.remove('open');}
+// Auto-open on first visit
+if(!localStorage.getItem('gamer-visited')){openStatus();localStorage.setItem('gamer-visited','1');}
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.theme===t);
+  });
+  const C=getThemeColors();
+  nodeG.select('circle')
+    .transition().duration(300)
+    .attr('fill',d=>{
+      if(['fw','ok','next','maybe','root'].includes(d.type)) return C[d.type]?.fill||'#111';
+      const gd=GD[d.id];
+      if(!gd?.match) return C[d.type]?.fill||'#111';
+      const pct=gd.match/100;
+      const col=d.type==='ok_l'?C.ok_l.stroke.replace('66',''):d.type==='next_l'?C.next_l.stroke.replace('66',''):C.maybe_l.stroke.replace('66','');
+      const tintA=Math.round((pct*pct*0.30)*255).toString(16).padStart(2,'0');
+      return col+tintA;
+    })
+    .attr('stroke',d=>C[d.type]?.stroke||'#555');
+  nodeG.selectAll('path.match-arc')
+    .transition().duration(300)
+    .attr('stroke',d=>C[d.type]?.stroke||'#555');
+  nodeG.selectAll('text.match-pct')
+    .transition().duration(300)
+    .attr('fill',d=>{
+      const col=d.type==='ok_l'?C.ok_l.text:d.type==='next_l'?C.next_l.text:C.maybe_l.text;
+      return col||'#888';
+    });
+  nodeG.selectAll('text:not(.match-pct)')
+    .transition().duration(300)
+    .attr('fill',d=>C[d.type]?.text||'#888');
+  localStorage.setItem('gamer-theme',t);
+}
+window.setTheme=setTheme;
+(function(){const saved=localStorage.getItem('gamer-theme');if(saved){document.documentElement.setAttribute('data-theme',saved);document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===saved));}})();
+window.openStatus=openStatus;
+window.closeStatus=closeStatus;
+window.toggleLabels=toggleLabels;
+window.toggleDNA=toggleDNA;
+window.openPanel=openPanel;
+window.loadVideo=loadVideo;
+window.addEventListener('resize',()=>sim.force('center',d3.forceCenter(W()/2,H()/2)).alpha(0.1).restart());
+// Restore font scale
+(function(){
+  const saved=localStorage.getItem('gamer-fontscale');
+  if(saved&&parseFloat(saved)!==1){
+    const sl=document.getElementById('font-scale-slider');
+    if(sl){sl.value=saved;applyFontScale(saved);}
+  }
+})();
+</script>
+</body>
+</html>
