@@ -1,0 +1,2359 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mapa de Filmes · Clauber</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,700;1,900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ═══════════════════════════════════════════════
+   THEME SYSTEM — cada tema tem identidade própria
+   ═══════════════════════════════════════════════ */
+
+/* ── PS5: azul royal frio, formas arredondadas,
+         tipografia suave, brilho de plasma ── */
+:root,[data-theme="ps5"]{
+  --bg:#060810;--bg2:#0b0e1a;--bg3:#0f1220;
+  --border:#1a1f35;--border2:#242840;
+  --text:#dde4ff;--text2:#5a6899;--text3:#303858;
+  --green:#00c5a5;--blue:#0096ff;--amber:#f0a030;--red:#ff3366;--purple:#9966ff;
+  --accent:#0096ff;--accent2:#00c5a5;
+  --pill-bg:#06091acc;--pill-border:#0c1840;--pill-color:#2a58a8;
+  --pill-hover-border:#0096ff;--pill-hover-color:#60b8ff;--pill-hover-bg:#040a22ee;
+  --tip-bg:#07091cf0;--tip-border:#0c1e50;
+  --status-dot-bg:#00c5a5;
+  --sbtn-bg:#06091acc;--sbtn-border:#0c1640;--sbtn-color:#4060a8;
+  /* PS5-specific shape vars */
+  --radius-pill:20px;--radius-card:14px;--radius-btn:8px;
+  --topbar-accent:linear-gradient(90deg,#0096ff22 0%,transparent 60%);
+  --border-style:0.5px solid;
+  --card-accent-top:3px solid #0096ff;
+  --font-ui:'DM Sans',sans-serif;
+  --sc-header-bg:#08101ecc;
+}
+
+/* ── STEAM: grafite-aço escuro, cantos cortados (clip-path),
+            azul aço + teal, UI densa tipo client Steam ── */
+[data-theme="steam"]{
+  --bg:#0c0d10;--bg2:#15171e;--bg3:#1c1f28;
+  --border:#252832;--border2:#2e3240;
+  --text:#b8c5d0;--text2:#5a6878;--text3:#303848;
+  --green:#4ab8a8;--blue:#4fa8d8;--amber:#a87820;--red:#d04040;--purple:#8060b8;
+  --accent:#4fa8d8;--accent2:#4ab8a8;
+  --pill-bg:#101420cc;--pill-border:#1a2430;--pill-color:#3a5870;
+  --pill-hover-border:#4fa8d8;--pill-hover-color:#7ac0e8;--pill-hover-bg:#0c1820ee;
+  --tip-bg:#101520f0;--tip-border:#1a2838;
+  --status-dot-bg:#4ab8a8;
+  --sbtn-bg:#101420cc;--sbtn-border:#182030;--sbtn-color:#405878;
+  /* Steam-specific: cantos cortados, bordas mais pesadas */
+  --radius-pill:3px;--radius-card:4px;--radius-btn:2px;
+  --topbar-accent:linear-gradient(90deg,#4fa8d822 0%,transparent 50%);
+  --border-style:1px solid;
+  --card-accent-top:0px;
+  --font-ui:'DM Sans',sans-serif;
+  --sc-header-bg:#101420cc;
+}
+
+/* ── XBOX: verde neon vivo sobre preto profundo,
+            formas angulares, sem bordas arredondadas,
+            linguagem militar/HUD ── */
+[data-theme="xbox"]{
+  --bg:#050805;--bg2:#080f08;--bg3:#0c150c;
+  --border:#142014;--border2:#1c2c1c;
+  --text:#c8e8c0;--text2:#486848;--text3:#284028;
+  --green:#52d052;--blue:#40c0f0;--amber:#e0a020;--red:#e04040;--purple:#8858c8;
+  --accent:#52d052;--accent2:#40e040;
+  --pill-bg:#050e05cc;--pill-border:#0c1e0c;--pill-color:#286828;
+  --pill-hover-border:#52d052;--pill-hover-color:#90e880;--pill-hover-bg:#030c03ee;
+  --tip-bg:#050e05f0;--tip-border:#0e200e;
+  --status-dot-bg:#52d052;
+  --sbtn-bg:#050e05cc;--sbtn-border:#0c1a0c;--sbtn-color:#386838;
+  /* Xbox-specific: sem cantos, bordas marcadas */
+  --radius-pill:0px;--radius-card:2px;--radius-btn:0px;
+  --topbar-accent:linear-gradient(90deg,#52d05230 0%,transparent 50%);
+  --border-style:1px solid;
+  --card-accent-top:0px;
+  --font-ui:'Space Mono',monospace;
+  --sc-header-bg:#080f08cc;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-ui,'DM Sans',sans-serif)}
+#app{display:flex;flex-direction:column;width:100%;height:100%;margin-right:380px}
+#main-row{display:flex;flex:1;overflow:hidden;min-height:0;position:relative}
+
+/* TOP BAR — accent gradient per theme */
+#top-bar{height:40px;flex-shrink:0;background:var(--bg);border-bottom:var(--border-style) var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:20;position:relative;background-image:var(--topbar-accent)}
+#top-bar-left{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#status-btn{font-family:'Space Mono',monospace;font-size:8px;padding:4px 12px;border-radius:var(--radius-btn);border:var(--border-style) var(--sbtn-border);background:var(--sbtn-bg);color:var(--sbtn-color);cursor:pointer;transition:all .18s;letter-spacing:.06em;display:flex;align-items:center;gap:6px;white-space:nowrap}
+#status-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--pill-hover-bg)}
+#status-dot{width:5px;height:5px;border-radius:50%;background:var(--status-dot-bg);animation:blink 2.4s ease-in-out infinite}
+#top-bar-divider{width:1px;height:18px;background:var(--border2);flex-shrink:0}
+#protocol-pills{display:flex;gap:4px;align-items:center;flex:1;justify-content:center}
+.prot-pill{font-family:'Space Mono',monospace;font-size:8px;padding:4px 10px;border-radius:var(--radius-pill);border:var(--border-style) var(--pill-border);background:var(--pill-bg);color:var(--pill-color);letter-spacing:.06em;cursor:pointer;transition:all .18s;white-space:nowrap;position:relative}
+.prot-pill:hover,.prot-pill.on{border-color:var(--pill-hover-border);color:var(--pill-hover-color);background:var(--pill-hover-bg)}
+#prot-tip{position:fixed;top:48px;left:50%;transform:translateX(-50%);background:var(--tip-bg);border:var(--border-style) var(--tip-border);border-radius:var(--radius-card);padding:13px 16px;width:260px;pointer-events:none;opacity:0;transition:opacity .15s;backdrop-filter:blur(10px);z-index:100}
+#prot-tip.show{opacity:1}
+#prot-tip-title{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:5px}
+#prot-tip-body{font-size:11px;color:var(--pill-color);line-height:1.65}
+#prot-tip-tag{display:inline-block;margin-top:8px;font-size:8px;font-family:'Space Mono',monospace;padding:2px 7px;border-radius:var(--radius-btn);background:var(--pill-bg);color:var(--pill-color)}
+#top-bar-right{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.ctrl{font-family:'Space Mono',monospace;font-size:8px;padding:4px 10px;border-radius:var(--radius-btn);border:var(--border-style) var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;transition:all .12s;letter-spacing:.05em}
+.ctrl:hover{background:var(--border);color:var(--text2)}
+
+/* Font scale slider */
+#font-scale-wrap{
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+  border-left:var(--border-style) var(--border2);
+  padding-left:8px;
+}
+#font-scale-label{
+  font-family:'Space Mono',monospace;font-size:7px;
+  color:var(--text3);letter-spacing:.06em;white-space:nowrap;
+}
+#font-scale-slider{
+  -webkit-appearance:none;appearance:none;
+  width:60px;height:2px;
+  background:var(--border2);border-radius:1px;
+  outline:none;cursor:pointer;
+}
+#font-scale-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--accent);cursor:pointer;
+  transition:box-shadow .12s;
+}
+#font-scale-slider::-webkit-slider-thumb:hover{
+  box-shadow:0 0 8px var(--accent)88;
+}
+#font-scale-val{
+  font-family:'Space Mono',monospace;font-size:7px;
+  color:var(--accent);letter-spacing:.04em;min-width:18px;
+}
+
+/* THEME SWITCHER — botões com identidade */
+.theme-btn{font-family:'Space Mono',monospace;font-size:7px;padding:4px 9px;border-radius:var(--radius-btn);border:var(--border-style) var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;transition:all .2s;letter-spacing:.08em;position:relative;overflow:hidden}
+.theme-btn:hover{background:var(--border);color:var(--text2)}
+.theme-btn.active{color:var(--bg);border-color:var(--accent);font-weight:700;background:var(--accent)}
+/* PS: botão arredondado com glow suave */
+[data-theme="ps5"] .theme-btn.active{box-shadow:0 0 10px var(--accent)55;border-radius:8px}
+/* Steam: botão reto, sem arredondamento */
+[data-theme="steam"] .theme-btn{border-radius:2px}
+[data-theme="steam"] .theme-btn.active{box-shadow:inset 0 -2px 0 rgba(255,255,255,.15)}
+/* Xbox: sem cantos, borda mais grossa no ativo */
+[data-theme="xbox"] .theme-btn{border-radius:0;font-size:8px}
+[data-theme="xbox"] .theme-btn.active{border-left:3px solid var(--accent);padding-left:6px}
+
+/* ── PS5 specific: glow effects ── */
+[data-theme="ps5"] .prot-pill:hover{box-shadow:0 0 8px var(--accent)44}
+[data-theme="ps5"] #top-bar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,#0096ff44 0%,transparent 50%)}
+[data-theme="ps5"] #ob-enter-btn{border-radius:20px}
+[data-theme="ps5"] #ob-title{letter-spacing:-.03em}
+
+/* ── STEAM specific: cantos cortados ── */
+[data-theme="steam"] #fw-footer{border-top:1px solid #4fa8d820}
+[data-theme="steam"] #panel-badge{border-radius:2px}
+
+/* ── XBOX specific: sem arredondamento, marcador lateral verde, HUD ── */
+[data-theme="xbox"] *{font-family:'Space Mono',monospace!important}
+[data-theme="xbox"] #top-bar{border-bottom:1px solid var(--accent)30}
+[data-theme="xbox"] #top-bar::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+[data-theme="xbox"] .prot-pill{border-radius:0}
+[data-theme="xbox"] .ctrl{border-radius:0}
+[data-theme="xbox"] #panel-header-bar{border-left:3px solid var(--accent)}
+[data-theme="xbox"] #panel-badge{border-radius:0}
+[data-theme="xbox"] #ob-title::before{content:'▶ ';color:var(--accent);font-size:22px}
+
+/* ── RANKING SIDEBAR ── */
+#rank-sidebar{
+  width:380px;
+  background:var(--bg);
+  border-left:1px solid var(--border2);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  position:fixed;
+  right:0;
+  top:40px;
+  bottom:34px;
+  z-index:18;
+  box-shadow:-6px 0 32px #00000066;
+  transition:opacity .25s, transform .25s;
+}
+#rank-header{
+  padding:22px 26px 18px;
+  border-bottom:1px solid var(--border2);
+  flex-shrink:0;
+}
+#rank-header-label{
+  font-family:'Space Mono',monospace;font-size:10px;
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--accent);
+  display:flex;align-items:center;gap:8px;
+}
+#rank-header-label::before{content:'▲';font-size:9px;}
+#rank-title{
+  font-family:'Space Mono',monospace;font-size:16px;font-weight:700;
+  color:var(--text);margin-top:6px;letter-spacing:.02em;
+}#rank-list{
+  flex:1;overflow-y:auto;
+  padding:8px 0;
+}
+#rank-list::-webkit-scrollbar{width:3px;}
+#rank-list::-webkit-scrollbar-track{background:transparent;}
+#rank-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.rank-item{
+  display:grid;
+  grid-template-columns:48px 1fr auto;
+  align-items:center;
+  gap:0 14px;
+  padding:12px 20px;
+  cursor:pointer;
+  border-bottom:1px solid var(--border);
+  transition:background .12s;
+  position:relative;
+}
+.rank-item:hover{background:var(--bg2);}
+.rank-item:last-child{border-bottom:none;}
+
+/* top 3 */
+.rank-item[data-pos="1"]{
+  padding:18px 20px;
+  background:color-mix(in srgb,var(--accent) 8%,var(--bg));
+}
+.rank-item[data-pos="1"]::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--accent);
+}
+.rank-item[data-pos="2"]{background:color-mix(in srgb,var(--accent) 4%,var(--bg));}
+.rank-item[data-pos="2"]::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--accent);opacity:.6;
+}
+.rank-item[data-pos="3"]{background:color-mix(in srgb,var(--accent) 2%,var(--bg));}
+.rank-item[data-pos="3"]::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--accent);opacity:.3;
+}
+
+.rank-pos{
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:11px;
+  color:var(--text3);flex-shrink:0;
+}
+.rank-pos-trophy{font-size:22px;line-height:1;}
+.rank-item[data-pos="1"] .rank-pos{color:var(--amber);}
+.rank-item[data-pos="2"] .rank-pos{color:var(--text2);}
+.rank-item[data-pos="3"] .rank-pos{color:var(--amber);opacity:.7;}
+
+.rank-info{min-width:0;overflow:hidden;}
+.rank-name{
+  font-family:'Space Mono',monospace;font-size:13px;font-weight:700;
+  color:var(--text);letter-spacing:.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  line-height:1.3;
+}
+.rank-item[data-pos="1"] .rank-name{font-size:15px;}
+.rank-meta{
+  font-family:'Space Mono',monospace;font-size:10px;
+  color:var(--text2);letter-spacing:.03em;margin-top:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.rank-pct{
+  font-family:'Playfair Display',Georgia,serif;
+  font-style:italic;font-weight:900;
+  font-size:22px;
+  flex-shrink:0;
+  letter-spacing:-.02em;
+}
+.rank-item[data-pos="1"] .rank-pct{font-size:28px;}
+.rank-item[data-pos="2"] .rank-pct{font-size:24px;}
+.rank-item[data-pos="3"] .rank-pct{font-size:22px;}
+
+/* type colors for rank pct */
+.rank-pct.type-ok{color:var(--green);}
+.rank-pct.type-next{color:var(--blue);}
+.rank-pct.type-maybe{color:var(--amber);}
+
+#rank-divider{
+  height:1px;background:var(--border2);margin:0 20px;
+  flex-shrink:0;
+}
+
+/* rank footer note */
+#rank-footer{
+  padding:12px 20px;flex-shrink:0;
+  border-top:1px solid var(--border2);
+  font-family:'Space Mono',monospace;font-size:10px;
+  color:var(--text2);letter-spacing:.05em;
+  line-height:1.6;
+}
+
+/* GRAPH */
+#graph-area{flex:1;position:relative;overflow:hidden;transition:flex .32s cubic-bezier(.4,0,.2,1)}
+#graph-area.panel-open{flex:0 0 56%}
+svg{width:100%;height:100%;display:block;cursor:grab}
+svg:active{cursor:grabbing}
+#graph-hint{position:absolute;bottom:50px;left:14px;font-size:9px;font-family:'Space Mono',monospace;color:var(--text3);letter-spacing:.04em;pointer-events:none}
+
+/* ══════════════════════════════════════════════════
+   ONBOARDING SCREEN — tela imersiva de boas-vindas
+   ══════════════════════════════════════════════════ */
+#status-overlay{
+  position:fixed;inset:0;z-index:200;
+  display:none;flex-direction:column;
+  background:var(--bg);
+  overflow-y:auto;
+}
+#status-overlay.open{display:flex}
+
+/* Animated noise grain overlay */
+#status-overlay::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.03;
+}
+
+/* Accent glow behind content */
+#status-overlay::after{
+  content:'';position:fixed;
+  top:-200px;left:50%;transform:translateX(-50%);
+  width:800px;height:500px;
+  background:radial-gradient(ellipse at center, var(--accent)18 0%, transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+#ob-inner{
+  position:relative;z-index:1;
+  width:100%;max-width:1120px;
+  margin:0 auto;
+  padding:40px 44px 52px;
+  display:flex;flex-direction:column;gap:0;
+}
+
+/* ── HEADER ── */
+#ob-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:36px;
+}
+#ob-kicker{
+  font-family:'Space Mono',monospace;font-size:8px;
+  color:var(--accent);letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+#ob-kicker::before{content:'';display:block;width:20px;height:1px;background:var(--accent)}
+#ob-title{
+  font-size:clamp(22px,3.5vw,32px);font-weight:700;
+  color:var(--text);line-height:1.15;letter-spacing:-.02em;
+  margin-bottom:10px;
+}
+#ob-sub{
+  font-size:13px;color:var(--text2);line-height:1.65;
+  max-width:520px;
+}
+#ob-close{
+  width:36px;height:36px;flex-shrink:0;
+  border-radius:var(--radius-pill);
+  border:var(--border-style) var(--border2);
+  background:transparent;color:var(--text2);
+  cursor:pointer;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;margin-top:4px;
+}
+#ob-close:hover{background:var(--border);color:var(--text)}
+
+/* ── SECTION LABEL ── */
+.ob-section-label{
+  font-family:'Space Mono',monospace;font-size:8px;
+  color:var(--text3);letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:12px;
+}
+.ob-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── MAIN BODY: journey left + sidebar right ── */
+#ob-body{
+  display:grid;
+  grid-template-columns:1fr 320px;
+  gap:0 40px;
+  align-items:start;
+}
+
+/* ── LEFT: journey column ── */
+#ob-journey-col{display:flex;flex-direction:column;}
+
+/* Journey steps — vertical stack */
+#ob-journey{
+  display:flex;flex-direction:column;gap:0;
+  position:relative;
+  margin-bottom:0;
+}
+
+/* Vertical connector line through bubbles */
+#ob-journey::before{
+  content:'';position:absolute;
+  left:25px;top:52px;bottom:52px;
+  width:1px;background:var(--border2);
+  z-index:0;
+}
+
+.ob-step{
+  position:relative;z-index:1;
+  padding:18px 0;
+  display:grid;
+  grid-template-columns:52px 1fr;
+  grid-template-rows:auto auto auto;
+  gap:0 20px;
+  border-bottom:var(--border-style) var(--border);
+}
+.ob-step:last-child{border-bottom:none}
+.ob-step:hover .ob-step-bubble{transform:scale(1.06)}
+
+.ob-step-bubble{
+  width:52px;height:52px;
+  border-radius:var(--radius-card);
+  border:var(--border-style);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  transition:transform .2s;
+  grid-row:1/3;grid-column:1;
+  align-self:center;flex-shrink:0;
+}
+.ob-step-num-label{
+  position:absolute;top:-7px;right:-7px;
+  width:16px;height:16px;border-radius:50%;
+  font-family:'Space Mono',monospace;font-size:7px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);border:1px solid;
+}
+.ob-step-tool{
+  font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:.12em;text-transform:uppercase;
+  opacity:.6;grid-column:2;align-self:end;padding-bottom:2px;
+}
+.ob-step-name{
+  font-size:13px;font-weight:700;
+  color:var(--text);
+  font-family:'Space Mono',monospace;letter-spacing:.04em;
+  grid-column:2;align-self:start;
+}
+.ob-step-text{
+  font-size:10.5px;color:var(--text2);line-height:1.6;
+  grid-column:2;margin-top:7px;
+}
+
+/* Step color themes */
+.ob-step-1 .ob-step-bubble{border-color:#4a4f6088;background:#0a0c1588;color:#6a7090}
+.ob-step-1 .ob-step-num-label{border-color:#4a4f60;color:#6a7090}
+.ob-step-1 .ob-step-tool{color:#6a7090}
+.ob-step-2 .ob-step-bubble{border-color:var(--accent)88;background:color-mix(in srgb,var(--accent) 8%,transparent);color:var(--accent);box-shadow:0 0 20px color-mix(in srgb,var(--accent) 18%,transparent)}
+.ob-step-2 .ob-step-num-label{border-color:var(--accent);color:var(--accent)}
+.ob-step-2 .ob-step-tool{color:var(--accent)}
+.ob-step-3 .ob-step-bubble{border-color:var(--amber)88;background:color-mix(in srgb,var(--amber) 8%,transparent);color:var(--amber);box-shadow:0 0 20px color-mix(in srgb,var(--amber) 14%,transparent)}
+.ob-step-3 .ob-step-num-label{border-color:var(--amber);color:var(--amber)}
+.ob-step-3 .ob-step-tool{color:var(--amber)}
+.ob-step-4 .ob-step-bubble{border-color:var(--purple)88;background:color-mix(in srgb,var(--purple) 8%,transparent);color:var(--purple);box-shadow:0 0 20px color-mix(in srgb,var(--purple) 14%,transparent)}
+.ob-step-4 .ob-step-num-label{border-color:var(--purple);color:var(--purple)}
+.ob-step-4 .ob-step-tool{color:var(--purple)}
+
+/* ── RIGHT: sidebar column ── */
+#ob-sidebar{
+  display:flex;flex-direction:column;gap:20px;
+  border-left:var(--border-style) var(--border);
+  padding-left:32px;
+}
+
+/* Groups compact */
+#ob-groups{display:flex;flex-direction:column;gap:5px;}
+.ob-group{
+  border-radius:var(--radius-card);
+  border:var(--border-style);
+  overflow:hidden;
+  position:relative;
+  transition:transform .18s;
+  cursor:default;
+}
+.ob-group:hover{transform:translateX(3px)}
+.ob-group-bar{height:2px;opacity:.5;}
+.ob-group-inner{
+  display:flex;align-items:center;gap:12px;
+  padding:9px 12px;
+}
+.ob-group-num{
+  font-family:'Space Mono',monospace;
+  font-size:22px;font-weight:700;
+  line-height:1;opacity:.25;
+  flex-shrink:0;width:26px;text-align:right;
+}
+.ob-group-name{
+  font-family:'Space Mono',monospace;font-size:8px;
+  font-weight:700;letter-spacing:.15em;margin-bottom:3px;
+}
+.ob-group-desc{font-size:9.5px;color:var(--text2);line-height:1.4}
+
+/* Pills 2-col */
+#ob-pills-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.ob-pill-card{
+  border-radius:var(--radius-btn);
+  border:var(--border-style) var(--border);
+  background:var(--bg2);
+  padding:9px 10px 8px;
+  transition:border-color .15s,background .15s;
+  display:flex;flex-direction:column;gap:3px;
+}
+.ob-pill-card:hover{border-color:var(--accent);background:var(--bg3)}
+.ob-pill-card--hint{opacity:.55}
+.ob-pill-card--hint:hover{opacity:1}
+.ob-pill-icon{font-size:11px;color:var(--accent);line-height:1;margin-bottom:1px;}
+.ob-pill-tag{
+  font-family:'Space Mono',monospace;font-size:7px;
+  letter-spacing:.1em;padding:2px 6px;
+  border-radius:var(--radius-pill);
+  border:var(--border-style) var(--pill-hover-border);
+  color:var(--pill-hover-color);
+  background:var(--pill-hover-bg);
+  display:inline-block;width:fit-content;
+}
+.ob-pill-label{font-size:9px;font-weight:600;color:var(--text)}
+.ob-pill-desc{font-size:8px;color:var(--text2);line-height:1.45}
+
+/* ── ENTER BUTTON ── */
+#ob-enter{
+  margin-top:28px;
+  display:flex;align-items:center;justify-content:center;gap:20px;
+}
+#ob-enter-btn{
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.15em;
+  padding:13px 34px;border-radius:var(--radius-btn);
+  border:1.5px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,transparent);
+  color:var(--accent);cursor:pointer;
+  transition:all .2s;position:relative;overflow:hidden;
+}
+#ob-enter-btn::before{
+  content:'';position:absolute;inset:0;
+  background:var(--accent);opacity:0;transition:opacity .2s;
+}
+#ob-enter-btn:hover::before{opacity:.12}
+#ob-enter-btn:hover{box-shadow:0 0 28px color-mix(in srgb,var(--accent) 28%,transparent)}
+#ob-enter-hint{font-family:'Space Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:.1em}
+
+/* Stagger animation */
+@keyframes obFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+#ob-inner > *{animation:obFadeUp .4s ease both}
+#ob-header{animation-delay:.05s}
+#ob-body{animation-delay:.12s}
+#ob-enter{animation-delay:.28s}
+
+/* SVG icons in bubbles */
+.ob-step-bubble svg{width:24px;height:24px;flex-shrink:0}
+
+/* Theme overrides */
+[data-theme="steam"] .ob-step-bubble{border-radius:2px}
+[data-theme="steam"] .ob-group{border-radius:2px}
+[data-theme="xbox"] .ob-step-bubble{border-radius:0}
+[data-theme="xbox"] .ob-group{border-radius:0}
+[data-theme="xbox"] #ob-enter-btn{border-radius:0;border-left:3px solid var(--accent)}
+
+/* SIDE PANEL */
+#side-panel{width:0;overflow:hidden;background:var(--bg2);border-left:var(--border-style) var(--border);display:flex;flex-direction:column;transition:width .32s cubic-bezier(.4,0,.2,1);flex-shrink:0}
+#side-panel.open{width:44%}
+
+/* PANEL HEADER */
+#panel-header-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 10px 16px;border-bottom:var(--border-style) var(--border);flex-shrink:0;background:var(--bg)}
+#panel-close{width:26px;height:26px;border-radius:var(--radius-pill);background:transparent;border:var(--border-style) var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:14px;transition:all .15s;flex-shrink:0}
+#panel-close:hover{background:var(--border);color:var(--text)}
+#panel-title-bar{display:flex;align-items:center;gap:10px;min-width:0}
+#panel-title{font-size:16px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#panel-badge{font-family:'Space Mono',monospace;font-size:8px;padding:3px 9px;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:.1em;flex-shrink:0}
+#panel-status-tag{display:none;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.10em;padding:4px 10px;border-radius:4px;margin-bottom:10px;border:0.5px solid;width:fit-content}
+#panel-status-tag[data-status="completed"]{background:#08180e;color:#3de08a;border-color:#3de08a55}
+#panel-status-tag[data-status="ongoing"]{background:#080e1a;color:#4da8ff;border-color:#4da8ff55}
+#panel-status-tag[data-status="dropped"]{background:#180e0a;color:#ffb340;border-color:#ffb34055}
+
+/* VIDEO AREA — sempre visível, 16/9 */
+#panel-video-wrap{width:100%;aspect-ratio:16/9;flex-shrink:0;background:#000;position:relative}
+#panel-video-wrap iframe{width:100%;height:100%;border:0;display:block}
+
+/* PANEL BODY */
+#panel-body{flex:1;overflow-y:auto;padding:14px 16px 24px}
+#panel-body::-webkit-scrollbar{width:2px}
+#panel-body::-webkit-scrollbar-thumb{background:var(--border2)}
+#panel-sub{font-family:'Space Mono',monospace;font-size:11px;color:var(--text2);margin-bottom:10px;letter-spacing:.04em}
+#panel-when{font-size:13px;font-family:'Space Mono',monospace;color:var(--amber);background:#18100a;border-left:2px solid var(--amber);padding:7px 12px;border-radius:0 5px 5px 0;line-height:1.5;margin-bottom:12px}
+#panel-when::before{content:'assista quando · ';color:#7a5a20;font-size:10px}
+#panel-desc{font-size:14px;color:#9a9fb5;line-height:1.75;margin-bottom:16px}
+
+/* TAGS */
+.sec-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.14em;margin-bottom:7px}
+#panel-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.p-tag{font-size:11px;font-family:'Space Mono',monospace;padding:3px 9px;border-radius:4px;background:var(--bg3);border:0.5px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .14s}
+.p-tag:hover{border-color:var(--text2);color:var(--text)}
+.p-tag.active-tag{border-color:var(--amber);color:var(--amber);background:#1a1208}
+
+/* CONNECTIONS — trilha horizontal de proximidade */
+#panel-conn-sec{margin-top:14px}
+#panel-conn-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+#panel-conn-track{
+  position:relative;
+  display:flex;flex-direction:row;align-items:stretch;
+  gap:0;
+  overflow-x:auto;padding-bottom:6px;
+  scrollbar-width:thin;
+}
+#panel-conn-track::-webkit-scrollbar{height:2px}
+#panel-conn-track::-webkit-scrollbar-thumb{background:var(--border2)}
+/* proximity line behind cards */
+#panel-conn-track::before{
+  content:'';
+  position:absolute;top:50%;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--accent)80,var(--border)40,transparent);
+  transform:translateY(-50%);pointer-events:none;z-index:0;
+}
+.conn-item{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:flex-start;
+  padding:9px 11px 8px;
+  min-width:100px;max-width:130px;flex-shrink:0;
+  border-radius:var(--radius-card);
+  background:var(--bg3);
+  border:0.5px solid var(--border);
+  border-top:2px solid transparent;
+  cursor:pointer;
+  transition:all .14s;
+  margin-right:6px;
+}
+.conn-item:hover{
+  background:var(--bg);
+  transform:translateY(-3px);
+  box-shadow:0 6px 20px #0006;
+}
+/* proximity rank fades — 1st is brightest */
+.conn-item[data-rank="0"]{opacity:1;border-color:var(--accent)55;border-top-color:var(--accent)}
+.conn-item[data-rank="1"]{opacity:.88}
+.conn-item[data-rank="2"]{opacity:.72}
+.conn-item[data-rank="3"]{opacity:.55}
+.conn-item[data-rank="4"]{opacity:.40}
+.conn-rank{
+  font-family:'Space Mono',monospace;font-size:7px;
+  color:var(--text3);letter-spacing:.1em;
+  margin-bottom:4px;
+}
+.conn-name{
+  font-size:11px;font-weight:700;
+  line-height:1.25;color:var(--text);
+  white-space:normal;word-break:break-word;
+}
+.conn-dir-label{
+  font-size:8px;font-family:'Space Mono',monospace;
+  color:var(--text3);margin-top:5px;
+  padding:2px 5px;border-radius:2px;
+  background:var(--bg2);white-space:nowrap;
+}
+.conn-match-bar{
+  width:100%;height:2px;border-radius:1px;
+  margin-top:6px;background:var(--border);
+  overflow:hidden;
+}
+.conn-match-fill{height:100%;border-radius:1px;}
+
+/* PANTEÃO */
+#pantheon-overlay{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:50;overflow:hidden}
+#pantheon-overlay.visible{display:flex}
+#po-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:16px}
+#po-header h2{font-family:'Space Mono',monospace;font-size:11px;color:var(--green);letter-spacing:.12em}
+#po-sub{font-size:11px;color:var(--text2);font-style:italic;flex:1}
+.ov-back{font-family:'Space Mono',monospace;font-size:9px;padding:5px 12px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;flex-shrink:0}
+.ov-back:hover{background:var(--border);color:var(--text)}
+#pantheon-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;padding:16px;align-content:start}
+#pantheon-grid::-webkit-scrollbar{width:2px}
+.p-card{border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg3);border:0.5px solid var(--border);transition:all .18s;position:relative}
+.p-card:hover{border-color:var(--green);transform:translateY(-2px);box-shadow:0 8px 20px #0005}
+.p-card-thumb{width:100%;height:90px;background:var(--bg2);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.p-card-thumb iframe{width:100%;height:100%;border:0;pointer-events:none;transform:scale(1.05)}
+.p-card-body{padding:8px 10px}
+.p-card-name{font-size:11px;font-weight:600;color:var(--green);line-height:1.3;margin-bottom:2px}
+.p-card-studio{font-family:'Space Mono',monospace;font-size:8px;color:var(--text3)}
+.p-card-badge{position:absolute;top:6px;right:6px;font-size:7px;font-family:'Space Mono',monospace;padding:2px 5px;border-radius:3px;background:#06120aee;color:var(--green);border:0.5px solid #2a6a4a}
+
+/* FIREWALL FOOTER */
+#fw-footer{height:36px;flex-shrink:0;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;overflow:hidden}
+#fw-label{font-family:'Space Mono',monospace;font-size:8px;color:var(--red);padding:0 13px;border-right:1px solid var(--border);white-space:nowrap;letter-spacing:.1em;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.fw-dot{width:5px;height:5px;border-radius:50%;background:var(--red);opacity:.7;animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:.9}}
+#fw-ticker{flex:1;overflow:hidden;cursor:pointer;position:relative}
+#fw-ticker-inner{display:flex;white-space:nowrap;animation:scroll-ticker 28s linear infinite}
+#fw-ticker:hover #fw-ticker-inner{animation-play-state:paused}
+@keyframes scroll-ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.fw-item{display:inline-flex;align-items:center;gap:10px;padding:0 18px;border-right:1px solid var(--border);height:36px}
+.fw-rule{font-family:'Space Mono',monospace;font-size:8px;color:#6a3030;letter-spacing:.06em}
+.fw-sep{color:var(--border2);font-size:9px}
+.fw-games{font-size:10px;color:#b06060}
+#fw-detail-btn{flex-shrink:0;padding:0 13px;font-family:'Space Mono',monospace;font-size:8px;color:var(--red);border-left:1px solid var(--border);cursor:pointer;height:100%;display:flex;align-items:center;gap:5px;transition:background .12s;letter-spacing:.04em}
+#fw-detail-btn:hover{background:#180808}
+
+/* EVITO hover badge */
+#evito-badge{
+  position:fixed;z-index:80;
+  background:#0e0505ee;
+  border:0.5px solid var(--red)55;
+  border-radius:var(--radius-btn);
+  padding:6px 10px;
+  transform:translateX(-50%) translateY(-100%);
+  pointer-events:none;
+  display:none;opacity:0;
+  transition:opacity .2s;
+  white-space:nowrap;
+  backdrop-filter:blur(6px);
+}
+#evito-badge-title{
+  font-family:'Space Mono',monospace;font-size:8px;
+  color:var(--red);letter-spacing:.1em;margin-bottom:3px;
+}
+#evito-badge-items{
+  font-size:9px;color:#aa6060;line-height:1.5;
+}
+
+#fw-modal{position:fixed;inset:0;background:#07080bdd;z-index:100;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+#fw-modal.open{display:flex}
+#fw-modal-box{width:100%;max-width:760px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:12px 12px 0 0;padding:22px;max-height:65vh;overflow-y:auto}
+#fw-modal-box::-webkit-scrollbar{width:2px}
+#fw-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+#fw-modal-hdr h2{font-family:'Space Mono',monospace;font-size:11px;color:var(--red);letter-spacing:.1em}
+.fw-close-btn{font-family:'Space Mono',monospace;font-size:9px;padding:5px 12px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
+.fw-close-btn:hover{background:var(--border)}
+#fw-cards{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fw-card{border-radius:8px;padding:14px 16px;background:var(--bg);border-left:2px solid var(--red);position:relative}
+.fw-card-title{font-size:13px;font-weight:600;margin-bottom:5px;color:#ff8888}
+.fw-card-body{font-size:12px;color:#7a5050;line-height:1.65;margin-bottom:10px}
+.fw-tags{display:flex;flex-wrap:wrap;gap:4px}
+.fw-tag{font-size:9px;font-family:'Space Mono',monospace;padding:2px 7px;border-radius:3px;background:#140808;border:0.5px solid #ff5a5a1a;color:#aa6060}
+
+/* ── DRAG-TO-MIGRATE: hub drop target highlight ── */
+.hub-drop-target circle{
+  filter:drop-shadow(0 0 12px var(--accent));
+  stroke-width:3!important;
+  stroke-opacity:1!important;
+}
+#migrate-tooltip{
+  position:fixed;z-index:200;
+  background:var(--bg2);
+  border:1px solid var(--accent);
+  border-radius:var(--radius-card);
+  padding:5px 11px;
+  font-family:'Space Mono',monospace;font-size:9px;
+  color:var(--accent);letter-spacing:.08em;
+  pointer-events:none;
+  display:none;
+  backdrop-filter:blur(8px);
+  white-space:nowrap;
+}
+
+/* ── RANK TOGGLE (MATCH / BOOST) ── */
+#rank-toggle-row{
+  display:flex;gap:4px;margin-top:10px;
+}
+.rank-toggle-btn{
+  flex:1;font-family:'Space Mono',monospace;font-size:8px;
+  padding:5px 0;border-radius:var(--radius-btn);
+  border:1px solid var(--border2);
+  background:var(--bg2);color:var(--text3);
+  cursor:pointer;transition:all .15s;letter-spacing:.06em;
+  text-align:center;
+}
+.rank-toggle-btn.active{
+  border-color:var(--accent);color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 10%,var(--bg));
+}
+
+/* ── VOTE controls on rank items (MATCH mode) ── */
+.rank-vote-ctrl{
+  display:flex;align-items:center;gap:4px;
+  margin-top:5px;
+}
+.rank-vote-btn{
+  width:20px;height:20px;border-radius:var(--radius-btn);
+  border:1px solid var(--border2);background:var(--bg2);
+  color:var(--text2);cursor:pointer;font-size:11px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .12s;line-height:1;
+  flex-shrink:0;
+}
+.rank-vote-btn.vote-up:hover{border-color:var(--green);color:var(--green);}
+.rank-vote-btn.vote-down:hover{border-color:var(--red);color:var(--red);}
+.rank-vote-label{
+  font-family:'Space Mono',monospace;font-size:8px;
+  color:var(--text3);letter-spacing:.04em;
+}
+.rank-pct-adjusted::after{
+  content:'*';font-size:11px;color:var(--amber);
+  margin-left:1px;font-style:normal;
+  vertical-align:super;line-height:0;
+}
+
+/* ── BOOST: drag-to-reorder ── */
+.rank-item.boost-dragging{opacity:.35;border:1px dashed var(--accent);}
+.rank-item.boost-drag-over{
+  background:color-mix(in srgb,var(--accent) 12%,var(--bg2));
+  border-top:2px solid var(--accent);
+}
+.rank-drag-handle{
+  font-size:11px;color:var(--text3);cursor:grab;
+  user-select:none;flex-shrink:0;padding:0 3px;
+  font-family:'Space Mono',monospace;
+}
+.rank-drag-handle:active{cursor:grabbing;}
+
+/* pulsing save indicator */
+@keyframes savePulse{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
+#rank-saved-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--green);display:none;
+  animation:savePulse 1s ease 1;
+  flex-shrink:0;
+}
+/* ── HUB DROP ZONE pulse ── */
+@keyframes hubPulseAnim{
+  0%,100%{opacity:0.10;}
+  50%{opacity:0.30;}
+}
+.hub-drop-zone-ring{
+  fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6,4;
+  pointer-events:none;opacity:0;
+  animation:hubPulseAnim 1.2s ease-in-out infinite;
+}
+</style>
+</head>
+<body>
+<div id="migrate-tooltip"></div>
+<div id="app">
+
+  <!-- ONBOARDING SCREEN -->
+  <div id="status-overlay">
+    <div id="ob-inner">
+
+      <!-- HEADER -->
+      <div id="ob-header">
+        <div>
+          <div id="ob-kicker">mapa mental · filmes</div>
+          <div id="ob-title">Um retrato de gosto,<br>não uma lista de tendências.</div>
+          <div id="ob-sub">Este mapa foi construído — não gerado. Dumps de memória, curadoria humana e múltiplas IAs produziram este grafo de filmes ajustado ao seu estado de espírito.</div>
+        </div>
+        <button id="ob-close" onclick="closeStatus()">×</button>
+      </div>
+
+      <!-- BODY: journey (left) + sidebar (right) -->
+      <div id="ob-body">
+
+        <!-- LEFT: A JORNADA -->
+        <div id="ob-journey-col">
+          <div class="ob-section-label">a jornada · como foi construído</div>
+          <div id="ob-journey">
+
+            <div class="ob-step ob-step-1">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="10" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".4"/>
+                  <path d="M8 11 Q14 7 20 11 L20 17 Q14 21 8 17 Z" stroke="currentColor" stroke-width="1" fill="none" opacity=".7"/>
+                  <circle cx="11" cy="14" r="1.2" fill="currentColor"/>
+                  <circle cx="17" cy="14" r="1.2" fill="currentColor"/>
+                  <path d="M11 17.5 Q14 19.5 17 17.5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+                </svg>
+                <div class="ob-step-num-label">1</div>
+              </div>
+              <div class="ob-step-tool">Dump de memória · IAs</div>
+              <div class="ob-step-name">Memória</div>
+              <div class="ob-step-text">Conversa longa em áudio transcrito: filmes que amou, que evita, que quer ver. Sem organizar — dump bruto de décadas de cinema. Gêneros, diretores, estados de espírito.</div>
+            </div>
+
+            <div class="ob-step ob-step-2">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".4"/>
+                  <path d="M9 14 Q9 9 14 9 Q19 9 19 14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".9"/>
+                  <circle cx="14" cy="17" r="2.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".7"/>
+                  <line x1="14" y1="19.5" x2="14" y2="21.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+                </svg>
+                <div class="ob-step-num-label">2</div>
+              </div>
+              <div class="ob-step-tool">Claude · Análise</div>
+              <div class="ob-step-name">Padrões</div>
+              <div class="ob-step-text">Múltiplas IAs analisaram os dumps em paralelo. Emergiram os critérios reais: sci-fi que expande, humor absurdo, animação autoral, impacto visual, cinema de autor. Não gênero — relação.</div>
+            </div>
+
+            <div class="ob-step ob-step-3">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <rect x="6" y="5" width="12" height="16" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".5"/>
+                  <line x1="9" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="1" opacity=".6"/>
+                  <line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1" opacity=".6"/>
+                  <line x1="9" y1="15" x2="13" y2="15" stroke="currentColor" stroke-width="1" opacity=".6"/>
+                  <path d="M19 10 Q21 14 19 18" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity=".8"/>
+                  <path d="M21 8 Q24 14 21 20" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
+                </svg>
+                <div class="ob-step-num-label">3</div>
+              </div>
+              <div class="ob-step-tool">Curadoria humana</div>
+              <div class="ob-step-name">Distribuição</div>
+              <div class="ob-step-text">Ambiguidades resolvidas manualmente — Oldboy no panteão, não na fila; Réquiem como régua de intensidade; Star Wars como ciclo encerrado. Cada decisão tem razão.</div>
+            </div>
+
+            <div class="ob-step ob-step-4">
+              <div class="ob-step-bubble">
+                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                  <circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".4"/>
+                  <path d="M9 14 Q9 9 14 9 Q19 9 19 14" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".9"/>
+                  <circle cx="14" cy="17" r="2.5" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".7"/>
+                  <line x1="14" y1="19.5" x2="14" y2="21.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+                </svg>
+                <div class="ob-step-num-label">4</div>
+              </div>
+              <div class="ob-step-tool">Claude</div>
+              <div class="ob-step-name">Interface</div>
+              <div class="ob-step-text">Engine D3 adaptada do Mapa Gamer — grafo, painéis, trailers, anéis de match%, DNA temático. Cada filme com filtro humano e contexto de quando assistir.</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT: SIDEBAR — grupos + navegar -->
+        <div id="ob-sidebar">
+
+          <div>
+            <div class="ob-section-label">os grupos · onde cada filme está</div>
+            <div id="ob-groups">
+              <div class="ob-group" style="border-color:var(--green)44;background:color-mix(in srgb,var(--green) 5%,var(--bg2));color:var(--green)">
+                <div class="ob-group-bar" style="background:var(--green);width:100%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">40</div>
+                  <div><div class="ob-group-name">JÁ CURTI</div><div class="ob-group-desc">Deram o clique. A régua de gosto. Tudo que entra precisa conversar com esses.</div></div>
+                </div>
+              </div>
+              <div class="ob-group" style="border-color:var(--blue)44;background:color-mix(in srgb,var(--blue) 5%,var(--bg2));color:var(--blue)">
+                <div class="ob-group-bar" style="background:var(--blue);width:75%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">10</div>
+                  <div><div class="ob-group-name">QUERO VER</div><div class="ob-group-desc">Alta probabilidade. Estão na fila real — só falta o momento certo.</div></div>
+                </div>
+              </div>
+              <div class="ob-group" style="border-color:var(--amber)44;background:color-mix(in srgb,var(--amber) 5%,var(--bg2));color:var(--amber)">
+                <div class="ob-group-bar" style="background:var(--amber);width:75%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">9</div>
+                  <div><div class="ob-group-name">TALVEZ</div><div class="ob-group-desc">Curiosidade com ressalvas. Vale assistir antes de decidir.</div></div>
+                </div>
+              </div>
+              <div class="ob-group" style="border-color:var(--red)44;background:color-mix(in srgb,var(--red) 5%,var(--bg2));color:var(--red)">
+                <div class="ob-group-bar" style="background:var(--red);width:30%"></div>
+                <div class="ob-group-inner">
+                  <div class="ob-group-num">5</div>
+                  <div><div class="ob-group-name">EVITO</div><div class="ob-group-desc">Padrões que quebram a experiência: violência vazia, fórmula previsível, franquia sem alma.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="ob-section-label">dna temático · o que conecta</div>
+            <div id="ob-pills-row">
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">🔭</div>
+                <div class="ob-pill-tag">sci-fi</div>
+                <div class="ob-pill-label">Ficção científica</div>
+                <div class="ob-pill-desc">Ciência como emoção — cosmos, tempo, IA, extraterrestre</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">◈</div>
+                <div class="ob-pill-tag">visual</div>
+                <div class="ob-pill-label">Impacto visual</div>
+                <div class="ob-pill-desc">A câmera conta — estética que você sente antes de processar</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">◈</div>
+                <div class="ob-pill-tag">animação</div>
+                <div class="ob-pill-label">Animação autoral</div>
+                <div class="ob-pill-desc">Spider-Verse, Ghibli, Pixar — desenho como forma de verdade</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">◎</div>
+                <div class="ob-pill-tag">humor</div>
+                <div class="ob-pill-label">Humor absurdo</div>
+                <div class="ob-pill-desc">Nonsense com lógica — Monty Python, Naked Gun, timing preciso</div>
+              </div>
+              <div class="ob-pill-card">
+                <div class="ob-pill-icon">✦</div>
+                <div class="ob-pill-tag">autor</div>
+                <div class="ob-pill-label">Cinema de autor</div>
+                <div class="ob-pill-desc">Almodóvar, Nolan, Noé — assinatura inconfundível</div>
+              </div>
+              <div class="ob-pill-card ob-pill-card--hint">
+                <div class="ob-pill-icon" style="color:var(--text3)">↔</div>
+                <div class="ob-pill-tag" style="border-color:var(--border2);color:var(--text3);background:transparent">grafo</div>
+                <div class="ob-pill-label" style="color:var(--text2)">Navegação livre</div>
+                <div class="ob-pill-desc">Arraste · scroll zoom · clique nos nós</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- EVITO — critérios de rejeição no onboarding -->
+      <div style="margin-top:32px;padding-top:28px;border-top:var(--border-style) var(--border);">
+        <div class="ob-section-label" style="color:var(--red);opacity:.7">evito · critérios de rejeição</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:12px;">
+          <div style="border-radius:var(--radius-card);border:var(--border-style) var(--border);border-left:2px solid var(--red);padding:12px 14px;background:var(--bg);">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#ff8888;margin-bottom:5px;">Terror genérico</div>
+            <div style="font-size:10px;color:#7a5050;line-height:1.55;margin-bottom:8px;">Horror sem propósito além do susto. Sem narrativa, sem DNA. O gênero não é o problema — é a execução sem intenção.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;"><span style="font-size:8px;font-family:'Space Mono',monospace;padding:2px 6px;border-radius:3px;background:#140808;border:0.5px solid #ff5a5a1a;color:#aa6060">slasher vazio</span><span style="font-size:8px;font-family:'Space Mono',monospace;padding:2px 6px;border-radius:3px;background:#140808;border:0.5px solid #ff5a5a1a;color:#aa6060">susto sem arte</span></div>
+          </div>
+          <div style="border-radius:var(--radius-card);border:var(--border-style) var(--border);border-left:2px solid var(--red);padding:12px 14px;background:var(--bg);">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#ff8888;margin-bottom:5px;">Franquia encerrada</div>
+            <div style="font-size:10px;color:#7a5050;line-height:1.55;margin-bottom:8px;">Não é rejeição ao universo — é que o capítulo está fechado. Nenhum novo episódio muda isso.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;"><span style="font-size:8px;font-family:'Space Mono',monospace;padding:2px 6px;border-radius:3px;background:#140808;border:0.5px solid #ff5a5a1a;color:#aa6060">Star Wars</span></div>
+          </div>
+          <div style="border-radius:var(--radius-card);border:var(--border-style) var(--border);border-left:2px solid var(--red);padding:12px 14px;background:var(--bg);">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#ff8888;margin-bottom:5px;">Romcom formulaica</div>
+            <div style="font-size:10px;color:#7a5050;line-height:1.55;margin-bottom:8px;">Estrutura previsível com resolução garantida. A exceção existe — mas precisa provar que tem risco.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;"><span style="font-size:8px;font-family:'Space Mono',monospace;padding:2px 6px;border-radius:3px;background:#140808;border:0.5px solid #ff5a5a1a;color:#aa6060">fórmula sem surpresa</span></div>
+          </div>
+          <div style="border-radius:var(--radius-card);border:var(--border-style) var(--border);border-left:2px solid var(--red);padding:12px 14px;background:var(--bg);">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#ff8888;margin-bottom:5px;">Violência sem propósito</div>
+            <div style="font-size:10px;color:#7a5050;line-height:1.55;margin-bottom:8px;">Impacto que não constrói nada. Diferente de Réquiem — aqui a destruição é o produto, não a linguagem.</div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;"><span style="font-size:8px;font-family:'Space Mono',monospace;padding:2px 6px;border-radius:3px;background:#140808;border:0.5px solid #ff5a5a1a;color:#aa6060">exploração vazia</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ENTER BUTTON -->
+      <div id="ob-enter">
+        <div id="ob-enter-hint">↓ &nbsp; explore o mapa &nbsp; ↓</div>
+        <button id="ob-enter-btn" onclick="closeStatus()">ENTRAR NO MAPA</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div id="top-bar">
+    <div id="top-bar-left">
+      <button id="status-btn" onclick="openStatus()">
+        <div id="status-dot"></div>
+        mapa filmes · como funciona
+      </button>
+    </div>
+    <div id="top-bar-divider"></div>
+    <div id="protocol-pills">
+      <div class="prot-pill" onmouseenter="showProt(0)" onmouseleave="hideProt()">sci-fi</div>
+      <div class="prot-pill" onmouseenter="showProt(1)" onmouseleave="hideProt()">visual</div>
+      <div class="prot-pill" onmouseenter="showProt(2)" onmouseleave="hideProt()">humor</div>
+      <div class="prot-pill" onmouseenter="showProt(3)" onmouseleave="hideProt()">animação</div>
+      <div class="prot-pill" onmouseenter="showProt(4)" onmouseleave="hideProt()">autor</div>
+    </div>
+    <div id="prot-tip">
+      <div id="prot-tip-title"></div>
+      <div id="prot-tip-body"></div>
+      <div id="prot-tip-tag"></div>
+    </div>
+    <div id="top-bar-divider"></div>
+    <div id="top-bar-right">
+      <div id="theme-switcher" style="display:flex;gap:3px;margin-right:6px;align-items:center">
+        <button class="theme-btn active" data-theme="ps5" onclick="setTheme('ps5')" title="PlayStation — azul royal">PS5</button>
+        <button class="theme-btn" data-theme="steam" onclick="setTheme('steam')" title="Steam — grafite aço">STM</button>
+        <button class="theme-btn" data-theme="xbox" onclick="setTheme('xbox')" title="Xbox — verde HUD">XBX</button>
+      </div>
+      <div style="width:1px;height:14px;background:var(--border2);margin-right:2px"></div>
+      <button class="ctrl" onclick="resetZoom()">reset</button>
+      <button class="ctrl" onclick="toggleLabels()">labels</button>
+      <button class="ctrl" id="dna-btn" onclick="toggleDNA()" title="DNA mecânico">dna</button>
+      <div id="font-scale-wrap">
+        <span id="font-scale-label">Aa</span>
+        <input id="font-scale-slider" type="range" min="1" max="2" step="0.05" value="1" oninput="applyFontScale(this.value)">
+        <span id="font-scale-val">1×</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-row">
+
+    <!-- GRAPH AREA -->
+    <div id="graph-area">
+      <svg id="canvas"></svg>
+
+      <div id="graph-hint">arraste · scroll zoom · clique nos filmes</div>
+    <div id="dna-legend" style="position:absolute;bottom:50px;right:12px;display:none;flex-direction:column;gap:4px;z-index:10">
+      <div style="font-family:'Space Mono',monospace;font-size:7px;color:var(--text3);letter-spacing:.1em;margin-bottom:2px">DNA TEMÁTICO</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:16px;height:1px;background:#ff6a3d;border-top:1px dashed #ff6a3d"></div><span style="font-family:'Space Mono',monospace;font-size:8px;color:#cc5030">impacto visual</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:16px;height:1px;border-top:1px dashed #7ecfff"></div><span style="font-family:'Space Mono',monospace;font-size:8px;color:#4a90bb">ficção científica</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:16px;height:1px;border-top:1px dashed #ffe066"></div><span style="font-family:'Space Mono',monospace;font-size:8px;color:#aa9020">humor &amp; leveza</span></div>
+    </div>
+
+      <!-- PANTEÃO OVERLAY -->
+      <div id="pantheon-overlay">
+        <div id="po-header">
+          <h2>JÁ CURTI — O PANTEÃO</h2>
+          <span id="po-sub">A régua de gosto. Tudo que entra precisa conversar com esses.</span>
+          <button class="ov-back" onclick="closePantheon()">← voltar</button>
+        </div>
+        <div id="pantheon-grid"></div>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div id="side-panel">
+      <div id="panel-header-bar">
+        <div id="panel-title-bar">
+          <div id="panel-title"></div>
+          <div id="panel-badge"></div>
+        </div>
+        <div id="panel-close" onclick="closePanel()">×</div>
+      </div>
+      <div id="panel-video-wrap">
+        <!-- iframe inserted by loadVideo() on panel open -->
+      </div>
+      <div id="panel-body">
+        <div id="panel-status-tag"></div>
+        <div id="panel-sub"></div>
+        <div id="panel-when" style="display:none;margin-bottom:10px"></div>
+        <div id="panel-desc"></div>
+        <div id="panel-tags-sec" style="display:none">
+          <div class="sec-label">tags</div>
+          <div id="panel-tags"></div>
+        </div>
+        <div id="panel-conn-sec" style="display:none">
+          <div class="sec-label" style="margin-top:14px">conexões · proximidade →</div>
+          <div id="panel-conn-track"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING SIDEBAR -->
+    <div id="rank-sidebar">
+      <div id="rank-header">
+        <div id="rank-header-label" style="display:flex;align-items:center;gap:6px;">ranking · análise <div id="rank-saved-dot"></div></div>
+        <div id="rank-title">PRÓXIMO A VER</div>
+        <div id="rank-toggle-row">
+          <button class="rank-toggle-btn active" id="toggle-match" onclick="setRankMode('match')">MATCH%</button>
+          <button class="rank-toggle-btn" id="toggle-boost" onclick="setRankMode('boost')">⠿ MINHA FILA</button>
+        </div>
+      </div>
+      <div id="rank-list">
+        <!-- built by buildRanking() -->
+      </div>
+      <div id="rank-footer">score = match% · DNA temático · contexto de quando assistir</div>
+    </div>
+  </div>
+
+  <!-- FIREWALL FOOTER -->
+  <div id="fw-footer">
+    <div id="fw-label"><div class="fw-dot"></div>EVITO</div>
+    <div id="fw-ticker"><div id="fw-ticker-inner"></div></div>
+    <div id="fw-detail-btn" onclick="document.getElementById('fw-modal').classList.add('open')">análise ↑</div>
+  </div>
+</div>
+
+<!-- EVITO hover badge -->
+<div id="evito-badge">
+  <div id="evito-badge-title">EVITO · firewalls de gosto</div>
+  <div id="evito-badge-items">∧ peaked · Star Wars — ✕ criterion · terror / romcom / violência — ∅ unearned · Alien vs Predador</div>
+</div>
+
+<!-- FIREWALL MODAL -->
+<div id="fw-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div id="fw-modal-box">
+    <div id="fw-modal-hdr">
+      <h2>EVITO — FIREWALLS DE GOSTO</h2>
+      <button class="fw-close-btn" onclick="document.getElementById('fw-modal').classList.remove('open')">× fechar</button>
+    </div>
+    <div id="fw-cards" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="fw-card">
+        <div class="fw-card-title">∧ peaked · Star Wars</div>
+        <div class="fw-card-body">O encanto existiu — Vader, Yoda, a Força. Viu em sequência, viu as falhas, o Despertar da Força repetiu a Estrela da Morte. O ciclo encerrou. A memória está intacta.</div>
+        <div class="fw-tags"><span class="fw-tag">peaked</span><span class="fw-tag">ciclo fechado</span></div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-card-title">✕ criterion · Terror slasher</div>
+        <div class="fw-card-body">Horror que existe só para assustar, sem narrativa ou intenção artística. O susto como produto final — não como linguagem. Filtro ativo antes de entrar.</div>
+        <div class="fw-tags"><span class="fw-tag">criterion</span><span class="fw-tag">slasher sem propósito</span></div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-card-title">✕ criterion · Romcom genérica</div>
+        <div class="fw-card-body">Estrutura de três atos previsível com resolução garantida. Você não acredita que seria surpreendido. A exceção existe — Quem vai Ficar com Mary provou. Mas precisa provar.</div>
+        <div class="fw-tags"><span class="fw-tag">criterion</span><span class="fw-tag">fórmula sem risco</span></div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-card-title">✕ criterion · Violência vazia</div>
+        <div class="fw-card-body">Diferente de Réquiem — onde a violência constrói algo. Aqui o choque é o objetivo, não a linguagem. O impacto sem propósito não é arte.</div>
+        <div class="fw-tags"><span class="fw-tag">criterion</span><span class="fw-tag">exploração sem arte</span></div>
+      </div>
+      <div class="fw-card">
+        <div class="fw-card-title">∅ unearned · Alien vs Predador</div>
+        <div class="fw-card-body">Pegou dois universos ricos e entregou entretenimento vazio. Cobrou o nome sem entregar a ficção científica que os dois universos prometiam. Uma chacota.</div>
+        <div class="fw-tags"><span class="fw-tag">unearned</span><span class="fw-tag">crossover sem substância</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+// ── PROTOCOL ──
+const PROT=[
+  {t:'Ficção Científica',b:'A ciência como janela para a condição humana. Extraterrestre, cosmos, IA — quando o sci-fi expande o que você pensa sobre a realidade.',tag:'DNA central'},
+  {t:'Show, don\'t tell',b:'A câmera e a edição contam a história sem palavras. Impacto visual que você sente antes de processar. A imagem como argumento.',tag:'obrigatório'},
+  {t:'Humor absurdo',b:'Comédia que não avisa que é comédia. Timing preciso, nonsense com lógica interna. Monty Python, Naked Gun — o ridículo como linguagem.',tag:'DNA paralelo'},
+  {t:'Animação autoral',b:'Quando a animação não é para crianças — é uma escolha estética. Spider-Verse, Spirited Away, Shrek: arte que usa o desenho como forma de verdade.',tag:'DNA paralelo'},
+  {t:'Cinema de autor',b:'Visão de mundo inconfundível. Almodóvar, Lars von Trier, Godard — filmes que carregam a assinatura do diretor como DNA, não como estilo.',tag:'filtro qualidade'},
+];
+function showProt(i){
+  const p=PROT[i];
+  document.getElementById('prot-tip-title').textContent=p.t;
+  document.getElementById('prot-tip-body').textContent=p.b;
+  document.getElementById('prot-tip-tag').textContent=p.tag;
+  document.getElementById('prot-tip').classList.add('show');
+}
+function hideProt(){document.getElementById('prot-tip').classList.remove('show');}
+
+// ── FIREWALL TICKER ──
+const FW=[
+  {r:'PEAKED · ∧',g:'Star Wars — o encanto existiu, o ciclo está encerrado'},
+  {r:'CRITERION · ✕',g:'Terror slasher genérico — susto sem substância'},
+  {r:'CRITERION · ✕',g:'Romcom previsível — fórmula sem risco'},
+  {r:'CRITERION · ✕',g:'Violência sem propósito — exploração sem arte'},
+  {r:'UNEARNED · ∅',g:'Alien vs Predador — usou o nome sem entregar a substância'},
+];
+const ti=document.getElementById('fw-ticker-inner');
+ti.innerHTML=[...FW,...FW].map(f=>`<div class="fw-item"><span class="fw-rule">${f.r}</span><span class="fw-sep">→</span><span class="fw-games">${f.g}</span></div>`).join('');
+
+// ── FILM DATA ──
+const TYPE_COLOR={ok:'#3de08a',next:'#4da8ff',maybe:'#ffb340',fw:'#ff5a5a'};
+const TYPE_LABEL={ok:'já curti',next:'quero ver',maybe:'talvez',fw:'evito'};
+const TYPE_BG={ok:'#08180ecc',next:'#080e1acc',maybe:'#18100acc',fw:'#180a0acc'};
+
+// DNA categories: 'scifi' | 'visual' | 'humor'
+const DNA_COLOR={'scifi':'#7ecfff','visual':'#ff6a3d','humor':'#ffe066'};
+const DNA_LABEL={'scifi':'ficção científica','visual':'impacto visual','humor':'humor & leveza'};
+
+const GD={
+  // ── JÁ CURTI — O PANTEÃO ──
+  ok1:{name:'Interstellar',ytId:'zSWdZVtXT7E',match:99,score:'10/10',dur:'2h49',studio:'Christopher Nolan',desc:'Mudou a forma de pensar sobre tempo, amor e física. A ciência como emoção. Dock no âmago.',when:'quer ser transformado — ficção científica que expande o que você acredita ser possível',tags:['sci-fi','cosmos','física','emocional'],to:['ok6','ok7','ok10'],dna:'scifi',type:'ok',status:'completed'},
+  ok2:{name:'Oldboy',ytId:'2kLI_HAJg4c',match:97,score:'10/10',dur:'2h0',studio:'Park Chan-wook',desc:'Coreano. Violência como arte, narrativa que vira ao contrário no final. Um dos filmes mais corajosos já feitos.',when:'quer ser perturbado de forma bela — narrativa que não te larga depois que acaba',tags:['thriller','coreano','arte','perturbador'],to:['ok8','ok12'],dna:'visual',type:'ok',status:'completed'},
+  ok3:{name:'Shrek',ytId:'CwziT4Q2gjM',match:95,score:'10/10',dur:'1h30',studio:'DreamWorks',desc:'Obra-prima de animação que subverte o conto de fadas com camadas adultas. Tem coração de verdade.',when:'quer leveza com substância — animação que não é só para criança',tags:['animação','comédia','subversivo','família'],to:['ok4','ok5','ok15'],dna:'humor',type:'ok',status:'completed'},
+  ok4:{name:'Spider-Verse',ytId:'g4Hbz2jLxvQ',match:96,score:'10/10',dur:'1h57',studio:'Sony Animation',desc:'Revolução estética. Cada personagem tem seu próprio estilo visual. O que animação pode ser foi redefinido aqui.',when:'quer animação que é arte — visual que você para para absorver',tags:['animação','arte','super-herói','visual'],to:['ok3','ok5'],dna:'visual',type:'ok',status:'completed'},
+  ok5:{name:'Spirited Away',ytId:'ByXuk9QqQkk',match:94,score:'10/10',dur:'2h5',studio:'Studio Ghibli · Miyazaki',desc:'Mundo que tem sua própria lógica interna completa. Cada criatura, cada espaço existe com propósito. Contemplação e aventura juntas.',when:'quer se perder num mundo que respira — sem pressa, com maravilha',tags:['animação','fantasia','miyazaki','contemplativo'],to:['ok3','ok4','ok26'],dna:'visual',type:'ok',status:'completed'},
+  ok6:{name:'A Chegada',ytId:'tFMo3UJ4B4g',match:96,score:'10/10',dur:'1h56',studio:'Denis Villeneuve',desc:'Linguagem como forma de perceber o tempo. Sci-fi que usa a ciência para falar de luto e livre-arbítrio. Impacto que cresce depois que acaba.',when:'quer sci-fi que muda como você pensa — não sobre naves, sobre percepção',tags:['sci-fi','linguística','tempo','emocional'],to:['ok1','ok7','ok10'],dna:'scifi',type:'ok',status:'completed'},
+  ok7:{name:'Contato',ytId:'EWwhQB3TKXA',match:93,score:'10/10',dur:'2h30',studio:'Robert Zemeckis · Sagan',desc:'Fé vs ciência, primeira verdadeira descoberta de vida extraterrestre. Jodie Foster perfeita. Baseado em Carl Sagan.',when:'quer sci-fi filosófico — o encontro com o desconhecido como mudança de visão de mundo',tags:['sci-fi','extraterrestre','filosofia','Sagan'],to:['ok1','ok6'],dna:'scifi',type:'ok',status:'completed'},
+  ok8:{name:'Brilho Eterno',ytId:'2bFDCEMKGHA',match:92,score:'10/10',dur:'1h48',studio:'Michel Gondry · Kaufman',desc:'Apagar memórias de um relacionamento enquanto você as revive. Forma e conteúdo se fundem de forma única na história do cinema.',when:'quer ficção que usa a estrutura para contar — memória como labirinto emocional',tags:['sci-fi','memória','romance','Kaufman'],to:['ok1','ok6','ok9'],dna:'scifi',type:'ok',status:'completed'},
+  ok9:{name:'Matrix',ytId:'m8e-FF8MsqU',match:91,score:'10/10',dur:'2h16',studio:'Wachowski',desc:'Filosofia, ação e estética em equilíbrio perfeito. Definiu uma geração. O bullet-time como linguagem visual nova.',when:'quer action que tem DNA — ficção científica que faz perguntas enquanto entretém',tags:['sci-fi','ação','filosofia','visual'],to:['ok1','ok8'],dna:'scifi',type:'ok',status:'completed'},
+  ok10:{name:'Planeta dos Macacos',ytId:'Dh7ZMwI-1dc',match:88,score:'10/10',dur:'2h10',studio:'Matt Reeves (2011–2017)',desc:'Trilogia recente. César é um dos personagens mais bem construídos do cinema moderno. Ficção científica com coração. Chegou cansado no terceiro — viu em sequência.',when:'quer saga épica — evolução de personagem ao longo de filmes',tags:['sci-fi','drama','trilogia','épico'],to:['ok1','ok9'],dna:'scifi',type:'ok',status:'completed'},
+  ok11:{name:'Monty Python',ytId:'tAFGyFpT_gc',match:94,score:'10/10',dur:'1h31',studio:'Monty Python',desc:'Absurdo com lógica interna impecável. Humor que envergonha Hollywood há décadas. O cálice sagrado é uma obra de humor filosófico.',when:'quer rir de verdade — comédia que respeita sua inteligência',tags:['comédia','absurdo','britânico','clássico'],to:['ok12','ok13','ok14','ok23'],dna:'humor',type:'ok',status:'completed'},
+  ok12:{name:'Apertem os Cintos',ytId:'T0bCUAVnmdg',match:93,score:'10/10',dur:'1h28',studio:'Zucker / Abrahams / Zucker',desc:'Densidade de piadas por minuto incomparável. Nonsense que só funciona porque é executado com seriedade absoluta.',when:'quer comédia pastelão inteligente — humor que você não vê vir',tags:['comédia','pastelão','nonsense','clássico'],to:['ok11','ok13','ok14'],dna:'humor',type:'ok',status:'completed'},
+  ok13:{name:'Corra que a Polícia',ytId:'UrQMgjK8J2w',match:91,score:'10/10',dur:'1h25',studio:'David Zucker',desc:'O mesmo DNA do Airplane mas em detetive. Frank Drebin é um personagem cômico perfeito — leva tudo a sério demais.',when:'quer humor pastelão com ritmo — piadas que constroem umas sobre as outras',tags:['comédia','pastelão','detetive','clássico'],to:['ok11','ok12'],dna:'humor',type:'ok',status:'completed'},
+  ok14:{name:'Hangover',ytId:'tcdDbyUgqtI',match:88,score:'10/10',dur:'1h40',studio:'Todd Phillips',desc:'Comédia que usa estrutura de mistério de forma brilhante. Você descobre o que aconteceu junto com os personagens.',when:'quer comédia moderna que tem plot — não só piadas, uma história que funciona',tags:['comédia','mistério','amigos','moderno'],to:['ok11','ok12','ok13'],dna:'humor',type:'ok',status:'completed'},
+  ok15:{name:'Divertidamente',ytId:'yRUAzGQ3nSY',match:90,score:'10/10',dur:'1h35',studio:'Pixar',desc:'Emoções como personagens dentro da mente. Pedagogia emocional embrulhada em entretenimento de primeira.',when:'quer animação que te faz pensar — emociona e ensina ao mesmo tempo',tags:['animação','emocional','Pixar','psicologia'],to:['ok3','ok4','ok16'],dna:'visual',type:'ok',status:'completed'},
+  ok16:{name:'Réquiem para um Sonho',ytId:'2Dx82G-KGLY',match:89,score:'10/10',dur:'1h42',studio:'Darren Aronofsky',desc:'Impacto visual e emocional que te persegue. A forma e a edição são parte do horror. Pertencia ao momento — a relação com o tema mudou, a qualidade não.',when:'[carga máxima] — só quando quer ser destroçado. Não é para sessão leve.',tags:['drama','vício','impacto','Aronofsky'],to:['ok2','ok8'],dna:'visual',type:'ok',status:'completed'},
+  ok17:{name:'Procurando Nemo',ytId:'SPHfeNgogVs',match:92,score:'10/10',dur:'1h40',studio:'Pixar · Andrew Stanton',desc:'Aventura emocional com coração de pai. Pixar no seu melhor: humor, medo e amor em 100 minutos perfeitos.',when:'quer animação que emociona sem ser pesada — leveza com substância',tags:['animação','Pixar','família','aventura'],to:['ok3','ok15','ok5'],dna:'visual',type:'ok',status:'completed'},
+  ok18:{name:'Robô Selvagem',ytId:'67BoDHIRwik',match:91,score:'10/10',dur:'1h42',studio:'DreamWorks · Kemp Powers',desc:'2024. Maternidade, adaptação e sobrevivência. Impressionismo animado — visualmente único, emocionalmente devastador.',when:'quer animação adulta recente — emoção com estética que vai te surpreender',tags:['animação','2024','emocional','sobrevivência'],to:['ok3','ok15','ok5'],dna:'visual',type:'ok',status:'completed'},
+  ok19:{name:'Blade Runner (1982)',ytId:'eogpIG53Cis',match:90,score:'10/10',dur:'1h57',studio:'Ridley Scott',desc:'Noir futurista que inventou um vocabulário visual inteiro. Replicantes como espelho da humanidade. O segundo não elevou — o primeiro ficou como marco.',when:'quer sci-fi autoral com atmosfera — câmera lenta, chuva, questões filosóficas',tags:['sci-fi','noir','visual','cyberpunk'],to:['ok9','ok8','ok6'],dna:'scifi',type:'ok',status:'completed'},
+  ok20:{name:'Ex Machina',ytId:'EoQuVnKhxaM',match:88,score:'10/10',dur:'1h48',studio:'Alex Garland',desc:'IA como espelho do narcisismo masculino. Câmera clínica, tensão crescente, Alicia Vikander perturbadora. Sci-fi intimista no seu melhor.',when:'quer sci-fi cerebral — inteligência artificial como thriller psicológico',tags:['sci-fi','IA','thriller','intimista'],to:['ok6','ok8','ok9'],dna:'scifi',type:'ok',status:'completed'},
+  ok21:{name:'Inception',ytId:'YoHD9XEInc0',match:86,score:'9/10',dur:'2h28',studio:'Christopher Nolan',desc:'Sonhos dentro de sonhos com mecânica precisa. Na época foi revelação. Ao rever, perdeu um pouco — envelheceu na execução.',when:'quer ação com estrutura cerebral — camadas narrativas que exigem atenção',tags:['sci-fi','sonhos','Nolan','ação'],to:['ok1','ok9'],dna:'scifi',type:'ok',status:'completed'},
+  ok22:{name:'Gattaca',ytId:'GaO_HpD7pQU',match:87,score:'9/10',dur:'1h52',studio:'Andrew Niccol',desc:'Genética como destino. Ficção científica dos anos 90 que ficou mais relevante com o tempo. Visual impecável, ritmo deliberado.',when:'quer sci-fi humanista — tecnologia como filtro de valor humano',tags:['sci-fi','genética','humanismo','90s'],to:['ok6','ok7','ok9'],dna:'scifi',type:'ok',status:'completed'},
+  ok23:{name:'Her',ytId:'WzV6mXIOVl4',match:95,score:'10/10',dur:'2h6',studio:'Spike Jonze',desc:'IA como relacionamento. Revê até hoje porque ressoa em cada conversa sobre inteligência artificial. Scarlett Johansson só pela voz — e é suficiente.',when:'quer sci-fi emocional sobre conexão e solidão — especialmente agora que a IA é realidade',tags:['sci-fi','IA','amor','Spike Jonze'],to:['ok6','ok20','ok8'],dna:'scifi',type:'ok',status:'ongoing'},
+  ok24:{name:'Dumb & Dumber',ytId:'2Ap24aTbHlI',match:88,score:'10/10',dur:'1h47',studio:'Farrelly Brothers',desc:'Comédia de adolescência que ainda funciona. Jim Carrey no máximo do máximo — duas estrelas em registro pastelão irresistível.',when:'quer comédia sem filtro — nostalgia com Jim Carrey em modo caos',tags:['comédia','Jim Carrey','pastelão','90s'],to:['ok11','ok12','ok13'],dna:'humor',type:'ok',status:'completed'},
+  ok25:{name:'Um Peixe Chamado Wanda',ytId:'r5BjHJsrfhE',match:85,score:'9/10',dur:'1h48',studio:'Charles Crichton · John Cleese',desc:'Comédia britânica com John Cleese — a mão do Monty Python está lá dentro. Absurdo com personagens reais, ritmo de farsa clássica.',when:'quer comédia britânica com estrutura — humor que tem Cleese no DNA',tags:['comédia','britânico','Cleese','farsa'],to:['ok11','ok12'],dna:'humor',type:'ok',status:'completed'},
+  ok26:{name:'Studio Ghibli (geral)',ytId:'4bG17OYs-GA',match:93,score:'10/10',dur:'variado',studio:'Miyazaki / Takahata',desc:'A Viagem de Chihiro, Ponyo, Howl — mundos que só existem aqui. Animação como contemplação. Marcantes, inesquecíveis.',when:'quer animação que respira no próprio ritmo — Ghibli é categoria única',tags:['animação','Ghibli','japonês','contemplativo'],to:['ok5','ok4'],dna:'visual',type:'ok',status:'ongoing'},
+  ok27:{name:'Alien (franquia)',ytId:'LjLamj-b0I8',match:84,score:'9/10',dur:'múltiplos',studio:'Scott / Cameron / Fincher',desc:'Estudou a ordem e viu tudo. Sci-fi de horror que funciona quando a ficção científica é o ponto — não o susto. Alien vs Predador é a exceção a descartar.',when:'quer ficção científica de tensão — xenomorfo como horror existencial',tags:['sci-fi','horror','franquia','espaço'],to:['ok7','ok9','ok6'],dna:'scifi',type:'ok',status:'completed'},
+  ok28:{name:'Mar Adentro',ytId:'0m-YKWdHqXE',match:84,score:'9/10',dur:'2h5',studio:'Alejandro Amenábar · Javier Bardem',desc:'Drama espanhol sobre eutanásia. Bardem em performance que prende. Cinema de autor europeu que usa o drama para questionar.',when:'quer drama de peso — cinema que te força a tomar posição',tags:['drama','espanhol','Bardem','autor'],to:['ok2','ok16'],dna:'visual',type:'ok',status:'completed'},
+  ok29:{name:'No Country for Old Men',ytId:'38A__WT3-o0',match:86,score:'9/10',dur:'2h2',studio:'Coen Brothers · Bardem',desc:'Violência como inevitabilidade. Anton Chigurh é um dos vilões mais perturbadores da história. Os Coen no modo seco e implacável.',when:'quer thriller que não cede — tensão sem alívio cômico',tags:['thriller','western','Coen','Bardem'],to:['ok2','ok8'],dna:'visual',type:'ok',status:'completed'},
+  ok30:{name:'Fargo (1996)',ytId:'9mdSqzBh8G0',match:83,score:'9/10',dur:'1h38',studio:'Coen Brothers',desc:'Minnesota. Crime que sai do controle. Marge Gunderson é um dos personagens mais únicos do cinema americano. Os Coen em modo poético.',when:'quer crime de autor com humanidade — tensão que mistura o absurdo com o trágico',tags:['crime','drama','Coen','noir'],to:['ok29','ok2'],dna:'visual',type:'ok',status:'completed'},
+  ok31:{name:'Show de Truman',ytId:'dlnmQbPGuls',match:91,score:'10/10',dur:'1h43',studio:'Peter Weir · Jim Carrey',desc:'Jim Carrey subverte o arquétipo cômico e entrega performance dramática. Reality show como prisão existencial — mais relevante hoje do que em 1998.',when:'quer comédia que vira drama — Jim Carrey sem o escudo do humor',tags:['drama','sci-fi','Jim Carrey','existencial'],to:['ok8','ok9','ok6'],dna:'scifi',type:'ok',status:'completed'},
+  ok32:{name:'Nobody',ytId:'44cm4U4WkCM',match:85,score:'9/10',dur:'1h32',studio:'Ilya Naishuller · Bob Odenkirk',desc:'Bob Odenkirk (Saul Goodman) como homem comum que vira máquina de guerra. Produto imprevisível que surpreende porque o ator subverte o próprio arquétipo.',when:'quer ação com personalidade — Odenkirk como contraste ao padrão do gênero',tags:['ação','thriller','Odenkirk','subversão'],to:['ok9','ok2'],dna:'visual',type:'ok',status:'completed'},
+  ok33:{name:'Jim Carrey (geral)',ytId:'7dD0pu77v7g',match:87,score:'10/10',dur:'variado',studio:'vários',desc:'De Ace Ventura a Mentiroso Mentiroso — difícil ter um filme que decepcione. O ator como garantia de energia. Melhor ainda quando subverte o humor (Truman, Brilho Eterno).',when:'quer carisma puro — Jim Carrey em qualquer registro',tags:['comédia','Jim Carrey','carisma','variado'],to:['ok24','ok31','ok8'],dna:'humor',type:'ok',status:'ongoing'},
+  ok34:{name:'Alien (série 2024)',ytId:'Yl2q5FiNvEQ',match:80,score:'8/10',dur:'8 ep',studio:'FX · Noah Hawley',desc:'Vista em sequência com toda a franquia. Funciona como homenagem ao primeiro filme — atmosfera acima de tudo. A maratona criou cansaço.',when:'quer expandir o universo Alien — homenagem ao horror original',tags:['sci-fi','horror','série','2024'],to:['ok27','ok7'],dna:'scifi',type:'ok',status:'completed'},
+
+  // ── QUERO VER ──
+  n1:{name:'Disclosure Day',match:95,ytId:'WP3Mp3-KF2s',score:'alta prioridade',dur:'~2h',studio:'Steven Spielberg',desc:'Spielberg voltando ao sci-fi que o definiu. UFOs com Emily Blunt. O mesmo diretor de Close Encounters e E.T. Estreia junho 2026.',when:'quer o grande sci-fi do ano — Spielberg + extraterrestre + IMAX',tags:['sci-fi','spielberg','UFO','2026'],from:['ok1','ok6','ok7'],to:[],dna:'scifi',type:'next'},
+  n2:{name:'Amélie Poulain',match:90,ytId:'HgCNnXLvMoA',score:'alta prioridade',dur:'2h2',studio:'Jean-Pierre Jeunet',desc:'Cinema francês autoral no seu melhor. Mundo com lógica própria, visual inventivo, narração que encanta. Leveza com profundidade.',when:'quer cinema de autor leve — França, imaginação, Audrey Tautou',tags:['francês','romance','autoral','visual'],from:['ok5','ok3','ok15'],to:[],dna:'visual',type:'next'},
+  n3:{name:'A Pele que Habito',match:86,ytId:'4Sb-gRVjOkw',score:'alta prioridade',dur:'2h0',studio:'Pedro Almodóvar',desc:'Almodóvar em modo thriller psicológico. Perturbador, elegante, com reviravolta que muda tudo o que você viu. Espanhol.',when:'quer perturbação elegante — Almodóvar num registro inesperado',tags:['thriller','Almodóvar','espanhol','perturbador'],from:['ok2','ok16','ok8'],to:[],dna:'visual',type:'next'},
+  n4:{name:'Amores Perros',match:84,ytId:'jDkNmFJSm1o',score:'alta prioridade',dur:'2h34',studio:'Alejandro González Iñárritu',desc:'México. Três histórias conectadas por um acidente. Violência visceral, emoção bruta. Iñárritu antes de Hollywood.',when:'quer cinema latino de impacto — histórias que se cruzam de forma brutal',tags:['mexicano','drama','violência','interconnected'],from:['ok2','ok16'],to:[],dna:'visual',type:'next'},
+  n5:{name:'O Iluminado',match:88,ytId:'5Cb3ik6zP2I',score:'alta prioridade',dur:'2h24',studio:'Stanley Kubrick · Nicholson',desc:'Kubrick + Nicholson. Horror psicológico como obra de arte. Tem vontade de ver há tempos — o mestre em modo perturbador.',when:'quer horror que é arte — Kubrick construindo tensão sem susto fácil',tags:['horror','Kubrick','Nicholson','psicológico'],from:['ok2','ok16','ok8'],to:[],dna:'visual',type:'next'},
+  n6:{name:'Fargo (série)',match:85,ytId:'g2YP6wMUZoE',score:'alta prioridade',dur:'multi-temporada',studio:'FX · Noah Hawley',desc:'Cada temporada é um universo independente com o DNA dos Coen. Fargo o filme te fisgou — a série expande a mitologia.',when:'quer Coen em formato série — crime absurdo no meio-oeste americano',tags:['crime','drama','Coen','série'],from:['ok30','ok29'],to:[],dna:'visual',type:'next'},
+  n7:{name:'Tropic Thunder',match:82,ytId:'GfHh4zy3-fU',score:'próximo a ver',dur:'1h47',studio:'Ben Stiller · Robert Downey Jr.',desc:'Sátira de Hollywood com RDJ em blackface — o humor antipoliticamente correto que te chamou a atenção. O crítico Gaveta recomendou.',when:'quer comédia que não pede licença — sátira pesada com elenco que assume o risco',tags:['comédia','sátira','Hollywood','RDJ'],from:['ok11','ok14'],to:[],dna:'humor',type:'next'},
+  n8:{name:'Tenet',match:75,ytId:'L3pk_TBkihU',score:'com ressalva',dur:'2h30',studio:'Christopher Nolan',desc:'Nolan jogando com entropia reversa. A crítica foi de confuso — mas é Nolan, e você já tem o repertório para decodificar.',when:'quer Nolan no modo mais radical — aceita a complexidade como parte da experiência',tags:['sci-fi','ação','Nolan','tempo'],from:['ok1','ok21'],to:[],dna:'scifi',type:'next'},
+  n9:{name:'Parasite',match:78,ytId:'5xH0HfJHsaY',score:'alta prioridade',dur:'2h12',studio:'Bong Joon-ho',desc:'Coreano. Oscar. Começa como comédia social, vira thriller, vira outra coisa. A estrutura narrativa é um argumento em si.',when:'quer cinema coreano moderno — drama que subverte o gênero',tags:['coreano','thriller','social','Oscar'],from:['ok2','ok8','ok6'],to:[],dna:'visual',type:'next'},
+  n10:{name:'Baldur\'s Gate 3',match:73,ytId:'0P0oMsGGHqY',score:'com ressalva',dur:'100h+',studio:'Larian Studios',desc:'RPG tático que ganhou o GOTY. O formato mistura diálogo com estratégia — Detroit Become Human e Telltale funcionaram, esse pode também.',when:'quer RPG com peso de decisão — aceita o formato tático antes de entrar',tags:['RPG','tático','GOTY','diálogo'],from:['ok9'],to:[],dna:'visual',type:'next'},
+
+  // ── TALVEZ ──
+  m1:{name:'A Vida é Bela',match:75,ytId:'Q5kic3_4CY8',score:'curiosidade',dur:'1h56',studio:'Roberto Benigni',desc:'Italiano. Holocaust como fábula de amor paterno. Emociona de forma devastadora sem mostrar o horror diretamente.',when:'quer emoção profunda — filme que usa leveza para falar de tragédia',tags:['italiano','guerra','emoção','pai'],from:['ok10','ok15'],to:[],dna:'visual',type:'maybe'},
+  m2:{name:'O Grande Lebowski',match:72,ytId:'cd-go0oBF4Y',score:'curiosidade',dur:'1h57',studio:'Coen Brothers',desc:'Nonsense coerente. "The Dude" é um personagem único. Os Coen num registro de comédia absurda que não se repete.',when:'quer comédia de autor que não se explica — Coen Brothers em modo relaxado',tags:['comédia','absurdo','Coen','culto'],from:['ok11','ok12','ok13'],to:[],dna:'humor',type:'maybe'},
+  m3:{name:'Duna (2021)',match:70,ytId:'8g18jFHCLXk',score:'curiosidade',dur:'2h35',studio:'Denis Villeneuve',desc:'O mesmo diretor de A Chegada. Ficção científica épica, visual esmagador. Primeira metade de uma história maior.',when:'quer sci-fi épico e denso — se tiver disposição para obra longa e séria',tags:['sci-fi','épico','Villeneuve','adaptação'],from:['ok1','ok6','ok10'],to:[],dna:'scifi',type:'maybe'},
+  m4:{name:'Annihilation',match:68,ytId:'89OP78l6oKQ',score:'curiosidade',dur:'1h55',studio:'Alex Garland',desc:'Ficção científica de horror atmosférico. Alienígena como metáfora de autodestruição. Perturbador e lindo ao mesmo tempo.',when:'quer sci-fi de autor que desconcerta — não tem resposta fácil',tags:['sci-fi','horror','Garland','atmosférico'],from:['ok6','ok7','ok8'],to:[],dna:'scifi',type:'maybe'},
+  m5:{name:'Quem vai Ficar com Mary',match:73,ytId:'wPlYxGTJuWQ',score:'curiosidade',dur:'1h59',studio:'Farrelly Brothers',desc:'Comédia romântica que subverte a fórmula com humor tosco e situações absurdas. Você mesmo citou como referência.',when:'quer romcom que não é óbvia — humor bruto numa estrutura de romance',tags:['comédia','romance','Farrelly','90s'],from:['ok11','ok12','ok14'],to:[],dna:'humor',type:'maybe'},
+  m6:{name:'Coherence',match:65,ytId:'S8Y5NX_Eo8A',score:'curiosidade',dur:'1h29',studio:'James Ward Byrkit',desc:'Sci-fi de baixo orçamento sobre realidades paralelas durante um jantar. Feito por $50k. Angústia cresce sem que você perceba.',when:'quer sci-fi intimista — ficção que usa conversa como tensão',tags:['sci-fi','realidades','baixo orçamento','angústia'],from:['ok6','ok8','ok1'],to:[],dna:'scifi',type:'maybe'},
+  m7:{name:'Divertidamente 2',match:67,ytId:'LEjhY15eCx0',score:'curiosidade',dur:'1h40',studio:'Pixar · Kelsey Mann',desc:'2024. Adiciona ansiedade adolescente com a mesma linguagem do original. Reviews divididas — mas o DNA está lá.',when:'quer continuar o universo do primeiro — com reservas',tags:['animação','Pixar','2024','continuação'],from:['ok15','ok3','ok4'],to:[],dna:'visual',type:'maybe'},
+  m8:{name:'Blade Runner 2049',match:60,ytId:'gCcx85zbxz4',score:'baixa prioridade',dur:'2h43',studio:'Denis Villeneuve',desc:'Usou o mesmo cenário sem elevar a história. O primeiro foi impacto demais — o segundo ficou na sombra. Peaked: o melhor já passou.',when:'só se tiver disposição específica — não vai superar o original',tags:['sci-fi','sequência','peaked','Villeneuve'],from:['ok19'],to:[],dna:'scifi',type:'maybe',evito_type:'peaked'},
+  m9:{name:'Star Wars: Andor',match:55,ytId:'etO1-7v6bEo',score:'baixa prioridade',dur:'multi-ep',studio:'Disney · Tony Gilroy',desc:'Falam muito bem. Mas o universo Star Wars está encerrado para você — mesmo a melhor série do universo não muda o ciclo fechado.',when:'só se o universo voltar a ter apelo — não há motivação agora',tags:['sci-fi','Star Wars','série','encerrado'],from:['fw1'],to:[],dna:'scifi',type:'maybe'},
+
+  // ── EVITO — firewalls de gosto ──
+  fw1:{name:'Star Wars (franquia)',type:'fw',evito_type:'peaked',match:0,ytId:'sGbxmsDFVnE',dur:'múltiplos',studio:'Disney/Lucasfilm',desc:'Viu em sequência e fechou. Viu as falhas de roteiro, o Despertar da Força repetindo a Estrela da Morte. O encanto existiu — Vader, Yoda, a Força — mas o ciclo está encerrado.',when:'nunca — ciclo encerrado',tags:['sci-fi','franquia','peaked'],from:['ok9','ok1'],to:[],dna:'scifi'},
+  fw2:{name:'Terror slasher genérico',type:'fw',evito_type:'criterion',match:0,ytId:'5KCJYUPMFHg',dur:'~1h30',studio:'qualquer estúdio',desc:'Horror sem propósito além do susto. Sem narrativa, sem personagens, sem DNA. O gênero não é o problema — é a execução sem intenção.',when:'nunca — susto sem substância',tags:['terror','slasher','criterion'],from:[],to:[],dna:'visual'},
+  fw3:{name:'Romcom genérica',type:'fw',evito_type:'criterion',match:0,ytId:'K5HRKfdClQE',dur:'~1h50',studio:'Hollywood formulaico',desc:'Estrutura de três atos previsível com resolução garantida. A exceção existe — Quem vai Ficar com Mary provou. Mas precisa provar antes de entrar.',when:'nunca — fórmula sem risco',tags:['romance','fórmula','criterion'],from:['ok11'],to:[],dna:'humor'},
+  fw4:{name:'Violência sem propósito',type:'fw',evito_type:'criterion',match:0,ytId:'2Dx82G-KGLY',dur:'variável',studio:'vários',desc:'Impacto que não constrói nada. Diferente de Réquiem (que usa a destruição para dizer algo) — aqui a violência é o produto.',when:'nunca — exploração sem arte',tags:['violência','vazio','criterion'],from:['ok2','ok16'],to:[],dna:'visual'},
+  fw5:{name:'Alien vs Predador',type:'fw',evito_type:'unearned',match:0,ytId:'4WgdX6gKFRQ',dur:'1h41',studio:'Paul W.S. Anderson',desc:'Chacota feia. Pegou dois universos ricos e entregou entretenimento vazio. Cobrou o nome sem entregar a ficção científica que os dois universos prometiam.',when:'nunca — usou o nome sem a substância',tags:['sci-fi','crossover','unearned'],from:['ok27'],to:[],dna:'scifi'},
+
+  // ── CHEQUES EM BRANCO — âncoras de ator/diretor ──
+  cb1:{name:'Wagner Moura',ytId:'4mZvwb9F_24',match:96,score:'cheque em branco',dur:'variado',studio:'Brasil + Hollywood',desc:'Tropa de Elite + Narcos + postura pública. Posicionamento político, carreira que representa o país no exterior. Ator que se expõe e trabalha de forma consistente. Carta branca plena.',when:'qualquer projeto — o nome é garantia',tags:['ator','Wagner Moura','Brasil','carta branca'],to:[],dna:'tensao',type:'ok',status:'ongoing'},
+  cb2:{name:'Adam Scott',ytId:'xEQP4VVuyrY',match:93,score:'cheque em branco',dur:'variado',studio:'vários',desc:'Good Place + Severance consolidaram. Ator que entrega sem chamar atenção — presença que ancora. Cheque em branco nascente mas já funcional.',when:'qualquer projeto — atenção total',tags:['ator','Adam Scott','Severance','carta branca'],to:[],dna:'satira',type:'ok',status:'ongoing'},
+  cb3:{name:'Matthew McConaughey',ytId:'nqPMcGkMHMo',match:94,score:'cheque em branco',dur:'variado',studio:'vários',desc:'Dallas Buyers Club + True Detective S1. Ator que quebrou o arquétipo do galã e se reinventou. Da comédia ao drama existencial. Mesmo padrão de Jim Carrey, Cillian Murphy — transcendeu o estereótipo.',when:'qualquer projeto — especialmente dramas',tags:['ator','McConaughey','True Detective','carta branca'],to:[],dna:'tensao',type:'ok',status:'ongoing'},
+  cb4:{name:'Joaquin Phoenix',ytId:'WzV6mXIOVl4',match:93,score:'cheque em branco',dur:'variado',studio:'vários',desc:'Her + Coringa + Gladiador. Ator que não aceita papel fácil. Registro que vai do horror ao drama sem perder intensidade. Começou no Gladiador mas é o trabalho posterior que consolida.',when:'qualquer projeto — atenção total',tags:['ator','Joaquin Phoenix','Her','carta branca'],to:[],dna:'tensao',type:'ok',status:'ongoing'},
+  cb5:{name:'Zendaya',ytId:'oDfghas1YxI',match:91,score:'cheque em branco',dur:'variado',studio:'vários',desc:'Euphoria + Challengers (Rivals). Presença que domina qualquer cena. Passou de Disney para trabalhos de peso — aura de ator que você vai atrás.',when:'qualquer projeto — especialmente dramas',tags:['atriz','Zendaya','Euphoria','carta branca'],to:[],dna:'tensao',type:'ok',status:'ongoing'},
+  cb6:{name:'Tarantino',ytId:'m-a_FMDGkGo',match:97,score:'cheque em branco',dur:'variado',studio:'Miramax/Sony',desc:'DNA de diálogo afiado como navalha — GTA 5 como ponte para entender o estilo antes de ver os filmes. Inglourious Basterds brinca com a realidade histórica do mesmo jeito que você gosta. Dificilmente abandona um filme dele.',when:'qualquer filme — o estilo é garantia',tags:['diretor','Tarantino','diálogo','carta branca'],to:[],dna:'humor',type:'ok',status:'ongoing'},
+};
+
+
+// ══════════════════════════════════════════════
+// ESTADO PERSISTENTE — localStorage filmes-state-v1
+// Sobrevive entre versões do HTML no mesmo domínio
+// ══════════════════════════════════════════════
+const STATE_KEY = 'filmes-state-v1';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    // Aplicar overrides de tipo (migrate)
+    if (s.types) {
+      Object.entries(s.types).forEach(([id, type]) => {
+        if (GD[id]) GD[id].type = type;
+      });
+    }
+    // Aplicar votes (voteAdj)
+    if (s.votes) {
+      Object.entries(s.votes).forEach(([id, adj]) => {
+        if (GD[id]) GD[id].voteAdj = adj;
+      });
+    }
+    // Restaurar boostOrder
+    if (s.boostOrder && Array.isArray(s.boostOrder)) {
+      boostOrderIds = s.boostOrder;
+    }
+  } catch(e) { console.warn('loadState error', e); }
+}
+
+function saveState() {
+  try {
+    const types = {};
+    const votes = {};
+    const boostOrder = rankMode === 'boost' ? boostOrderIds : null;
+    Object.entries(GD).forEach(([id, gd]) => {
+      if (gd.type !== undefined) types[id] = gd.type;
+      if (gd.voteAdj && gd.voteAdj !== 0) votes[id] = gd.voteAdj;
+    });
+    localStorage.setItem(STATE_KEY, JSON.stringify({ types, votes, boostOrder, savedAt: Date.now() }));
+    // feedback visual
+    const dot = document.getElementById('rank-saved-dot');
+    if (dot) { dot.style.display = 'block'; setTimeout(() => dot.style.display = 'none', 1200); }
+  } catch(e) { console.warn('saveState error', e); }
+}
+
+// Inicializar voteAdj=0 em todos os jogos
+Object.values(GD).forEach(gd => { if (gd.voteAdj === undefined) gd.voteAdj = 0; });
+
+// boostOrder: array de IDs na ordem manual do usuário (modo BOOST)
+let boostOrderIds = [];
+
+// Carregar estado salvo antes de renderizar
+loadState();
+// ── THEME-AWARE COLORS ──
+function getThemeColors(){
+  const s=getComputedStyle(document.documentElement);
+  const g=s.getPropertyValue('--green').trim();
+  const b=s.getPropertyValue('--blue').trim();
+  const a=s.getPropertyValue('--amber').trim();
+  const r=s.getPropertyValue('--red').trim();
+  const g_col=s.getPropertyValue('--green').trim();
+  const b_col=s.getPropertyValue('--blue').trim();
+  const a_col=s.getPropertyValue('--amber').trim();
+  const r_col=s.getPropertyValue('--red').trim();
+  return {
+    root:{fill:'#0d0f18',stroke:'#4a4f60',text:'#c0c4d0',r:46},
+    // Group hubs — solid filled with their accent color, inverted text
+    fw:{fill:r_col,stroke:r_col,text:'#0a0404',r:40},
+    ok:{fill:g_col,stroke:g_col,text:'#010a04',r:40},
+    next:{fill:b_col,stroke:b_col,text:'#010408',r:40},
+    maybe:{fill:a_col,stroke:a_col,text:'#0a0600',r:40},
+    // leaf nodes — fill computed dynamically per match%, stored as base
+    fw_l:{fill:'#100606',stroke:r_col+'66',text:'#ffffff',r:32},
+    ok_l:{fill:'#040c06',stroke:g_col+'66',text:'#ffffff',r:32},
+    next_l:{fill:'#04060e',stroke:b_col+'66',text:'#ffffff',r:32},
+    maybe_l:{fill:'#0d0a02',stroke:a_col+'66',text:'#ffffff',r:32},
+  };
+}
+const COLORS=getThemeColors();
+
+const STATUS_ICON={completed:'✓',ongoing:'▶',dropped:'×'};
+const STATUS_COL={completed:'#3de08a',ongoing:'#4da8ff',dropped:'#ffb340'};
+const EVITO_ICON={derailed:'⚡',dissolved:'◌',criterion:'✕',adrift:'~',peaked:'∧',unearned:'∅'};
+const EVITO_COL={derailed:'#ff6b6b',dissolved:'#8888cc',criterion:'#666',adrift:'#4da8ff',peaked:'#ffb340',unearned:'#ff7aab'};
+
+// Mapa de tipo GD → tipo de nó no grafo
+const GD_TYPE_TO_NODE = { next: 'next_l', maybe: 'maybe_l', ok: 'ok_l', fw: 'fw_l' };
+// Mapa inverso: tipo nó → hub pai
+const NODE_TYPE_TO_HUB = { next_l: 'next', maybe_l: 'maybe', ok_l: 'ok', fw_l: 'fw' };
+
+function gdNodeType(id) {
+  const gd = GD[id];
+  if (!gd) return 'next_l';
+  return GD_TYPE_TO_NODE[gd.type] || 'next_l';
+}
+function gdNodeParent(id) {
+  const gd = GD[id];
+  if (!gd) return 'next';
+  return gd.type || 'next';
+}
+
+const rawNodes=[
+  {id:'root',label:'MAPA\nFILMES',type:'root'},
+  {id:'fw',label:'EVITO',type:'fw',parent:'root'},
+  {id:'ok',label:'JÁ\nCURTI',type:'ok',parent:'root'},
+  {id:'next',label:'QUERO\nVER',type:'next',parent:'root'},
+  {id:'maybe',label:'TALVEZ',type:'maybe',parent:'root'},
+  ...['ok1','ok2','ok3','ok4','ok5','ok6','ok7','ok8','ok9','ok10','ok11','ok12','ok13','ok14','ok15','ok16','ok17','ok18','ok19','ok20','ok21','ok22','ok23','ok24','ok25','ok26','ok27','ok28','ok29','ok30','ok31','ok32','ok33','ok34','cb1','cb2','cb3','cb4','cb5','cb6'].map(id=>({id,label:GD[id].name.split(' ')[0],type:'ok_l',parent:'ok'})),
+  ...['n1','n2','n3','n4','n5','n6','n7','n8','n9','n10'].map(id=>({id,label:GD[id].name.split(' ')[0],type:gdNodeType(id),parent:gdNodeParent(id)})),
+  ...['m1','m2','m3','m4','m5','m6','m7','m8','m9'].map(id=>({id,label:GD[id].name.split(' ')[0],type:gdNodeType(id),parent:gdNodeParent(id)})),
+  ...['fw1','fw2','fw3','fw4','fw5'].map(id=>({id,label:GD[id].name.split(' ').slice(0,2).join('\n'),type:gdNodeType(id),parent:gdNodeParent(id)})),
+];
+
+// Build proper labels
+const labelMap={
+  ok1:'Inter-\nstellar',ok2:'Oldboy',ok3:'Shrek',ok4:'Spider-\nVerse',ok5:'Spirited\nAway',
+  ok6:'A\nChegada',ok7:'Contato',ok8:'Brilho\nEterno',ok9:'Matrix',ok10:'Planeta\nMacacos',
+  ok11:'Monty\nPython',ok12:'Apertem\nos Cintos',ok13:'Corra\nPolícia',ok14:'Hangover',
+  ok15:'Diverti-\ndamente',ok16:'Réquiem',ok17:'Finding\nNemo',ok18:'Robô\nSelvagem',
+  ok19:'Blade\nRunner',ok20:'Ex\nMachina',ok21:'Inception',ok22:'Gattaca',
+  ok23:'Her',ok24:'Dumb &\nDumber',ok25:'Peixe\nWanda',ok26:'Ghibli',
+  ok27:'Alien',ok28:'Mar\nAdentro',ok29:'No Country',ok30:'Fargo',
+  ok31:'Show de\nTruman',ok32:'Nobody',ok33:'Jim\nCarrey',ok34:'Alien\n2024',
+  cb1:'Wagner\nMoura',cb2:'Adam\nScott',cb3:'McConaugh-\ney',cb4:'Joaquin\nPhoenix',cb5:'Zendaya',cb6:'Tarantino',
+  n1:'Disclosure\nDay',n2:'Amélie',n3:'A Pele',n4:'Amores\nPerros',
+  n5:'O\nIluminado',n6:'Fargo\nSérie',n7:'Tropic\nThunder',n8:'Tenet',
+  n9:'Parasite',n10:"Baldur's\nGate 3",
+  m1:'A Vida\né Bela',m2:'Lebowski',m3:'Duna',
+  m4:'Annihila-\ntion',m5:'Quem\nFicar',m6:'Coherence',m7:'Diverti-\ndamente 2',
+  m8:'Blade R.\n2049',m9:'Andor',
+  fw1:'Star\nWars',fw2:'Terror\nSlasher',fw3:'Romcom\nGenérica',fw4:'Violência\nVazia',fw5:'AvP',
+};
+rawNodes.forEach(n=>{if(labelMap[n.id])n.label=labelMap[n.id];});
+
+const parentLinks=rawNodes.filter(n=>n.parent).map(n=>({source:n.parent,target:n.id,cross:false,dna:null}));
+// curated cross-links (from/to in GD)
+const crossLinks=[];
+Object.entries(GD).forEach(([id,gd])=>{
+  (gd.to||[]).forEach(tid=>{if(GD[tid])crossLinks.push({source:id,target:tid,cross:true,dna:null});});
+});
+// DNA similarity links — same dna across different parent clusters
+const dnaLinks=[];
+const dnaGroups={};
+Object.entries(GD).forEach(([id,gd])=>{
+  if(gd.dna){if(!dnaGroups[gd.dna])dnaGroups[gd.dna]=[];dnaGroups[gd.dna].push(id);}
+});
+// Only add dna links between panteão nodes (ok*) — keeps graph readable
+Object.entries(dnaGroups).forEach(([dna,ids])=>{
+  const okIds=ids.filter(id=>GD[id].type==='ok');
+  for(let i=0;i<okIds.length;i++){
+    for(let j=i+1;j<okIds.length;j++){
+      // avoid duplicating existing cross-links
+      const a=okIds[i],b=okIds[j];
+      const already=crossLinks.find(l=>(l.source===a&&l.target===b)||(l.source===b&&l.target===a));
+      if(!already)dnaLinks.push({source:a,target:b,cross:false,dna});
+    }
+  }
+});
+let showDNA=false;
+const allLinks=[...parentLinks,...crossLinks,...dnaLinks];
+
+// ── ARC HELPER ──
+function polarToCartesian(r,angleDeg){
+  const a=(angleDeg-90)*Math.PI/180;
+  return{x:r*Math.cos(a),y:r*Math.sin(a)};
+}
+function describeArc(r,startAngle,endAngle){
+  if(endAngle>=360)endAngle=359.999;
+  const s=polarToCartesian(r,startAngle);
+  const e=polarToCartesian(r,endAngle);
+  const large=endAngle-startAngle>180?1:0;
+  return`M${s.x},${s.y}A${r},${r},0,${large},1,${e.x},${e.y}`;
+}
+
+// ── D3 SETUP ──
+const W=()=>Math.max(document.getElementById('graph-area').clientWidth,100);
+const H=()=>Math.max(document.getElementById('graph-area').clientHeight,100);
+const svg=d3.select('#canvas');
+const g=svg.append('g');
+const zoom=d3.zoom().scaleExtent([0.1,5]).on('zoom',e=>g.attr('transform',e.transform));
+svg.call(zoom);
+
+const sim=d3.forceSimulation(rawNodes)
+  .force('link',d3.forceLink(allLinks).id(d=>d.id).distance(d=>{
+    const t=typeof d.target==='object'?d.target.type:d.target;
+    const s=typeof d.source==='object'?d.source.type:d.source;
+    if(d.cross)return 160;
+    // root → group hub: bem espaçado
+    if(['fw','ok','next','maybe'].includes(t)&&s==='root')return 420;
+    // group hub → leaf: afasta os filhos do hub
+    if(['fw_l','ok_l','next_l','maybe_l'].includes(t))return 160;
+    return 220;
+  }).strength(d=>{
+    const t=typeof d.target==='object'?d.target.type:d.target;
+    const s=typeof d.source==='object'?d.source.type:d.source;
+    if(d.cross)return 0.04; // cross-links bem fracos — não puxam clusters
+    if(['fw','ok','next','maybe'].includes(t)&&s==='root')return 0.8;
+    return 0.45;
+  }))
+  .force('charge',d3.forceManyBody().strength(d=>{
+    if(d.type==='root')return -4000;
+    if(['fw','ok','next','maybe'].includes(d.type))return -3500;
+    return -600;
+  }))
+  .force('center',d3.forceCenter(W()/2,H()/2))
+  .force('collision',d3.forceCollide().radius(d=>(COLORS[d.type]?.r||32)*2.8))
+  .alphaDecay(0.010);
+
+const linkEl=g.append('g').selectAll('line').data(allLinks).join('line')
+  .attr('stroke',d=>{
+    if(d.dna)return DNA_COLOR[d.dna]||'#555';
+    return d.cross?'#2a3348':'#161820';
+  })
+  .attr('stroke-width',d=>{const t=typeof d.target==='object'?d.target.type:'';return d.dna?0.6:d.cross?0.8:(['fw','ok','next','maybe'].includes(t)?1.2:0.5);})
+  .attr('stroke-dasharray',d=>d.dna?'1,5':d.cross?'2,4':null)
+  .attr('stroke-opacity',d=>{
+    const t=typeof d.target==='object'?d.target.type:'';
+    if(d.dna)return showDNA?0.35:0;
+    return d.cross?0.5:(['fw','ok','next','maybe'].includes(t)?0.8:0.3);
+  });
+
+// ══════════════════════════════════════════════
+// DRAG-TO-MIGRATE — arrasta nó folha até hub pai
+// ══════════════════════════════════════════════
+const HUB_IDS = { next: 'QUERO VER', maybe: 'TALVEZ', ok: 'JÁ CURTI', fw: 'EVITO' };
+const HUB_DROP_RADIUS = 130; // px no espaço do grafo — zona generosa
+
+let dragMigrateActive = false;
+let dragSourceNode = null;
+
+// Drop zone rings — criados uma vez, mostrados durante drag
+const dropZoneRings = {};
+['next','maybe','ok','fw'].forEach(hubId => {
+  dropZoneRings[hubId] = g.append('circle')
+    .attr('class','hub-drop-zone-ring')
+    .attr('r', HUB_DROP_RADIUS)
+    .attr('opacity', 0)
+    .attr('display','none');
+});
+
+function showDropZones() {
+  ['next','maybe','ok','fw'].forEach(hubId => {
+    const hub = rawNodes.find(n => n.id === hubId);
+    if (!hub) return;
+    dropZoneRings[hubId]
+      .attr('cx', hub.x).attr('cy', hub.y)
+      .attr('display', null)
+      .attr('opacity', 0.18);
+  });
+}
+function hideDropZones() {
+  ['next','maybe','ok','fw'].forEach(hubId => {
+    dropZoneRings[hubId].attr('display','none').attr('opacity',0);
+  });
+}
+
+function getHubNode(hubId) {
+  return rawNodes.find(n => n.id === hubId);
+}
+
+function getDropTarget(x, y) {
+  // x,y em coordenadas do grafo (já transformadas)
+  for (const hubId of Object.keys(HUB_IDS)) {
+    const hub = getHubNode(hubId);
+    if (!hub) continue;
+    const dx = hub.x - x, dy = hub.y - y;
+    if (Math.sqrt(dx*dx + dy*dy) < HUB_DROP_RADIUS) return hubId;
+  }
+  return null;
+}
+
+const migrateTooltip = document.getElementById('migrate-tooltip');
+
+const nodeG=g.append('g').selectAll('g').data(rawNodes).join('g')
+  .attr('cursor','pointer')
+  .call(d3.drag()
+    .on('start',(e,d)=>{
+      if(!e.active) sim.alphaTarget(0.3).restart();
+      d.fx=d.x; d.fy=d.y;
+      const isLeaf = ['ok_l','next_l','maybe_l','fw_l'].includes(d.type);
+      const isHub  = ['next','maybe','ok','fw'].includes(d.type);
+      dragMigrateActive = isLeaf;
+      dragSourceNode = isLeaf ? d : null;
+      if (isLeaf) {
+        // Congela todos os nós na posição atual — alvo parado é mais fácil de acertar
+        sim.stop();
+        rawNodes.forEach(n => { n.fx = n.x; n.fy = n.y; });
+        showDropZones();
+      }
+      if (isHub) { d._hubPinned = true; }
+    })
+    .on('drag',(e,d)=>{
+      d.fx=e.x; d.fy=e.y;
+      // update drop zone positions in case sim moved hubs
+      ['next','maybe','ok','fw'].forEach(hubId => {
+        const hub = rawNodes.find(n => n.id === hubId);
+        if (hub) dropZoneRings[hubId].attr('cx', hub.x).attr('cy', hub.y);
+      });
+      if (!dragMigrateActive || !dragSourceNode) return;
+
+      // e.x / e.y já estão no espaço do grafo — usa direto
+      const target = getDropTarget(e.x, e.y);
+
+      // Highlight hubs — highlight drop zone ring
+      ['next','maybe','ok','fw'].forEach(hubId => {
+        const isTarget = hubId === target;
+        dropZoneRings[hubId].attr('opacity', isTarget ? 0.45 : 0.18)
+          .attr('stroke', isTarget ? 'var(--amber)' : 'var(--accent)');
+      });
+      nodeG.filter(n => ['next','maybe','ok','fw'].includes(n.type))
+        .classed('hub-drop-target', n => n.id === target);
+
+      // Tooltip
+      if (target && target !== GD[d.id]?.type) {
+        migrateTooltip.textContent = `mover para ${HUB_IDS[target]}`;
+        migrateTooltip.style.display = 'block';
+        migrateTooltip.style.left = (e.sourceEvent.clientX + 14) + 'px';
+        migrateTooltip.style.top  = (e.sourceEvent.clientY - 28) + 'px';
+      } else {
+        migrateTooltip.style.display = 'none';
+      }
+    })
+    .on('end',(e,d)=>{
+      migrateTooltip.style.display = 'none';
+      nodeG.classed('hub-drop-target', false);
+      hideDropZones();
+
+      const isHub = ['next','maybe','ok','fw'].includes(d.type);
+
+      if (isHub) {
+        // Hub reposicionado: mantém fixado onde foi solto, física dos filhos continua
+        // fx/fy já estão setados com a posição final — não limpar
+        if(!e.active) sim.alphaTarget(0);
+        sim.alpha(0.15).restart();
+        dragMigrateActive = false;
+        dragSourceNode = null;
+        return;
+      }
+
+      // Descongela todos os nós — física volta ao normal (só para leaf drags)
+      rawNodes.forEach(n => {
+        if (n !== d && !n._hubPinned) { n.fx = null; n.fy = null; }
+      });
+      d.fx = null; d.fy = null;
+
+      if (dragMigrateActive && dragSourceNode) {
+        // e.x / e.y já estão no espaço do grafo — consistente com d.fx/d.fy durante o drag
+        const target = getDropTarget(e.x, e.y);
+
+        if (target && GD[d.id] && target !== GD[d.id].type) {
+          migrateGame(d, target);
+        }
+      }
+
+      // Retoma simulação suavemente
+      if(!e.active) sim.alphaTarget(0);
+      sim.alpha(0.15).restart();
+
+      dragMigrateActive = false;
+      dragSourceNode = null;
+    })
+  );
+
+nodeG.append('circle')
+  .attr('r',d=>COLORS[d.type]?.r||20)
+  .attr('fill',d=>{
+    // Group hubs — solid accent fill
+    if(['fw','ok','next','maybe','root'].includes(d.type)) return COLORS[d.type]?.fill||'#111';
+    // Leaf nodes — tint fill based on match%
+    const gd=GD[d.id];
+    if(!gd?.match) return COLORS[d.type]?.fill||'#111';
+    const pct=gd.match/100;
+    const col=d.type==='ok_l'?'#3de08a':d.type==='next_l'?'#4da8ff':d.type==='fw_l'?'#ff3366':'#ffb340';
+    // opacity scales: 60%=3%, 80%=10%, 98%=28%
+    const tintA=Math.round((pct*pct*0.30)*255).toString(16).padStart(2,'0');
+    return col+tintA;
+  })
+  .attr('stroke',d=>COLORS[d.type]?.stroke||'#333')
+  .attr('stroke-width',d=>['fw','ok','next','maybe','root'].includes(d.type)?0:1.0)
+  .attr('stroke-opacity',d=>['fw','ok','next','maybe','root'].includes(d.type)?0:0.55);
+
+// Match % arc ring — only for leaf game nodes (ok_l, next_l, maybe_l)
+const LEAF_TYPES=['ok_l','next_l','maybe_l','fw_l'];
+nodeG.filter(d=>LEAF_TYPES.includes(d.type)&&GD[d.id]?.match!=null)
+  .append('path')
+  .attr('class','match-arc')
+  .attr('fill','none')
+  .attr('stroke-linecap','round')
+  .attr('pointer-events','none')
+  .each(function(d){
+    const gd=GD[d.id];
+    const r=(COLORS[d.type]?.r||28)+5;
+    const pct=gd.match/100;
+    const col=d.type==='ok_l'?'#3de08a':d.type==='next_l'?'#4da8ff':d.type==='fw_l'?'#ff3366':'#ffb340';
+    // base ring (dim track)
+    d3.select(this.parentNode).insert('path','path.match-arc')
+      .attr('fill','none').attr('stroke',col).attr('stroke-opacity',0.10)
+      .attr('stroke-width',2).attr('pointer-events','none')
+      .attr('d',describeArc(r,0,360));
+    // active arc — thickness scales with match %
+    const arcW=pct>=0.9?5:pct>=0.75?3.5:2.5;
+    d3.select(this)
+      .attr('stroke',col)
+      .attr('stroke-opacity',0.6+(pct*0.4))
+      .attr('stroke-width',arcW)
+      .attr('d',describeArc(r,0,pct*360));
+    // no glow — contrast via size/opacity only
+  });
+
+// % label — OUTSIDE circle, RPG dramatic size scaling
+nodeG.filter(d=>LEAF_TYPES.includes(d.type)&&GD[d.id]?.match!=null)
+  .append('text')
+  .attr('class','match-pct')
+  .attr('text-anchor','middle')
+  .attr('dominant-baseline','auto')
+  .attr('pointer-events','none')
+  .each(function(d){
+    const gd=GD[d.id];
+    const pct=gd.match/100;
+    const r=COLORS[d.type]?.r||28;
+    const col=d.type==='ok_l'?'#3de08a':d.type==='next_l'?'#4da8ff':d.type==='fw_l'?'#ff3366':'#ffb340';
+    // RPG Persona-style: cubic scale — 98%=big, 62%=whisper
+    // Range: 6px (60%) → 26px (98%) — dramatic spread, no glow, size-only contrast
+    const fSize=(6+(pct*pct*pct*20))*0.7;
+    // Position: above the arc ring
+    const arcR=r+5;
+    const yOff=-(arcR+4+(fSize*0.55));
+    const el=d3.select(this);
+    el.attr('y',yOff)
+      .attr('fill',col)
+      .attr('font-family','"Playfair Display",Georgia,serif')
+      .attr('font-size',fSize)
+      .attr('font-weight','900')
+      .attr('font-style','italic')
+      .attr('opacity', pct>=0.9 ? 1 : pct>=0.75 ? 0.62 : 0.35)
+      .attr('letter-spacing','-.02em')
+      .attr('filter',null)
+      .text(`${gd.match}%`);
+  });
+
+// Status / evito_type badge — canto superior direito do nó
+nodeG.filter(d=>{const gd=GD[d.id];return gd&&(gd.status||gd.evito_type);})
+  .append('text')
+  .attr('class','node-status-badge')
+  .attr('pointer-events','none')
+  .attr('text-anchor','middle')
+  .attr('dominant-baseline','middle')
+  .each(function(d){
+    const gd=GD[d.id];
+    const r=(COLORS[d.type]?.r||28);
+    const icon=gd.status?STATUS_ICON[gd.status]:EVITO_ICON[gd.evito_type];
+    const col=gd.status?STATUS_COL[gd.status]:EVITO_COL[gd.evito_type];
+    d3.select(this)
+      .attr('x', r*0.65).attr('y', -r*0.65)
+      .attr('font-size',8).attr('fill',col)
+      .attr('font-family','Space Mono,monospace')
+      .text(icon||'');
+  });
+
+let showLbls=true;
+const lbls=nodeG.append('text')
+  .attr('text-anchor','middle').attr('dominant-baseline','middle')
+  .attr('fill',d=>COLORS[d.type]?.text||'#888')
+  .attr('font-family','Space Mono,monospace')
+  .attr('font-size',d=>['fw','ok','next','maybe','root'].includes(d.type)?12:10.5)
+  .attr('font-weight',d=>'700')
+  .attr('pointer-events','none')
+  .each(function(d){
+    const el=d3.select(this);
+    const lines=d.label.split('\n');
+    // Name centered — % is now outside so no y-offset needed
+    if(lines.length===1){
+      el.text(d.label);
+    }else{
+      lines.forEach((l,i)=>el.append('tspan')
+        .attr('x',0)
+        .attr('dy',i===0?`-${(lines.length-1)*0.55}em`:'1.1em')
+        .text(l));
+    }
+  });
+
+nodeG.on('click',(e,d)=>{
+  e.stopPropagation();
+  if(d.type==='ok'){openPantheon();return;}
+  if(d.type==='root')return;
+  if(GD[d.id])openPanel(d.id);
+  pulse(e.currentTarget,COLORS[d.type]?.r||22);
+});
+
+function pulse(el,r){
+  d3.select(el).select('circle')
+    .transition().duration(80).attr('r',r*1.35)
+    .transition().duration(200).attr('r',r);
+}
+
+// Duplo clique num hub: desanchora e deixa a física reassumir
+nodeG.on('dblclick',(e,d)=>{
+  e.stopPropagation();
+  if(!['next','maybe','ok','fw'].includes(d.type)) return;
+  d.fx = null; d.fy = null;
+  d._hubPinned = false;
+  sim.alpha(0.3).restart();
+  // Pulso visual para indicar que foi liberado
+  pulse(e.currentTarget, COLORS[d.type]?.r || 40);
+});
+
+sim.on('tick',()=>{
+  linkEl.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+  nodeG.attr('transform',d=>`translate(${d.x},${d.y})`);
+});
+
+// ── TAG FILTER ──
+let activeTag=null;
+function filterByTag(tag){
+  if(activeTag===tag){activeTag=null;clearFilter();return;}
+  activeTag=tag;
+  nodeG.select('circle').transition().duration(200)
+    .attr('opacity',d=>{
+      if(d.type==='root'||['fw','ok','next','maybe'].includes(d.type))return 1;
+      const gd=GD[d.id];
+      return gd&&gd.tags&&gd.tags.includes(tag)?1:0.15;
+    });
+  lbls.transition().duration(200)
+    .attr('opacity',d=>{
+      if(d.type==='root'||['fw','ok','next','maybe'].includes(d.type))return 1;
+      const gd=GD[d.id];
+      return gd&&gd.tags&&gd.tags.includes(tag)?1:0.15;
+    });
+  // highlight tags in panel
+  document.querySelectorAll('.p-tag').forEach(el=>{
+    el.classList.toggle('active-tag',el.dataset.tag===tag);
+  });
+}
+function clearFilter(){
+  nodeG.select('circle').transition().duration(200).attr('opacity',1);
+  lbls.transition().duration(200).attr('opacity',1);
+  document.querySelectorAll('.p-tag').forEach(el=>el.classList.remove('active-tag'));
+}
+
+// ── NEURAL FOCUS — isola nó selecionado + conexões ──
+function applyNeuralFocus(id) {
+  const gd = GD[id];
+  if (!gd) return;
+
+  // IDs conectados: from + to
+  const connected = new Set([id]);
+  (gd.from || []).forEach(fid => connected.add(fid));
+  (gd.to   || []).forEach(tid => connected.add(tid));
+
+  // Fade nós: visível se no set, fantasma se não
+  nodeG.transition().duration(300)
+    .attr('opacity', d => connected.has(d.id) || connected.has(d.type) ? 1 : 0.06);
+
+  // Fade links: destaca links conectados ao nó, apaga o resto
+  linkEl.transition().duration(300)
+    .attr('stroke-opacity', d => {
+      const src = typeof d.source === 'object' ? d.source.id : d.source;
+      const tgt = typeof d.target === 'object' ? d.target.id : d.target;
+      if (d.dna) return 0; // DNA links somem no foco
+      if (src === id || tgt === id) return 0.85;
+      if (connected.has(src) && connected.has(tgt)) return 0.35;
+      return 0.03;
+    })
+    .attr('stroke-width', d => {
+      const src = typeof d.source === 'object' ? d.source.id : d.source;
+      const tgt = typeof d.target === 'object' ? d.target.id : d.target;
+      if (src === id || tgt === id) return 1.5;
+      return 0.4;
+    });
+}
+
+function clearNeuralFocus() {
+  nodeG.transition().duration(250).attr('opacity', 1);
+  linkEl.transition().duration(250)
+    .attr('stroke-opacity', d => {
+      const t = typeof d.target === 'object' ? d.target.type : '';
+      if (d.dna) return showDNA ? 0.35 : 0;
+      return d.cross ? 0.5 : (['fw','ok','next','maybe'].includes(t) ? 0.8 : 0.3);
+    })
+    .attr('stroke-width', d => {
+      const t = typeof d.target === 'object' ? d.target.type : '';
+      return d.dna ? 0.6 : d.cross ? 0.8 : (['fw','ok','next','maybe'].includes(t) ? 1.2 : 0.5);
+    });
+}
+
+// ── SIDE PANEL ──
+let currentGame=null;
+
+function openPanel(id){
+  const gd=GD[id];
+  currentGame=gd;
+  videoEmbedded=false;
+
+  // reset video — stop previous iframe
+  const videoWrap=document.getElementById('panel-video-wrap');
+  videoWrap.innerHTML='';
+
+  const panel=document.getElementById('side-panel');
+  const ga=document.getElementById('graph-area');
+  panel.classList.add('open');
+  ga.classList.add('panel-open');
+  // hide rank sidebar — painel ocupa esse espaço
+  document.getElementById('rank-sidebar').style.display='none';
+  setTimeout(()=>sim.force('center',d3.forceCenter(ga.clientWidth/2,H()/2)).alpha(0.15).restart(),60);
+
+  // badge
+  const badge=document.getElementById('panel-badge');
+  badge.textContent=TYPE_LABEL[gd.type]||gd.type;
+  badge.style.background=TYPE_BG[gd.type]||'#111';
+  badge.style.color=TYPE_COLOR[gd.type]||'#888';
+  badge.style.border=`0.5px solid ${TYPE_COLOR[gd.type]||'#333'}55`;
+
+  const titleEl=document.getElementById('panel-title');
+  titleEl.textContent=gd.name;
+  titleEl.style.color=TYPE_COLOR[gd.type]||'#e8eaf0';
+
+  document.getElementById('panel-sub').textContent=`${gd.dur} · ${gd.studio}`;
+
+  const statusEl=document.getElementById('panel-status-tag');
+  const STATUS_LABEL={completed:'owned · ciclo fechado',ongoing:'ongoing · manutenção',dropped:'dropped · largou'};
+  if(gd.status){
+    statusEl.style.display='block';
+    statusEl.setAttribute('data-status',gd.status);
+    statusEl.textContent=STATUS_LABEL[gd.status]||gd.status;
+  } else { statusEl.style.display='none'; }
+
+  const whenEl=document.getElementById('panel-when');
+  if(gd.when){whenEl.style.display='block';whenEl.textContent=gd.when;}
+  else{whenEl.style.display='none';}
+
+  document.getElementById('panel-desc').textContent=gd.desc;
+
+  // tags
+  if(gd.tags&&gd.tags.length){
+    document.getElementById('panel-tags-sec').style.display='block';
+    document.getElementById('panel-tags').innerHTML=gd.tags.map(t=>`<span class="p-tag${activeTag===t?' active-tag':''}" data-tag="${t}" onclick="filterByTag('${t}')">${t}</span>`).join('');
+  }else{document.getElementById('panel-tags-sec').style.display='none';}
+
+  // connections — trilha horizontal ordenada por proximidade (rank 0 = mais próximo)
+  const froms=(gd.from||[]).map((fid,i)=>({dir:'from',id:fid,rank:i}));
+  const tos=(gd.to||[]).map((tid,i)=>({dir:'to',id:tid,rank:i}));
+  // merge: froms first (inspira = mais relevante), depois tos (conecta = derivados)
+  // re-rank globally so 0 = closest overall
+  const conns=[...froms,...tos].map((c,i)=>({...c,rank:i}));
+  if(conns.length){
+    document.getElementById('panel-conn-sec').style.display='block';
+    document.getElementById('panel-conn-track').innerHTML=conns.map(c=>{
+      const o=GD[c.id];if(!o)return'';
+      const col=TYPE_COLOR[o.type]||'#666';
+      const dirLabel=c.dir==='from'?'← inspira':'→ conecta';
+      const matchPct=o.match||70;
+      const rankLabel=`#${c.rank+1}`;
+      return`<div class="conn-item" data-rank="${Math.min(c.rank,4)}" style="border-top-color:${col}" onclick="openPanel('${c.id}')">
+        <span class="conn-rank">${rankLabel} · ${matchPct}%</span>
+        <span class="conn-name" style="color:${col}">${o.name}</span>
+        <span class="conn-dir-label">${dirLabel}</span>
+        <div class="conn-match-bar"><div class="conn-match-fill" style="width:${matchPct}%;background:${col}88"></div></div>
+      </div>`;
+    }).filter(Boolean).join('');
+  }else{document.getElementById('panel-conn-sec').style.display='none';}
+
+  // embed video automatically on panel open
+  loadVideo();
+
+  // Neural focus — isola o nó e suas conexões
+  applyNeuralFocus(id);
+}
+
+// ── TAB SWITCH ──
+let currentTab='info';
+let videoEmbedded=false;
+
+function loadVideo(){
+  if(!currentGame||!currentGame.ytId||videoEmbedded) return;
+  videoEmbedded=true;
+  const wrap=document.getElementById('panel-video-wrap');
+  wrap.innerHTML='';
+  const iframe=document.createElement('iframe');
+  iframe.src=`https://www.youtube.com/embed/${currentGame.ytId}`;
+  iframe.title='YouTube video player';
+  iframe.setAttribute('frameborder','0');
+  iframe.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+  iframe.setAttribute('allowfullscreen','');
+  iframe.style.cssText='width:100%;height:100%;border:0;display:block';
+  wrap.appendChild(iframe);
+}
+
+function closePanel(){
+  const videoWrap=document.getElementById('panel-video-wrap');
+  videoWrap.innerHTML='';
+  videoEmbedded=false;
+  document.getElementById('side-panel').classList.remove('open');
+  document.getElementById('graph-area').classList.remove('panel-open');
+  // reexibir sidebar de ranking
+  document.getElementById('rank-sidebar').style.display='flex';
+  // Restaura grafo completo
+  clearNeuralFocus();
+  setTimeout(()=>sim.force('center',d3.forceCenter(W()/2,H()/2)).alpha(0.1).restart(),360);
+}
+
+// ── PANTEÃO ──
+let panthBuilt=false;
+function openPantheon(){
+  if(!panthBuilt){buildPantheon();panthBuilt=true;}
+  document.getElementById('pantheon-overlay').classList.add('visible');
+}
+function closePantheon(){document.getElementById('pantheon-overlay').classList.remove('visible');}
+
+function buildPantheon(){
+  const grid=document.getElementById('pantheon-grid');
+  ['ok1','ok2','ok3','ok4','ok5','ok6','ok7','ok8','ok9','ok10','ok11','ok12','ok13','ok14','ok15','ok16','ok17','ok18'].forEach(id=>{
+    const gd=GD[id];
+    const card=document.createElement('div');
+    card.className='p-card';
+    const thumb=gd.ytId?`<img src="https://img.youtube.com/vi/${gd.ytId}/mqdefault.jpg" style="width:100%;height:100%;object-fit:cover;opacity:.8" loading="lazy">`
+      :`<div style="font-family:Space Mono,monospace;font-size:8px;color:#2a3048;text-align:center;padding:8px">${gd.studio}</div>`;
+    card.innerHTML=`
+      <div class="p-card-thumb" style="background:#050505">${thumb}</div>
+      <div class="p-card-body">
+        <div class="p-card-name">${gd.name}</div>
+        <div class="p-card-studio">${gd.studio} · ${gd.dur}</div>
+      </div>
+      <div class="p-card-badge">10/10</div>`;
+    card.onclick=()=>{closePantheon();openPanel(id);};
+    grid.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════
+// MIGRATE GAME — muda o tipo e reconecta o nó
+// ══════════════════════════════════════════════
+function migrateGame(nodeData, newHub) {
+  const id = nodeData.id;
+  const gd = GD[id];
+  if (!gd) return;
+
+  const oldHub = gd.type; // 'next' | 'maybe' | 'ok'
+  gd.type = newHub;
+
+  // Atualizar tipo do nó no grafo
+  const typeMap = { next: 'next_l', maybe: 'maybe_l', ok: 'ok_l', fw: 'fw_l' };
+  nodeData.type = typeMap[newHub] || nodeData.type;
+
+  // Reconectar link pai: remove link antigo, adiciona novo
+  const linkIdx = allLinks.findIndex(l => {
+    const src = typeof l.source === 'object' ? l.source.id : l.source;
+    const tgt = typeof l.target === 'object' ? l.target.id : l.target;
+    return src === oldHub && tgt === id && !l.cross && !l.dna;
+  });
+  if (linkIdx >= 0) {
+    const link = allLinks[linkIdx];
+    // Redireciona source para novo hub
+    const newHubNode = rawNodes.find(n => n.id === newHub);
+    if (newHubNode) link.source = newHubNode;
+  }
+
+  // Cores do hub destino
+  const newCol = newHub === 'ok' ? '#3de08a' : newHub === 'next' ? '#4da8ff' : newHub === 'fw' ? '#ff3366' : '#ffb340';
+  const C = getThemeColors();
+  const newStroke = C[nodeData.type]?.stroke || '#555';
+  const newFill   = C[nodeData.type]?.fill   || '#111';
+
+  const nodeEl = nodeG.filter(n => n.id === id);
+  const circ   = nodeEl.select('circle');
+
+  // Pulso: flash na cor do hub destino → estabiliza no fill correto
+  circ
+    .transition().duration(80)
+      .attr('fill', newCol + '55')
+      .attr('stroke', newCol)
+    .transition().duration(80)
+      .attr('fill', newCol + '99')
+    .transition().duration(80)
+      .attr('fill', newCol + '55')
+    .transition().duration(200)
+      .attr('fill', newFill)
+      .attr('stroke', newStroke);
+
+  // Atualizar arco de match com a mesma cor
+  nodeEl.selectAll('path.match-arc')
+    .transition().duration(440)
+    .attr('stroke', newCol);
+
+  // Rebuild ranking
+  buildRanking();
+  // Salvar estado
+  saveState();
+
+  sim.alpha(0.15).restart();
+}
+
+// ── RANKING SIDEBAR ──
+let rankMode = 'match'; // 'match' | 'boost'
+
+function setRankMode(mode) {
+  rankMode = mode;
+  document.getElementById('toggle-match').classList.toggle('active', mode === 'match');
+  document.getElementById('toggle-boost').classList.toggle('active', mode === 'boost');
+  buildRanking();
+}
+
+// ── VOTE: ajusta match% em ±3% por clique ──
+function voteMatch(id, delta) {
+  const gd = GD[id];
+  if (!gd) return;
+  // voteAdj: acúmulo de votos, limitado a ±20
+  gd.voteAdj = Math.max(-20, Math.min(20, (gd.voteAdj || 0) + delta));
+  buildRanking();
+  saveState();
+}
+
+function effectiveMatch(gd) {
+  return Math.max(0, Math.min(100, gd.match + (gd.voteAdj || 0)));
+}
+
+// ── BOOST DRAG REORDER ──
+let boostDragSrcIdx = null;
+
+function initBoostDrag() {
+  const list = document.getElementById('rank-list');
+  let dragEl = null;
+
+  list.querySelectorAll('.rank-item[data-boost-idx]').forEach(item => {
+    item.setAttribute('draggable', 'true');
+
+    item.addEventListener('dragstart', e => {
+      dragEl = item;
+      boostDragSrcIdx = parseInt(item.dataset.boostIdx);
+      setTimeout(() => item.classList.add('boost-dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('boost-dragging');
+      list.querySelectorAll('.rank-item').forEach(el => el.classList.remove('boost-drag-over'));
+      dragEl = null;
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.querySelectorAll('.rank-item').forEach(el => el.classList.remove('boost-drag-over'));
+      item.classList.add('boost-drag-over');
+    });
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetIdx = parseInt(item.dataset.boostIdx);
+      if (boostDragSrcIdx === null || boostDragSrcIdx === targetIdx) return;
+      // reorder boostOrderIds
+      const moved = boostOrderIds.splice(boostDragSrcIdx, 1)[0];
+      boostOrderIds.splice(targetIdx, 0, moved);
+      buildRanking();
+      saveState();
+    });
+  });
+}
+
+function buildRanking(){
+  // Candidatos: next + maybe
+  const candidates = Object.entries(GD)
+    .filter(([id, gd]) => gd.type === 'next' || gd.type === 'maybe')
+    .map(([id, gd]) => ({ id, gd }));
+
+  // Sync boostOrderIds: adiciona novos, remove migrados
+  const candidateIds = candidates.map(c => c.id);
+  // remove ids que saíram de candidatos
+  boostOrderIds = boostOrderIds.filter(id => candidateIds.includes(id));
+  // adiciona novos no final
+  candidateIds.forEach(id => { if (!boostOrderIds.includes(id)) boostOrderIds.push(id); });
+
+  let ordered;
+  if (rankMode === 'boost') {
+    // Ordem manual
+    ordered = boostOrderIds.map(id => candidates.find(c => c.id === id)).filter(Boolean);
+  } else {
+    // Ordem por effectiveMatch (match + voteAdj)
+    ordered = [...candidates].sort((a, b) => {
+      const diff = effectiveMatch(b.gd) - effectiveMatch(a.gd);
+      if (diff !== 0) return diff;
+      if (a.gd.type === b.gd.type) return 0;
+      return a.gd.type === 'next' ? -1 : 1;
+    });
+  }
+
+  const trophies = ['🏆','🥈','🥉'];
+  const list = document.getElementById('rank-list');
+
+  list.innerHTML = ordered.map(({ id, gd }, i) => {
+    const pos = i + 1;
+    const col = gd.type === 'next' ? 'type-next' : 'type-maybe';
+    const eff = effectiveMatch(gd);
+    const hasVote = (gd.voteAdj || 0) !== 0;
+    const voteSign = (gd.voteAdj || 0) > 0 ? `+${gd.voteAdj}` : `${gd.voteAdj}`;
+
+    const posDisplay = rankMode === 'boost'
+      ? `<span class="rank-drag-handle" title="arraste para reordenar">⠿</span>`
+      : pos <= 3
+        ? `<span class="rank-pos-trophy">${trophies[i]}</span>`
+        : `<span style="font-family:'Space Mono',monospace;font-size:8px;color:var(--text3)">#${pos}</span>`;
+
+    const divider = rankMode !== 'boost' && (pos === 3 || pos === 6)
+      ? '<div id="rank-divider"></div>' : '';
+
+    // Vote controls (match mode only)
+    const voteCtrl = rankMode === 'match'
+      ? `<div class="rank-vote-ctrl">
+          <button class="rank-vote-btn vote-down" onclick="event.stopPropagation();voteMatch('${id}',-3)" title="−3%">▽</button>
+          ${hasVote ? `<span class="rank-vote-label">${voteSign}%</span>` : '<span class="rank-vote-label" style="color:var(--text3)">ajustar</span>'}
+          <button class="rank-vote-btn vote-up" onclick="event.stopPropagation();voteMatch('${id}',+3)" title="+3%">△</button>
+        </div>`
+      : '';
+
+    const boostAttr = rankMode === 'boost' ? `data-boost-idx="${i}"` : '';
+
+    return `${divider}<div class="rank-item" data-pos="${rankMode === 'boost' ? 4 : Math.min(pos,4)}" ${boostAttr} onclick="openPanel('${id}')">
+      <div class="rank-pos">${posDisplay}</div>
+      <div class="rank-info">
+        <div class="rank-name">${gd.name}</div>
+        <div class="rank-meta">${gd.type === 'next' ? 'quero ver' : 'talvez'} · ${gd.dur}</div>
+        ${voteCtrl}
+      </div>
+      <div class="rank-pct ${col}${hasVote && rankMode === 'match' ? ' rank-pct-adjusted' : ''}">${eff}%</div>
+    </div>`;
+  }).join('');
+
+  // footer hint
+  const footer = document.getElementById('rank-footer');
+  if (footer) {
+    footer.textContent = rankMode === 'boost'
+      ? 'arraste os itens para reordenar · sua fila de filmes'
+      : 'score = match% · △▽ para ajustar · * = editado';
+  }
+
+  if (rankMode === 'boost') initBoostDrag();
+}
+buildRanking();
+
+// ── FONT SCALE ACCESSIBILITY ──
+let currentScale=1;
+function applyFontScale(val){
+  currentScale=parseFloat(val);
+  const pct=Math.round(currentScale*100);
+  document.getElementById('font-scale-val').textContent=currentScale.toFixed(2).replace('.00','')+'×';
+
+  // Scale all SVG text labels proportionally
+  const baseLeaf=10.5*currentScale;
+  const baseGroup=12*currentScale;
+
+  // Name labels
+  lbls.attr('font-size',d=>(['fw','ok','next','maybe','root'].includes(d.type)?baseGroup:baseLeaf));
+
+  // % labels — keep relative dramatic scaling, multiply by scale
+  nodeG.selectAll('text.match-pct').each(function(d){
+    const gd=GD[d.id]; if(!gd) return;
+    const pct2=gd.match/100;
+    const fSize=(6+(pct2*pct2*pct2*20))*0.7*currentScale;
+    const r=COLORS[d.type]?.r||28;
+    const arcR=r+5;
+    const yOff=-(arcR+4+(fSize*0.55));
+    d3.select(this).attr('font-size',fSize).attr('y',yOff).attr('filter',null);
+  });
+
+  // Scale UI font sizes via CSS custom property
+  document.documentElement.style.setProperty('--ui-scale', currentScale);
+  // Apply to key UI elements
+  const uiEls=document.querySelectorAll('#panel-body, #panel-title, #panel-sub, #panel-when, #panel-desc, .p-tag, .conn-item, .sec-label, #ob-title, #ob-sub, .ob-step-text, .ob-step-name, .ob-group-desc, .ob-pill-desc, .ob-pill-label');
+  uiEls.forEach(el=>{
+    // read original data-size or compute from current
+    if(!el.dataset.origSize){
+      const cs=parseFloat(getComputedStyle(el).fontSize);
+      el.dataset.origSize=cs;
+    }
+    el.style.fontSize=(parseFloat(el.dataset.origSize)*currentScale)+'px';
+  });
+  localStorage.setItem('filmes-fontscale',val);
+}
+function toggleLabels(){showLbls=!showLbls;lbls.attr('display',showLbls?null:'none');}
+function toggleDNA(){
+  showDNA=!showDNA;
+  linkEl.filter(d=>!!d.dna).transition().duration(300)
+    .attr('stroke-opacity',d=>showDNA?0.35:0);
+  const btn=document.getElementById('dna-btn');
+  if(btn){btn.style.color=showDNA?'var(--amber)':'';btn.style.borderColor=showDNA?'var(--amber)':'';}
+  const legend=document.getElementById('dna-legend');
+  if(legend)legend.style.display=showDNA?'flex':'none';
+}
+function openStatus(){document.getElementById('status-overlay').classList.add('open');}
+function closeStatus(){document.getElementById('status-overlay').classList.remove('open');}
+// Auto-open on first visit
+if(!localStorage.getItem('filmes-visited')){openStatus();localStorage.setItem('filmes-visited','1');}
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.theme===t);
+  });
+  const C=getThemeColors();
+  nodeG.select('circle')
+    .transition().duration(300)
+    .attr('fill',d=>{
+      if(['fw','ok','next','maybe','root'].includes(d.type)) return C[d.type]?.fill||'#111';
+      const gd=GD[d.id];
+      if(!gd?.match) return C[d.type]?.fill||'#111';
+      const pct=gd.match/100;
+      const col=d.type==='ok_l'?C.ok_l.stroke.replace('66',''):d.type==='next_l'?C.next_l.stroke.replace('66',''):d.type==='fw_l'?C.fw_l.stroke.replace('66',''):C.maybe_l.stroke.replace('66','');
+      const tintA=Math.round((pct*pct*0.30)*255).toString(16).padStart(2,'0');
+      return col+tintA;
+    })
+    .attr('stroke',d=>C[d.type]?.stroke||'#555');
+  nodeG.selectAll('path.match-arc')
+    .transition().duration(300)
+    .attr('stroke',d=>C[d.type]?.stroke||'#555');
+  nodeG.selectAll('text.match-pct')
+    .transition().duration(300)
+    .attr('fill',d=>{
+      const col=d.type==='ok_l'?C.ok_l.text:d.type==='next_l'?C.next_l.text:d.type==='fw_l'?C.fw_l.text:C.maybe_l.text;
+      return col||'#888';
+    });
+  nodeG.selectAll('text:not(.match-pct)')
+    .transition().duration(300)
+    .attr('fill',d=>C[d.type]?.text||'#888');
+  localStorage.setItem('filmes-theme',t);
+}
+window.setTheme=setTheme;
+window.setRankMode=setRankMode;
+window.voteMatch=voteMatch;
+(function(){const saved=localStorage.getItem('filmes-theme');if(saved){document.documentElement.setAttribute('data-theme',saved);document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===saved));}})();
+window.openStatus=openStatus;
+window.closeStatus=closeStatus;
+window.toggleLabels=toggleLabels;
+window.toggleDNA=toggleDNA;
+window.openPanel=openPanel;
+window.loadVideo=loadVideo;
+window.addEventListener('resize',()=>sim.force('center',d3.forceCenter(W()/2,H()/2)).alpha(0.1).restart());
+// Restore font scale
+(function(){
+  const saved=localStorage.getItem('filmes-fontscale');
+  if(saved&&parseFloat(saved)!==1){
+    const sl=document.getElementById('font-scale-slider');
+    if(sl){sl.value=saved;applyFontScale(saved);}
+  }
+})();
+</script>
+</body>
+</html>
