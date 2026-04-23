@@ -1,0 +1,2477 @@
+<!DOCTYPE html>
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ELEMENTAL CLASH — v17.0  SYNC STATE ARCHITECTURE + FLOW HARDENING          ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  NOVIDADES v16.0 — CARD FOCUS ANIMATION + STATE FIX                        ║
+║  ✨ NEW: Carta selecionada voa para o centro da tela (card-focus overlay)   ║
+║  ✨ NEW: Opções PPR aparecem ao redor com stagger fade+scale                ║
+║  ✨ NEW: Após escolha, carta confirma PPR e o deck inteiro flipa para baixo ║
+║  🐛 FIX: Estado inicial garantido (P1 up, P2 down) sem flash                ║
+║  🐛 FIX: Transição de turno estável — cartas não desaparecem                ║
+║  🐛 FIX: flipLock honrado em todo o ciclo de vida                           ║
+║  🐛 FIX: onReveal não chama renderDecks durante animação                    ║
+║  ─────────────────────────────────────────────────────────────────────────  ║
+║  NOVIDADES v15.0 — INTEGRITY AUDIT + FLOW FIXES                             ║
+║  🐛 FIX: overflow:hidden removido de .player-zone e #main (clipava cards)   ║
+║  🐛 FIX: sistema dual zone-active/zone-turn-active unificado                ║
+║  🐛 FIX: applyZoneEmphasis chamado automaticamente dentro de renderPhase    ║
+║  🐛 FIX: deckState pré-setado antes de render() em boot/nextRound/restart   ║
+║  🐛 FIX: setDeckFaceDown redundante após render() removido                  ║
+║  🐛 FIX: onConfirm P2 path simplificado                                     ║
+║  ✅ v14: flip animations, waking, stagger preservados                       ║
+║  ─────────────────────────────────────────────────────────────────────────  ║
+║  🎯 NOVO FLUXO: P1 ativo (face-up) → P2 oculto (face-down)                 ║
+║     P1 confirma → P1 flip down → P2 flip up → P2 ativo                    ║
+║     P2 confirma → P2 flip down → overlay REVELAR → ambos revelam          ║
+║  🐛 FIX: deckState{p1,p2} = fonte de verdade para visibilidade             ║
+║  🐛 FIX: flipLock{p1,p2} — renderPlayerGrid não toca DOM mid-animation    ║
+║  🐛 FIX: flipDeck/revealDeck com onComplete callback (sem setTimeout cego) ║
+║  🐛 FIX: onReveal usa _updateCardHpHearts() (in-place, sem rebuild DOM)    ║
+║  🐛 FIX: renderPhase não mais gerencia face-down/turned (removido)         ║
+║  🐛 FIX: boot instala P2 face-down antes do primeiro render               ║
+║  🐛 FIX: nextRound/restart restauram P1 up + P2 down via setDeckFace*     ║
+║  ✅ v13: overflow fix + stagger CSS preservados                            ║
+║  ✅ v12: Desktop scaling preservado                                        ║
+║  ✅ Arquitetura THEME/ENGINE/RENDERER/BATTLE_FX/UI preservada             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>BCards — Patrulha de Heróis</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+
+<style id="theme-layer">
+:root {
+  --ink:        #1a1a2e;
+  --bg:         #d6eeff;       /* céu azul claro */
+  --surface:    #ffffff;
+  --raised:     #f0f8ff;
+  --card-bg:    #ffffff;
+  --gold:       #ffb800;
+  --gold-lt:    #ffd640;
+  --gold-dk:    #cc8800;
+  --gold-glow:  rgba(255,184,0,.45);
+  --silver:     #8a9bb5;
+  --text:       #1a2a4a;
+  --text-dim:   #5a7a9a;
+  --p1-col:     #e63020;
+  --p1-lt:      #ff4433;
+  --p1-glow:    rgba(230,48,32,.5);
+  --p2-col:     #1565c0;
+  --p2-lt:      #2196f3;
+  --p2-glow:    rgba(21,101,192,.5);
+  /* cores por personagem — substituem elementos */
+  --rex:        #e63020;  --rex-glow:     rgba(230,48,32,.5);
+  --marina:     #2196f3;  --marina-glow:  rgba(33,150,243,.5);
+  --guto:       #ffb800;  --guto-glow:    rgba(255,184,0,.5);
+  --asa:        #ff7b00;  --asa-glow:     rgba(255,123,0,.5);
+  --faisca:     #22bb44;  --faisca-glow:  rgba(34,187,68,.5);
+  --hp-hi:   #22bb44;
+  --hp-mid:  #ffb800;
+  --hp-lo:   #e63020;
+  --hp-empty: rgba(26,42,78,.12);
+  --r:        14px;
+  --r-sm:     8px;
+  --pace-speed: 1;
+
+  /* Zone expand system */
+  --zone-scale-dur:        420ms;
+  --zone-scale-ease:       cubic-bezier(.4, 0, .2, 1);
+  --zone-inactive-opacity: 0.6;
+
+  /* Card sizes — active zone ~35% bigger, inactive ~30% smaller */
+  --card-active-w:   clamp(88px,  17vw, 140px);
+  --card-active-h:   clamp(124px, 23.5vw, 195px);
+  --card-inactive-w: clamp(50px,  8.5vw, 74px);
+  --card-inactive-h: clamp(70px,  12vw,  103px);
+}
+</style>
+
+<style id="layout-layer">
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  display: flex; flex-direction: column;
+  overflow: hidden; position: relative;
+}
+
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 40% at 20% 30%, rgba(255,255,255,.55) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 30% at 75% 20%, rgba(255,255,255,.45) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 50% at 50% 100%, rgba(100,180,255,.15) 0%, transparent 60%);
+}
+
+/* ── Main layout removed FAB dock CSS ── */
+#gpc-inline {
+  display:none;
+}
+
+/* ── Main layout ── */
+#main {
+  flex:1; display:flex; flex-direction:column;
+  overflow:visible; /* v15: allow scaled zones to bleed without clipping */
+  position:relative; z-index:1; height:100dvh;
+}
+
+/* Round counter */
+#round-counter {
+  position: fixed;
+  top: 8px; left: 50%; transform: translateX(-50%);
+  z-index: 20;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(7px, 1.1vw, 9px);
+  color: var(--text);
+  letter-spacing: 2px;
+  background: rgba(255,255,255,.85);
+  border: 2px solid var(--gold);
+  border-radius: 20px;
+  padding: 2px 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+
+/* ── FIELD ZONES — P2 top, P1 bottom ── */
+.player-zone {
+  flex: 1 1 50%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: visible;
+  padding: clamp(6px,1.2vw,12px) clamp(6px,1.5vw,14px);
+  gap: clamp(4px,.8vw,8px);
+}
+
+#zone-p2 {
+  background: radial-gradient(ellipse 110% 140% at 50% -10%, rgba(21,101,192,.12) 0%, rgba(21,101,192,.04) 45%, transparent 70%);
+  transform: rotate(180deg);
+}
+#zone-p1 {
+  background: radial-gradient(ellipse 110% 140% at 50% 110%, rgba(230,48,32,.12) 0%, rgba(230,48,32,.04) 45%, transparent 70%);
+}
+
+#zone-p2.zone-turn-active {
+  background: radial-gradient(ellipse 110% 140% at 50% -10%, rgba(21,101,192,.22) 0%, rgba(21,101,192,.08) 45%, transparent 70%);
+}
+#zone-p1.zone-turn-active {
+  background: radial-gradient(ellipse 110% 140% at 50% 110%, rgba(230,48,32,.22) 0%, rgba(230,48,32,.08) 45%, transparent 70%);
+}
+
+/* Inner wrapper inside flipped P2 zone — re-flip content so text is readable */
+#zone-p2 .zone-inner {
+  transform: rotate(180deg);
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(4px,.8vw,8px); width: 100%;
+}
+#zone-p1 .zone-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(4px,.8vw,8px); width: 100%;
+}
+
+/* ── Divider ── */
+#field-divider {
+  flex: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(21,101,192,.2) 30%, rgba(21,101,192,.5) 50%, rgba(21,101,192,.2) 70%, transparent);
+  position: relative;
+  z-index: 5;
+  margin: 0 clamp(20px,5vw,80px);
+}
+
+/* ── Player label ── */
+.zone-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: clamp(7px,1.1vw,10px);
+  letter-spacing: 1px;
+  opacity: .7;
+}
+.zone-label.p1 { color:var(--p1-lt); }
+.zone-label.p2 { color:var(--p2-lt); }
+
+/* Turn badge */
+.turn-badge {
+  display:none; font-family:'Nunito',sans-serif; font-weight:900; font-size:clamp(7px,1vw,9px);
+  color:#fff; background:var(--gold);
+  border:none; border-radius:20px; padding:2px 10px;
+  letter-spacing:1px; animation:badgePulse 1.2s ease-in-out infinite;
+  box-shadow: 0 2px 6px rgba(0,0,0,.18);
+}
+.turn-badge.show { display:block; }
+@keyframes badgePulse { 0%,100%{opacity:.8; transform:scale(1)} 50%{opacity:1; transform:scale(1.04)} }
+
+/* HP bar row */
+.player-hp-bar-wrap {
+  width: clamp(160px, 55%, 360px);
+  display:flex; align-items:center; gap:6px;
+  flex-shrink:0;
+}
+.php-label { font-family:'Nunito',sans-serif; font-weight:800; font-size:clamp(6px,.9vw,8px); letter-spacing:.5px; white-space:nowrap; flex-shrink:0; }
+.p1-clr { color:var(--p1-lt); }
+.p2-clr { color:var(--p2-lt); }
+.php-num   { font-family:'Nunito',sans-serif; font-weight:900; font-size:clamp(7px,1vw,9px); white-space:nowrap; flex-shrink:0; }
+.php-bar {
+  flex: 1; height: 9px; border-radius: 6px;
+  background: rgba(26,42,78,.12);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.15);
+  overflow: visible; position: relative; isolation: isolate;
+}
+.php-fill {
+  height: 100%; border-radius: 6px; position: relative;
+  transition: width .7s cubic-bezier(.4,0,.2,1), background .5s;
+  overflow: hidden;
+}
+.php-fill::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.28) 40%, rgba(255,255,255,.55) 50%, rgba(255,255,255,.28) 60%, transparent 100%);
+  background-size: 200% 100%;
+  animation: energyShimmer 1.8s ease-in-out infinite;
+  border-radius: inherit;
+}
+@keyframes energyShimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+#p1-php-fill {
+  background: linear-gradient(90deg, #6a0000 0%, #c0392b 45%, #ff6050 85%, #ffaa80 100%);
+  box-shadow: 0 0 8px rgba(220,60,40,.8), 0 0 18px rgba(220,60,40,.4), inset 0 1px 0 rgba(255,180,160,.35);
+}
+#p2-php-fill {
+  background: linear-gradient(90deg, #001a5a 0%, #1565c0 45%, #2196f3 85%, #80d0ff 100%);
+  box-shadow: 0 0 8px rgba(30,100,220,.8), 0 0 18px rgba(30,100,220,.4), inset 0 1px 0 rgba(150,210,255,.35);
+}
+
+/* ── Cards grid ── */
+.cards-grid {
+  display:flex; flex-wrap:wrap;
+  gap: clamp(5px,1vw,10px);
+  align-items:center; justify-content:center;
+  position: relative;
+}
+
+/* ── Deck flip container — wraps all cards ── */
+.deck-wrap {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(5px,1vw,10px);
+  align-items: center;
+  justify-content: center;
+  perspective: 800px;
+  /* transition and transform controlled by the DECK TURN-AWAY SYSTEM below */
+}
+
+
+/* ── ELEMENT TOKENS ── */
+.rex     { --elem-color:var(--rex);    --elem-glow:var(--rex-glow);    --card-bg-a:#fff2f0; --card-bg-b:#fff8f7; --shine-clr:rgba(230,48,32,.15);  --mid-clr:rgba(230,48,32,.06);  --stripe-a:#e63020; --stripe-b:#ff6650; }
+.marina  { --elem-color:var(--marina); --elem-glow:var(--marina-glow); --card-bg-a:#f0f7ff; --card-bg-b:#f7fbff; --shine-clr:rgba(33,150,243,.15);  --mid-clr:rgba(33,150,243,.06); --stripe-a:#1565c0; --stripe-b:#2196f3; }
+.guto    { --elem-color:var(--guto);   --elem-glow:var(--guto-glow);   --card-bg-a:#fffbf0; --card-bg-b:#fffdf7; --shine-clr:rgba(255,184,0,.18);   --mid-clr:rgba(255,184,0,.07);  --stripe-a:#cc8800; --stripe-b:#ffb800; }
+.asa     { --elem-color:var(--asa);    --elem-glow:var(--asa-glow);    --card-bg-a:#fff5ee; --card-bg-b:#fff9f5; --shine-clr:rgba(255,123,0,.15);   --mid-clr:rgba(255,123,0,.06);  --stripe-a:#cc5500; --stripe-b:#ff7b00; }
+.faisca  { --elem-color:var(--faisca); --elem-glow:var(--faisca-glow); --card-bg-a:#f0fff3; --card-bg-b:#f7fff9; --shine-clr:rgba(34,187,68,.15);   --mid-clr:rgba(34,187,68,.06);  --stripe-a:#178a30; --stripe-b:#22bb44; }
+
+/* ── Card base ── */
+/* v19: zero 3D flip on card element — no preserve-3d, no backface-visibility.
+   Face state is purely opacity on .card-inner vs .card-back via data-face attr. */
+.card {
+  width: var(--card-active-w, clamp(88px,17vw,140px));
+  height: var(--card-active-h, clamp(124px,23.5vw,195px));
+  border-radius: var(--r);
+  background: linear-gradient(155deg, var(--card-bg-a, #211d2c) 0%, var(--card-bg-b, #0d0b10) 100%);
+  border: 2px solid rgba(26,42,78,.10);
+  box-shadow: 0 4px 0 rgba(0,0,0,.15), 0 6px 18px rgba(0,0,0,.12);
+  display: flex; flex-direction: column;
+  padding: 0;
+  cursor: pointer; user-select: none;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Card back — hidden by default, shown when data-face="down" */
+.card-back {
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(21,101,192,.08) 0,
+    rgba(21,101,192,.08) 5px,
+    rgba(214,238,255,.9) 5px,
+    rgba(214,238,255,.9) 10px
+  );
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(22px,4vw,34px);
+  border: 2px solid rgba(21,101,192,.25);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity var(--flip-dur) var(--flip-ease) calc(var(--flip-i,0) * var(--flip-stagger));
+}
+.card-back::before {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 1.5px solid rgba(21,101,192,.18);
+  border-radius: calc(var(--r) - 4px);
+}
+
+/* ── face-down: show back, hide front ── */
+.card[data-face="down"] .card-back  { opacity: 1; }
+.card[data-face="down"] .card-inner { opacity: 0; }
+.card[data-face="down"]::after      { opacity: 0; }
+.card[data-face="down"] .card-glow  { opacity: 0 !important; }
+
+.card::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit; pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 50% at 50% 0%, var(--shine-clr, rgba(255,255,255,.08)) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 35% at 50% 60%, var(--mid-clr, rgba(255,255,255,.03)) 0%, transparent 70%);
+  z-index: 0;
+}
+.card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 5px;
+  border-radius: var(--r) var(--r) 0 0;
+  background: linear-gradient(90deg, var(--stripe-a, var(--elem-color)), var(--stripe-b, var(--elem-color)), var(--stripe-a, var(--elem-color)));
+  box-shadow: 0 0 8px var(--elem-glow, rgba(255,255,255,.2));
+  z-index: 1;
+}
+
+.card-inner {
+  position: relative; z-index: 2;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  padding: clamp(4px,.7vw,6px) clamp(3px,.5vw,5px) clamp(2px,.4vw,4px);
+  gap: 1px;
+  border-radius: inherit;
+  overflow: hidden;
+  transition: opacity var(--flip-dur) var(--flip-ease) calc(var(--flip-i,0) * var(--flip-stagger));
+}
+
+/* Press effect */
+.card.selectable:active:not(.dead) {
+  transform: translateY(3px) scale(.97) !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4) !important;
+  transition: transform .06s ease-out !important;
+}
+
+.card.selectable {
+  cursor: pointer;
+  border-color: rgba(26,42,78,.12);
+  box-shadow: 0 4px 0 rgba(0,0,0,.12), 0 6px 14px rgba(0,0,0,.1);
+}
+.card.selectable:hover:not(.dead) {
+  transform: translateY(-5px) scale(1.05);
+  border-color: var(--elem-color);
+  box-shadow: 0 9px 0 rgba(0,0,0,.4), 0 14px 28px rgba(0,0,0,.6), 0 0 24px var(--elem-glow, rgba(201,150,58,.3));
+}
+
+@keyframes bounceSelect {
+  0%   { transform: translateY(-3px) scale(1.02); }
+  40%  { transform: translateY(-9px) scale(1.06); }
+  65%  { transform: translateY(-1px) scale(1.01); }
+  80%  { transform: translateY(-5px) scale(1.04); }
+  100% { transform: translateY(-3px) scale(1.02); }
+}
+
+.card.selected {
+  border-color: var(--elem-color) !important;
+  box-shadow:
+    0 6px 0 rgba(0,0,0,.2),
+    0 0 0 2px var(--elem-color),
+    0 0 30px var(--elem-glow),
+    0 10px 22px rgba(0,0,0,.2) !important;
+  animation: bounceSelect .4s cubic-bezier(.34,1.56,.64,1) forwards !important;
+}
+.card.used    { border-color:rgba(201,150,58,.5)!important; box-shadow:0 0 12px rgba(201,150,58,.3)!important; opacity:.75; }
+.card.dead    { opacity:.2; filter:grayscale(1) blur(1px); cursor:default; pointer-events:none; }
+.card.disabled { opacity:.4; cursor:default; pointer-events:none; }
+
+/* ── Card glow ── */
+.card-glow {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, var(--elem-glow, rgba(201,150,58,.2)) 0%, transparent 60%);
+  opacity: 0; transition: opacity .3s;
+}
+.card.selectable:hover .card-glow,
+.card.selected .card-glow { opacity: 1; }
+
+/* ── Card stats ── */
+.card-stats {
+  width: 100%; display: flex; justify-content: space-between;
+  flex-shrink: 0; padding: 0;
+}
+.cs-atk, .cs-def {
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(7px, 1.05vw, 9.5px);
+  font-weight: 800; line-height: 1;
+  padding: 1px 2px; border-radius: 3px;
+}
+.cs-atk { color: #cc2200; background: rgba(230,48,32,.10); }
+.cs-def { color: #1565c0; background: rgba(21,101,192,.10); }
+
+/* ── Card icon ── */
+.card-icon-area {
+  flex: 1; display: flex; align-items: flex-end; justify-content: center;
+  align-self: stretch;
+  padding: 0;
+  /* overflow: visible permite que personagens "saiam" levemente da área */
+  overflow: visible;
+  flex-shrink: 0; position: relative;
+  min-height: 0;
+}
+/* hero-img: preenche todo o espaço disponível, alinhado para baixo */
+.hero-img {
+  width: 100%;
+  height: 110%;        /* levemente maior que o container — personagem "vivo" */
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 2px 10px var(--elem-glow, rgba(255,255,255,.3)));
+  animation: iconIdle 3.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+/* fallback emoji quando PNG não carrega */
+.card-icon-area[data-fallback]::after {
+  content: attr(data-fallback);
+  font-size: clamp(28px, 5.2vw, 44px);
+  line-height: 1;
+}
+.card.selectable .hero-img { animation: iconIdleActive 2.4s ease-in-out infinite; }
+.card.selected .hero-img {
+  animation: iconIdleSelected 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px var(--elem-glow)) drop-shadow(0 2px 6px rgba(0,0,0,.5));
+}
+/* ── Per-character idle animations — each has its own personality ──────────── */
+/* All use --anim-offset (set per-card in JS) to desync timing */
+
+/* Rex: agitado, enérgico — movimentos rápidos e bruscos */
+@keyframes idleRex {
+  0%   { transform: translateY(0)    scale(1)    rotate(0deg); }
+  15%  { transform: translateY(-4px) scale(1.06) rotate(1.2deg); }
+  30%  { transform: translateY(1px)  scale(.97)  rotate(-.8deg); }
+  50%  { transform: translateY(-3px) scale(1.04) rotate(.9deg); }
+  70%  { transform: translateY(2px)  scale(.98)  rotate(-.5deg); }
+  85%  { transform: translateY(-2px) scale(1.02) rotate(.4deg); }
+  100% { transform: translateY(0)    scale(1)    rotate(0deg); }
+}
+/* Marina: fluido, ondulante — como água */
+@keyframes idleMarina {
+  0%   { transform: translateY(0)    scale(1)    rotate(0deg); }
+  20%  { transform: translateY(-3px) scale(1.03) rotate(.5deg); }
+  40%  { transform: translateY(1.5px) scale(.99) rotate(-.3deg); }
+  60%  { transform: translateY(-2px) scale(1.02) rotate(.4deg); }
+  80%  { transform: translateY(1px)  scale(.99)  rotate(-.2deg); }
+  100% { transform: translateY(0)    scale(1)    rotate(0deg); }
+}
+/* Guto: pesado, lento — balanços grandes e pausados */
+@keyframes idleGuto {
+  0%   { transform: translateY(0)    scale(1)    rotate(0deg); }
+  25%  { transform: translateY(-2px) scale(1.04) rotate(1.5deg); }
+  55%  { transform: translateY(2px)  scale(.97)  rotate(-1deg); }
+  80%  { transform: translateY(-1px) scale(1.01) rotate(.5deg); }
+  100% { transform: translateY(0)    scale(1)    rotate(0deg); }
+}
+/* Asa: leve, aéreo — flutua com leveza, quase não toca o chão */
+@keyframes idleAsa {
+  0%   { transform: translateY(0)    scale(1)    rotate(0deg); }
+  18%  { transform: translateY(-5px) scale(1.04) rotate(.6deg); }
+  36%  { transform: translateY(-3px) scale(1.02) rotate(-.4deg); }
+  54%  { transform: translateY(-4px) scale(1.03) rotate(.5deg); }
+  72%  { transform: translateY(-1px) scale(1.01) rotate(-.2deg); }
+  100% { transform: translateY(0)    scale(1)    rotate(0deg); }
+}
+/* Faísca: nervoso, elétrico — pequenos tremores rápidos */
+@keyframes idleFaisca {
+  0%   { transform: translateY(0)    scale(1)    rotate(0deg); }
+  10%  { transform: translateY(-2px) scale(1.02) rotate(.3deg); }
+  20%  { transform: translateY(1px)  scale(.99)  rotate(-.2deg); }
+  30%  { transform: translateY(-3px) scale(1.04) rotate(.7deg); }
+  45%  { transform: translateY(1px)  scale(.98)  rotate(-.5deg); }
+  60%  { transform: translateY(-2px) scale(1.03) rotate(.4deg); }
+  75%  { transform: translateY(0)    scale(1.01) rotate(-.1deg); }
+  88%  { transform: translateY(-1px) scale(1.02) rotate(.2deg); }
+  100% { transform: translateY(0)    scale(1)    rotate(0deg); }
+}
+
+/* Duration per character (base, JS adds offset for desync) */
+.card.rex    .hero-img { animation: idleRex    2.8s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.marina .hero-img { animation: idleMarina 3.8s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.guto   .hero-img { animation: idleGuto   4.4s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.asa    .hero-img { animation: idleAsa    3.2s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.faisca .hero-img { animation: idleFaisca 2.2s ease-in-out var(--anim-offset, 0s) infinite; }
+
+/* Selectable: ligeiramente mais vivo */
+.card.selectable.rex    .hero-img { animation: idleRex    2.0s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.selectable.marina .hero-img { animation: idleMarina 2.8s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.selectable.guto   .hero-img { animation: idleGuto   3.2s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.selectable.asa    .hero-img { animation: idleAsa    2.4s ease-in-out var(--anim-offset, 0s) infinite; }
+.card.selectable.faisca .hero-img { animation: idleFaisca 1.6s ease-in-out var(--anim-offset, 0s) infinite; }
+
+/* No focus overlay: pulse suave comum */
+@keyframes focusIconPulse {
+  0%,100% { transform: scale(1)    translateY(0);   }
+  35%     { transform: scale(1.06) translateY(-5px); }
+  65%     { transform: scale(1.03) translateY(-2px); }
+}
+
+/* ── Card name ── */
+.card-name {
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(7.5px, 1.2vw, 10px);
+  font-weight: 800; letter-spacing: .3px;
+  text-align: center; color: var(--text);
+  flex-shrink: 0;
+  text-shadow: none;
+}
+
+/* ── HP Hearts ── */
+.card-hp-hearts {
+  display: flex; justify-content: center;
+  gap: clamp(1px, 0.3vw, 2px);
+  flex-wrap: wrap; flex-shrink: 0;
+  padding-top: 1px;
+}
+.hp-heart { font-size: clamp(6px, 1vw, 8.5px); line-height: 1; display: inline-block; transition: transform .2s, opacity .2s; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.hp-heart.full  { opacity: .9; }
+.hp-heart.empty { opacity: .14; filter: grayscale(1); }
+
+/* ── PPR Tray (inside selected card) ── */
+.card-ppr-tray {
+  display: none;
+  justify-content: center;
+  gap: clamp(3px, .6vw, 5px);
+  padding-top: 2px;
+  flex-shrink: 0;
+  width: 100%;
+}
+.card.selected .card-ppr-tray { display: flex; }
+.ppr-pill {
+  width: clamp(22px, 4vw, 34px);
+  height: clamp(22px, 4vw, 34px);
+  border-radius: clamp(8px, 1.5vw, 12px);
+  background: rgba(255,255,255,.9);
+  border: 2px solid rgba(26,42,78,.15);
+  color: var(--text);
+  font-size: clamp(11px, 2vw, 17px);
+  cursor: pointer;
+  display: flex; align-items:center; justify-content:center;
+  box-shadow: 0 3px 0 rgba(0,0,0,.15), 0 4px 8px rgba(0,0,0,.1);
+  transition: transform .1s, box-shadow .1s, background .15s, border-color .15s;
+  position: relative;
+}
+.ppr-pill:hover { background:rgba(255,184,0,.2); border-color:var(--gold); transform:translateY(-2px); box-shadow:0 5px 0 rgba(0,0,0,.15),0 6px 12px rgba(0,0,0,.1); }
+.ppr-pill:active { transform:translateY(2px) !important; box-shadow:0 1px 0 rgba(0,0,0,.15) !important; }
+.ppr-pill.chosen {
+  background: rgba(255,184,0,.35); border-color: var(--gold);
+  box-shadow: 0 3px 0 var(--gold-dk), 0 0 12px var(--gold-glow), 0 4px 8px rgba(0,0,0,.15);
+  transform: translateY(-1px);
+  animation: pillChosen .3s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes pillChosen { 0%{transform:translateY(-1px) scale(1)} 50%{transform:translateY(-4px) scale(1.15)} 100%{transform:translateY(-1px) scale(1.05)} }
+
+/* ── JOGAR button — embedded inside selected card, below deck ── */
+#play-btn-p1, #play-btn-p2 {
+  display: none;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(10px, 1.8vw, 14px);
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  padding: 8px 20px;
+  border-radius: 50px;
+  background: linear-gradient(160deg, #ff9500, #ffca00, #ff8c00);
+  border: 2.5px solid #ffdf00;
+  color: #1a0800;
+  text-shadow: 0 1px 0 rgba(255,255,255,.45);
+  box-shadow: 0 4px 0 #9a5000, 0 6px 20px rgba(0,0,0,.55), 0 0 24px rgba(255,170,0,.4);
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s, opacity .2s;
+}
+#play-btn-p1.btn-ready, #play-btn-p2.btn-ready {
+  display: block;
+  animation: playBtnBounce .75s ease-in-out infinite;
+}
+#play-btn-p1.btn-wait, #play-btn-p2.btn-wait {
+  display: block;
+  background: linear-gradient(160deg, rgba(80,70,50,.35), rgba(60,50,30,.35));
+  border-color: rgba(201,150,58,.2);
+  color: rgba(201,150,58,.35);
+  text-shadow: none;
+  box-shadow: 0 2px 0 rgba(0,0,0,.4);
+  cursor: default;
+  pointer-events: none;
+  animation: none;
+  filter: none;
+  opacity: 1;
+}
+@keyframes playBtnBounce {
+  0%,100% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 6px 0 #9a5000, 0 8px 26px rgba(0,0,0,.5), 0 0 40px rgba(255,170,0,.6); }
+}
+#play-btn-p1:active, #play-btn-p2:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 1px 0 #9a5000, 0 3px 10px rgba(0,0,0,.5) !important;
+  animation: none !important;
+}
+
+/* ── BATTLE FX ── */
+.card-battle-fx {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3; overflow: hidden;
+}
+.card-battle-fx.fx-attack::before {
+  content: ''; position: absolute; top: -30%; left: -20%; width: 60%; height: 160%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,.04) 35%, rgba(255,255,255,.55) 48%, rgba(255,255,255,.65) 50%, rgba(255,255,255,.55) 52%, rgba(255,255,255,.04) 65%, transparent 100%);
+  animation: fxAttackSlash .45s cubic-bezier(.2,0,.4,1) forwards;
+}
+.card-battle-fx.fx-attack::after {
+  content: ''; position: absolute; top: -30%; left: 10%; width: 40%; height: 160%;
+  background: linear-gradient(108deg, transparent 0%, rgba(255,255,255,.02) 30%, rgba(255,255,255,.3) 48%, rgba(255,255,255,.35) 50%, rgba(255,255,255,.3) 52%, rgba(255,255,255,.02) 70%, transparent 100%);
+  animation: fxAttackSlash .45s .06s cubic-bezier(.2,0,.4,1) forwards;
+}
+@keyframes fxAttackSlash { 0%{transform:translateX(-120%) skewX(-8deg);opacity:0} 15%{opacity:1} 85%{opacity:.8} 100%{transform:translateX(220%) skewX(-8deg);opacity:0} }
+.card.fx-attacker { animation: fxAttackerBurst .5s ease-out forwards; }
+@keyframes fxAttackerBurst { 0%{box-shadow:0 4px 0 rgba(0,0,0,.5),0 6px 14px rgba(0,0,0,.5)} 25%{box-shadow:0 0 0 3px var(--elem-color),0 0 40px var(--elem-glow),0 0 80px var(--elem-glow);transform:scale(1.06)} 60%{transform:scale(1.02)} 100%{box-shadow:0 4px 0 rgba(0,0,0,.5),0 6px 14px rgba(0,0,0,.5);transform:scale(1)} }
+.card.fx-damage { animation: fxDamageShake .5s ease-out forwards; }
+@keyframes fxDamageShake { 0%{transform:translateX(0)} 10%{transform:translateX(-6px) scale(.98);filter:brightness(2.5) saturate(0) sepia(1) hue-rotate(-20deg)} 25%{transform:translateX(5px);filter:brightness(2) saturate(.3)} 40%{transform:translateX(-4px)} 55%{transform:translateX(3px)} 70%{transform:translateX(-2px)} 85%{transform:translateX(1px)} 100%{transform:translateX(0);filter:brightness(1)} }
+.card-battle-fx.fx-damage-hit { background:rgba(255,50,30,.0); animation:fxDmgFlash .45s ease-out forwards; }
+@keyframes fxDmgFlash { 0%{background:rgba(255,50,30,.0)} 15%{background:rgba(255,50,30,.75);box-shadow:inset 0 0 30px rgba(255,0,0,.6)} 50%{background:rgba(255,50,30,.25)} 100%{background:rgba(255,50,30,.0)} }
+.card.fx-tie { animation:fxTiePulse .6s ease-out forwards; }
+@keyframes fxTiePulse { 0%{filter:brightness(1)} 30%{filter:brightness(1.6) saturate(.2);transform:scale(1.03)} 60%{filter:brightness(.85) saturate(.5)} 100%{filter:brightness(1);transform:scale(1)} }
+.card.fx-destroyed { animation:fxDestroyed .7s ease-in forwards; }
+@keyframes fxDestroyed { 0%{filter:brightness(1);transform:scale(1)} 20%{filter:brightness(3) saturate(0);transform:scale(1.08)} 50%{transform:scale(.9);opacity:.5;filter:grayscale(1) brightness(.6)} 100%{transform:scale(.8);opacity:.15;filter:grayscale(1) blur(2px)} }
+.card-battle-fx.fx-win-beam::before {
+  content:''; position:absolute; bottom:0; left:20%; right:20%; height:0;
+  background:linear-gradient(to top, var(--elem-glow), transparent);
+  animation:fxWinBeam .9s ease-out forwards;
+}
+@keyframes fxWinBeam { 0%{height:0;opacity:.8} 60%{height:120%;opacity:.6} 100%{height:130%;opacity:0} }
+.card-battle-fx.fx-shockwave::before {
+  content:''; position:absolute; top:50%; left:50%; width:20px; height:20px; margin:-10px 0 0 -10px;
+  border-radius:50%; border:3px solid var(--elem-color,rgba(255,220,100,.9));
+  animation:fxShockwave .5s ease-out forwards; z-index:10;
+}
+@keyframes fxShockwave { 0%{transform:scale(.2);opacity:1} 60%{transform:scale(3.5);opacity:.6} 100%{transform:scale(5);opacity:0} }
+
+/* Strike animations — card lunges toward opponent (they are vertically stacked) */
+.card.fx-strike-p1 { animation:strikeP1 .55s cubic-bezier(.2,0,.4,1) forwards; z-index:50; }
+@keyframes strikeP1 {
+  0%{transform:translateY(0) scale(1);filter:brightness(1)}
+  15%{transform:translateY(-8px) scale(1.04);filter:brightness(1.3)}
+  38%{transform:translateY(-28px) scale(1.08) rotate(-2deg);filter:brightness(1.6) drop-shadow(0 0 12px var(--elem-glow))}
+  55%{transform:translateY(-32px) scale(1.1) rotate(-3deg)}
+  70%{transform:translateY(-10px) scale(1.03) rotate(-1deg);filter:brightness(1.1)}
+  88%{transform:translateY(4px) scale(.98)}
+  100%{transform:translateY(0) scale(1);filter:brightness(1)}
+}
+.card.fx-strike-p2 { animation:strikeP2 .55s cubic-bezier(.2,0,.4,1) forwards; z-index:50; }
+@keyframes strikeP2 {
+  0%{transform:translateY(0) scale(1);filter:brightness(1)}
+  15%{transform:translateY(8px) scale(1.04);filter:brightness(1.3)}
+  38%{transform:translateY(28px) scale(1.08) rotate(2deg);filter:brightness(1.6) drop-shadow(0 0 12px var(--elem-glow))}
+  55%{transform:translateY(32px) scale(1.1) rotate(3deg)}
+  70%{transform:translateY(10px) scale(1.03) rotate(1deg);filter:brightness(1.1)}
+  88%{transform:translateY(-4px) scale(.98)}
+  100%{transform:translateY(0) scale(1);filter:brightness(1)}
+}
+
+/* ── Damage particles ── */
+.dmg-particle {
+  position: fixed; pointer-events: none; z-index: 600;
+  font-family: 'Nunito', sans-serif; font-weight: 900;
+  font-size: clamp(20px, 4vw, 32px);
+  text-shadow: 0 0 8px currentColor, 0 2px 0 rgba(0,0,0,.9), 2px 2px 0 rgba(0,0,0,.6);
+  transform-origin: center center;
+  animation: personaDmg 1.9s cubic-bezier(.22,1,.36,1) forwards;
+  margin-left: -20px; margin-top: -20px;
+}
+.dmg-particle.dmg-big {
+  font-size: clamp(28px, 5.5vw, 44px);
+  animation: personaDmgBig 2.2s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes personaDmg {
+  0%{opacity:0;transform:scale(.3) translateY(10px) rotate(-8deg)}
+  12%{opacity:1;transform:scale(1.35) translateY(-12px) rotate(4deg)}
+  22%{transform:scale(.95) translateY(-8px) rotate(-2deg)}
+  32%{transform:scale(1.08) translateY(-14px) rotate(1deg)}
+  48%{opacity:1;transform:scale(1) translateY(-18px) rotate(0deg)}
+  75%{opacity:.9;transform:scale(1) translateY(-38px) rotate(0deg)}
+  100%{opacity:0;transform:scale(.7) translateY(-65px) rotate(0deg)}
+}
+@keyframes personaDmgBig {
+  0%{opacity:0;transform:scale(.2) translateY(14px) rotate(-12deg)}
+  10%{opacity:1;transform:scale(1.5) translateY(-16px) rotate(6deg)}
+  20%{transform:scale(.88) translateY(-10px) rotate(-3deg)}
+  30%{transform:scale(1.15) translateY(-18px) rotate(2deg)}
+  45%{opacity:1;transform:scale(1.05) translateY(-22px) rotate(0deg)}
+  72%{opacity:.85;transform:scale(1) translateY(-52px)}
+  100%{opacity:0;transform:scale(.6) translateY(-80px)}
+}
+.burst-dot {
+  position: fixed; pointer-events: none; z-index: 599;
+  width: 6px; height: 6px; border-radius: 50%;
+  animation: burstDot .7s ease-out forwards;
+}
+@keyframes burstDot { 0%{opacity:1;transform:scale(1) translate(0,0)} 100%{opacity:0;transform:scale(.3) translate(var(--dx),var(--dy))} }
+
+/* ═══════════════════════════════════════════════════════════════
+   v19 CARD FLIP SYSTEM — per-card data-face + opacity
+   ───────────────────────────────────────────────────────────────
+   Model: each .card carries data-face="up|down"
+   Face state = opacity on .card-inner (front) and .card-back
+   No rotateY on card element. No preserve-3d. No backface-visibility.
+   No flipLock. No rAF. Zero inheritance conflicts.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --flip-dur:      420ms;
+  --flip-ease:     cubic-bezier(.4, 0, .2, 1);
+  --flip-stagger:  55ms;
+  --deck-scale-inactive: 0.82;
+  --deck-opacity-inactive: 0.55;
+  --deck-scale-dur: 300ms;
+  --deck-scale-ease: cubic-bezier(.4, 0, .2, 1);
+
+}
+
+/* ── Deck wrapper scale — driven by data-deck-state ── */
+.deck-wrap {
+  transform-origin: center center;
+  transition:
+    transform var(--deck-scale-dur) var(--deck-scale-ease),
+    opacity   var(--deck-scale-dur) var(--deck-scale-ease);
+}
+.deck-wrap[data-deck-state="inactive"] {
+  transform: scale(var(--deck-scale-inactive));
+  opacity: var(--deck-opacity-inactive);
+  pointer-events: none;
+}
+.deck-wrap[data-deck-state="active"] {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* ── Deck wake animation — when inactive→active ── */
+@keyframes deckWakeUp {
+  0%   { transform: scale(var(--deck-scale-inactive)); opacity: var(--deck-opacity-inactive); }
+  55%  { transform: scale(1.03); opacity: 1; }
+  80%  { transform: scale(.985); }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.deck-wrap[data-deck-state="waking"] {
+  animation: deckWakeUp 420ms cubic-bezier(.34,1.56,.64,1) forwards;
+  pointer-events: none; /* block clicks during wake */
+}
+
+/* ── Card base transition (hover/press effects) ── */
+.card {
+  transition:
+    transform .18s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .18s,
+    border-color .18s;
+}
+
+/* face-down: pointer events off, cursor reset */
+.card[data-face="down"] {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+/* face-up while unflipping — no extra rules needed,
+   .card-inner opacity transition handles the reveal */
+
+/* ─────────────────────────────────────────────────────────────
+   ZONE EMPHASIS SYSTEM v2 — expanding active zone
+   Classes toggled by applyZoneEmphasis(activePlayer)
+   ───────────────────────────────────────────────────────────── */
+
+/* Base transition on all player zones */
+.player-zone {
+  transition:
+    flex        var(--zone-scale-dur) var(--zone-scale-ease),
+    opacity     var(--zone-scale-dur) cubic-bezier(.4, 0, .2, 1),
+    background  .4s ease;
+  transform-origin: center center;
+}
+
+/* Active zone: ~70% of vertical space */
+.player-zone.zone-turn-active {
+  flex: 7 1 0%;
+  opacity: 1;
+  filter: none;
+}
+
+/* Inactive zone: ~30% */
+.player-zone.zone-turn-inactive {
+  flex: 3 1 0%;
+  opacity: var(--zone-inactive-opacity);
+  filter: saturate(0.55);
+}
+
+/* P2 rotation — no transform scale, just the base rotation */
+#zone-p2 { transform: rotate(180deg); }
+#zone-p2.zone-turn-active   { transform: rotate(180deg); }
+#zone-p2.zone-turn-inactive { transform: rotate(180deg); }
+
+/* ── Cards in ACTIVE zone: larger, wrap into 3+2 rows ── */
+.player-zone.zone-turn-active .deck-wrap {
+  flex-wrap: wrap;
+  align-content: center;
+  max-width: calc(3 * var(--card-active-w) + 2 * clamp(8px,1.2vw,16px));
+  gap: clamp(8px,1.2vw,16px);
+}
+
+.player-zone.zone-turn-active .card {
+  width:  var(--card-active-w);
+  height: var(--card-active-h);
+  transition:
+    width  var(--zone-scale-dur) var(--zone-scale-ease),
+    height var(--zone-scale-dur) var(--zone-scale-ease),
+    transform .18s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .18s, border-color .18s;
+}
+
+/* ── Cards in INACTIVE zone: shrunk ~30%, single row ── */
+.player-zone.zone-turn-inactive .deck-wrap {
+  flex-wrap: nowrap;
+  gap: clamp(3px,.5vw,6px);
+  max-width: 100%;
+}
+
+.player-zone.zone-turn-inactive .card {
+  width:  var(--card-inactive-w);
+  height: var(--card-inactive-h);
+  cursor: default !important;
+  transition:
+    width  var(--zone-scale-dur) var(--zone-scale-ease),
+    height var(--zone-scale-dur) var(--zone-scale-ease),
+    transform .18s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .18s, border-color .18s;
+}
+
+/* Inactive cards: hide text, keep icon */
+.player-zone.zone-turn-inactive .card-name,
+.player-zone.zone-turn-inactive .card-hp-hearts,
+.player-zone.zone-turn-inactive .cs-row,
+.player-zone.zone-turn-inactive .ppr-tray {
+  opacity: 0;
+  transition: opacity var(--zone-scale-dur) ease;
+}
+.player-zone.zone-turn-inactive .card-icon-area {
+  opacity: 0.7;
+  transition: opacity var(--zone-scale-dur) ease;
+}
+
+/* Active zone cards: show everything */
+.player-zone.zone-turn-active .card-name,
+.player-zone.zone-turn-active .card-hp-hearts,
+.player-zone.zone-turn-active .cs-row,
+.player-zone.zone-turn-active .card-icon-area {
+  opacity: 1;
+  transition: opacity var(--zone-scale-dur) ease;
+}
+
+/* ── REVEAL overlay ── */
+#reveal-focus {
+  position:fixed; inset:0; z-index:250;
+  background:rgba(214,238,255,.92); backdrop-filter:blur(4px) saturate(.9);
+  pointer-events:none; align-items:center; justify-content:center;
+  display:flex; opacity:0; transition:opacity .5s ease;
+  flex-direction: column; gap: 18px;
+}
+#reveal-focus.show   { opacity:1; pointer-events:all; }
+#reveal-focus.hiding { opacity:0; pointer-events:none; }
+
+#reveal-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(12px, 2.2vw, 20px);
+  color: var(--text);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  animation: revealLabelPulse 1.8s ease-in-out infinite;
+}
+@keyframes revealLabelPulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+
+#btn-reveal {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(16px, 2.8vw, 24px);
+  letter-spacing: 2px;
+  padding: 16px 44px;
+  border-radius: 50px;
+  border: 3px solid #ffdf00;
+  background: linear-gradient(160deg, #ff8c00, #ffba00, #ff8c00);
+  color: #1a0a00;
+  cursor: pointer;
+  position: relative; z-index:251;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255,255,255,.4);
+  box-shadow: 0 8px 0 #b85e00, 0 10px 28px rgba(0,0,0,.6), 0 0 50px rgba(255,180,0,.5), 0 0 100px rgba(255,180,0,.25);
+  animation: revealBounce 0.9s ease-in-out infinite;
+  transition: transform .1s, box-shadow .1s;
+}
+#btn-reveal:active {
+  transform: translateY(6px) !important;
+  box-shadow: 0 2px 0 #b85e00, 0 4px 14px rgba(0,0,0,.5) !important;
+  animation: none !important;
+}
+@keyframes revealBounce {
+  0%,100%{transform:translateY(0) scale(1)}
+  50%{transform:translateY(-7px) scale(1.04)}
+}
+
+/* ── Hint text in reveal ── */
+#reveal-sub {
+  font-family: 'Nunito', sans-serif;
+  font-size: clamp(9px, 1.4vw, 12px);
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+/* ── Result toast ── */
+#result-toast {
+  position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
+  z-index:1000; display:flex; align-items:center; justify-content:center;
+  pointer-events:none; opacity:0; transition:opacity .4s ease;
+}
+#result-toast.show { opacity:1; pointer-events:auto; }
+#toast-inner {
+  background:rgba(255,255,255,.96); border:2px solid rgba(255,184,0,.5);
+  border-radius:12px; padding:12px 22px 10px; text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.18),0 0 20px rgba(255,184,0,.15);
+  min-width:220px; max-width:360px;
+  overflow:hidden;
+}
+#toast-main { font-family:'Nunito',sans-serif; font-weight:900; font-size:clamp(11px,1.8vw,15px); color:var(--text); letter-spacing:.5px; margin-bottom:4px; }
+#toast-sub  { font-family:'Nunito',serif; font-size:clamp(9px,1.4vw,11px); color:var(--text-dim); }
+
+/* Barra de progresso do toast */
+#toast-progress-wrap {
+  margin-top:10px;
+  height:3px;
+  background:rgba(255,255,255,.08);
+  border-radius:3px;
+  overflow:hidden;
+}
+#toast-progress-bar {
+  height:100%; width:100%;
+  background:linear-gradient(90deg,var(--gold-dk),var(--gold-lt));
+  border-radius:3px;
+  transform-origin:left;
+  transform:scaleX(1);
+  transition:none;
+}
+#toast-progress-bar.draining {
+  transition:transform linear;
+}
+
+#gameover-screen {
+  position:fixed; inset:0; z-index:2000; background:rgba(214,238,255,.92);
+  backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center;
+}
+#gameover-screen.show { display:flex; }
+#gameover-box {
+  background:var(--surface); border:3px solid var(--gold);
+  border-radius:24px; padding:32px 40px; text-align:center;
+  box-shadow:0 0 60px rgba(255,184,0,.3),0 20px 60px rgba(0,0,0,.15);
+  display:flex; flex-direction:column; gap:16px; align-items:center;
+}
+#go-crown { font-size:44px; animation:crownBounce 1s ease-in-out infinite; }
+@keyframes crownBounce { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-8px) rotate(5deg)} }
+#go-title    { font-family:'Nunito',sans-serif; font-weight:900; font-size:clamp(18px,3.5vw,28px); color:var(--text); }
+#go-subtitle { font-family:'Nunito',sans-serif; font-size:clamp(10px,1.6vw,13px); color:var(--text-dim); }
+.btn-confirm {
+  font-family:'Nunito',sans-serif; font-weight:900;
+  font-size:clamp(11px,1.8vw,15px); letter-spacing:1px;
+  padding:12px 28px; border-radius:50px;
+  border:3px solid var(--gold);
+  background:linear-gradient(160deg, #ffca00, #ffb800, #ff9500);
+  color:#1a0800; cursor:pointer;
+  box-shadow:0 4px 0 var(--gold-dk),0 6px 20px rgba(0,0,0,.2);
+  transition:transform .1s,box-shadow .1s;
+}
+.btn-confirm:hover { transform:translateY(-3px); box-shadow:0 7px 0 var(--gold-dk),0 0 24px rgba(255,184,0,.4); }
+.btn-confirm:active { transform:translateY(3px)!important; box-shadow:0 1px 0 var(--gold-dk)!important; }
+
+/* ── Hint label ── */
+.zone-hint {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: clamp(7px, 1.05vw, 9px);
+  letter-spacing: 1px;
+  color: rgba(26,42,78,.5);
+  white-space: nowrap;
+  pointer-events: none;
+  min-height: 14px;
+  transition: color .3s, letter-spacing .3s;
+}
+.zone-hint.ppr-prompt {
+  color: var(--text);
+  letter-spacing: 2px;
+  animation: hintPulse 1.1s ease-in-out infinite;
+}
+.zone-hint.ready-prompt {
+  color: #178a30;
+  letter-spacing: 2px;
+}
+@keyframes hintPulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP SCALING — min-width: 1024px
+   All sizing re-tuned for large screens. Mobile values untouched.
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+
+  /* ── Player zones: use available vertical space better ── */
+  .player-zone {
+    padding: clamp(16px, 2.2vh, 32px) clamp(24px, 3vw, 60px);
+    gap: clamp(10px, 1.4vh, 20px);
+  }
+
+  /* ── Cards: desktop sizes set via zone vars ── */
+  .card {
+    border-radius: 16px;
+  }
+  :root {
+    --card-active-w:   clamp(120px, 11vw, 160px);
+    --card-active-h:   clamp(168px, 15.4vw, 224px);
+    --card-inactive-w: clamp(64px,  6vw,  88px);
+    --card-inactive-h: clamp(90px,  8.4vw, 123px);
+  }
+
+  /* ── Deck gap and perspective ── */
+  .deck-wrap {
+    gap: clamp(10px, 1.2vw, 18px);
+    perspective: 1200px;
+  }
+
+  /* ── Card typography ── */
+  .card-name {
+    font-size: clamp(9px, 0.9vw, 13px);
+  }
+  .cs-atk, .cs-def {
+    font-size: clamp(9px, 0.85vw, 12px);
+  }
+  /* card-icon-area: usa hero-img width/height, font-size não é mais relevante */
+  .hp-heart {
+    font-size: clamp(8px, 0.85vw, 12px);
+  }
+
+  /* ── PPR tray pills ── */
+  .ppr-pill {
+    width:  clamp(34px, 3.2vw, 46px);
+    height: clamp(34px, 3.2vw, 46px);
+    font-size: clamp(16px, 1.6vw, 22px);
+    border-radius: clamp(10px, 1vw, 14px);
+  }
+
+  /* ── HP bar ── */
+  .player-hp-bar-wrap {
+    width: clamp(260px, 38%, 520px);
+    gap: 10px;
+  }
+  .php-bar     { height: 13px; border-radius: 8px; }
+  .php-label   { font-size: clamp(8px, 0.85vw, 11px); letter-spacing: 1.5px; }
+  .php-num     { font-size: clamp(9px, 0.9vw, 13px); }
+
+  /* ── Turn badge ── */
+  .turn-badge {
+    font-size: clamp(9px, 0.85vw, 12px);
+    padding: 4px 14px;
+    letter-spacing: 1.5px;
+  }
+
+  /* ── Zone hint ── */
+  .zone-hint {
+    font-size: clamp(9px, 0.9vw, 12px);
+    letter-spacing: 2px;
+    min-height: 18px;
+  }
+
+  /* ── Round counter ── */
+  #round-counter {
+    font-size: clamp(9px, 0.85vw, 12px);
+    padding: 4px 16px;
+    letter-spacing: 2.5px;
+  }
+
+  /* ── JOGAR button ── */
+  #play-btn-p1, #play-btn-p2 {
+    font-size: clamp(13px, 1.2vw, 18px);
+    padding: 12px 32px;
+    border-radius: 60px;
+    border-width: 3px;
+  }
+
+  /* ── REVELAR button ── */
+  #btn-reveal {
+    font-size: clamp(20px, 2vw, 30px);
+    padding: 20px 60px;
+    border-radius: 60px;
+    border-width: 3.5px;
+  }
+  #reveal-label {
+    font-size: clamp(14px, 1.6vw, 24px);
+    letter-spacing: 5px;
+  }
+  #reveal-sub {
+    font-size: clamp(11px, 1vw, 15px);
+    letter-spacing: 2.5px;
+  }
+
+  /* ── Divider ── */
+  #field-divider {
+    margin: 0 clamp(40px, 8vw, 140px);
+  }
+
+  /* ── Damage particles ── */
+  .dmg-particle {
+    font-size: clamp(28px, 3vw, 44px);
+  }
+  .dmg-particle.dmg-big {
+    font-size: clamp(36px, 4vw, 56px);
+  }
+
+  /* ── Game Over box ── */
+  #gameover-box {
+    padding: 44px 60px;
+    gap: 20px;
+  }
+  #go-crown  { font-size: 58px; }
+  #go-title  { font-size: clamp(22px, 2.4vw, 36px); }
+  #go-subtitle { font-size: clamp(12px, 1.1vw, 16px); }
+  .btn-confirm {
+    font-size: clamp(13px, 1.2vw, 18px);
+    padding: 16px 36px;
+    border-width: 3px;
+  }
+
+}
+
+/* ── XL screens (1440px+): push card size to max ── */
+@media (min-width: 1440px) {
+  :root {
+    --card-active-w:   clamp(148px, 10vw, 180px);
+    --card-active-h:   clamp(207px, 14vw, 252px);
+    --card-inactive-w: clamp(76px,  5.5vw, 100px);
+    --card-inactive-h: clamp(107px, 7.7vw, 140px);
+  }
+  .deck-wrap { gap: clamp(14px, 1.2vw, 22px); }
+  .player-hp-bar-wrap { width: clamp(300px, 36%, 600px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARD FOCUS OVERLAY — v20: carta domina a tela, PPR embaixo
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Full-screen backdrop — dois estágios de blur para não achatar */
+#card-focus-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(214,238,255,.92);
+  backdrop-filter: blur(8px) saturate(.85);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: space-between;
+  padding: clamp(16px, 3vh, 36px) clamp(12px, 4vw, 40px) clamp(20px, 4vh, 44px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .36s ease;
+}
+#card-focus-overlay.show { opacity: 1; pointer-events: all; }
+
+/* ── Carta grande — ocupa todo o espaço vertical disponível ── */
+#focus-card-clone {
+  /* Cresce para preencher a tela — limitado pelo menor eixo */
+  width:  min(72vw, 52vh, 360px);
+  height: min(100vw, 72vh, 500px);
+  border-radius: clamp(16px, 2.5vw, 28px);
+  background: var(--focus-bg-solid, #1565c0);
+  border: 2.5px solid var(--focus-elem-color, rgba(255,255,255,.2));
+  box-shadow:
+    0 12px 0 rgba(0,0,0,.13),
+    0 18px 60px rgba(0,0,0,.14),
+    0 0  60px var(--focus-elem-glow, rgba(255,184,0,.3)),
+    0 0 120px var(--focus-elem-glow, rgba(255,184,0,.15));
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: clamp(6px, 1.2vh, 14px);
+  padding: clamp(10px, 2vh, 22px) clamp(8px, 2vw, 20px);
+  position: relative;
+  flex-shrink: 1;
+  min-height: 0;
+  animation: focusCardIn .44s cubic-bezier(.34,1.3,.64,1) forwards;
+}
+@keyframes focusCardIn {
+  0%   { transform: scale(.35) translateY(50px); opacity: 0; }
+  55%  { opacity: 1; }
+  100% { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+#focus-card-clone.dismiss {
+  animation: focusCardOut .3s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes focusCardOut {
+  0%   { transform: scale(1)   translateY(0);    opacity: 1; }
+  100% { transform: scale(.4)  translateY(30px); opacity: 0; }
+}
+
+/* Stripe topo removida — fundo inteiro é a cor do herói */
+
+/* Brilho pulsante nas bordas da carta */
+#focus-card-clone::before {
+  content: '';
+  position: absolute; inset: -2px;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--focus-elem-color, rgba(255,184,0,.5));
+  animation: focusCardGlow 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes focusCardGlow {
+  0%,100% { box-shadow: 0 0 10px 2px var(--focus-elem-glow, rgba(255,184,0,.3)),
+                        0 0 40px 4px var(--focus-elem-glow, rgba(255,184,0,.15)); }
+  50%     { box-shadow: 0 0 22px 6px var(--focus-elem-glow, rgba(255,184,0,.55)),
+                        0 0 80px 12px var(--focus-elem-glow, rgba(255,184,0,.25)); }
+}
+
+/* Conteúdo da carta */
+.focus-stats  { display:flex; justify-content:space-between; width:88%; flex-shrink:0; }
+.focus-atk    { font-family:'Nunito',sans-serif; font-weight:800;
+                font-size:clamp(10px,1.6vw,15px); color:rgba(255,255,255,.95);
+                background:rgba(0,0,0,.18); padding:2px 6px; border-radius:4px; text-shadow:0 1px 3px rgba(0,0,0,.3); }
+.focus-def    { font-family:'Nunito',sans-serif; font-weight:800;
+                font-size:clamp(10px,1.6vw,15px); color:rgba(255,255,255,.95);
+                background:rgba(0,0,0,.18); padding:2px 6px; border-radius:4px; text-shadow:0 1px 3px rgba(0,0,0,.3); }
+
+.focus-icon {
+  flex: 1;
+  width: 80%;
+  max-width: 260px;
+  min-height: 0;
+  display: flex; align-items: flex-end; justify-content: center;
+  overflow: visible;
+}
+.focus-icon .hero-img {
+  width: 100%; height: 120%;
+  object-fit: contain; object-position: center bottom;
+  filter:
+    drop-shadow(0 6px 28px var(--focus-elem-glow, rgba(255,255,255,.5)))
+    drop-shadow(0 2px 8px rgba(0,0,0,.25));
+  animation: focusHeroPulse 2.2s ease-in-out infinite;
+}
+@keyframes focusHeroPulse {
+  0%,100% { transform: scale(1)    translateY(0);    }
+  40%     { transform: scale(1.07) translateY(-8px); }
+  70%     { transform: scale(1.03) translateY(-3px); }
+}
+
+.focus-name {
+  font-family:'Nunito',sans-serif;
+  font-size: clamp(12px, 2vw, 18px);
+  font-weight: 900; color: rgba(255,255,255,.95); letter-spacing: .5px; text-shadow: 0 1px 4px rgba(0,0,0,.3);
+  flex-shrink: 0;
+}
+.focus-hearts {
+  display:flex; gap:clamp(2px,.4vw,4px); flex-wrap:wrap; justify-content:center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,.35));
+}
+
+/* ── PPR row — na base da tela, botões grandes ── */
+#focus-ppr-row {
+  display: flex;
+  gap: clamp(18px, 5vw, 44px);
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-top: clamp(8px, 1.5vh, 18px);
+}
+
+/* ── PPR buttons: image-only, sem fundo nem borda ─────────────────────────
+   Desktop (hover: hover): glow via filter no hover
+   Mobile  (hover: none) : scale-down no :active
+   ────────────────────────────────────────────────────────────────────────── */
+.focus-ppr-btn {
+  /* Botões grandes — confortáveis num tablet/celular */
+  width:  clamp(80px, 15vw, 120px);
+  height: clamp(80px, 15vw, 120px);
+  border-radius: clamp(14px, 2vw, 22px);
+  background: rgba(255,255,255,.75);
+  border: 2px solid rgba(26,42,78,.08);
+  box-shadow: 0 4px 18px rgba(0,0,0,.1), 0 1px 0 rgba(255,255,255,.8) inset;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px;
+  padding: clamp(6px, 1.2vw, 12px);
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, background .15s;
+  opacity: 0;
+  transform: scale(.4) translateY(24px);
+  animation: focusPillIn .4s cubic-bezier(.34,1.5,.64,1)
+    calc(var(--ppr-i,0) * 80ms + 260ms) forwards;
+}
+@keyframes focusPillIn {
+  0%   { opacity:0; transform: scale(.4) translateY(24px); }
+  70%  { opacity:1; }
+  100% { opacity:1; transform: scale(1) translateY(0); }
+}
+
+/* Imagem — grande e com espaço */
+.focus-ppr-btn img.ppr-icon {
+  width: 78%; height: 78%;
+  object-fit: contain;
+  pointer-events: none;
+  transition: filter .22s ease, transform .18s ease;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,.18));
+}
+
+/* Desktop hover */
+@media (hover: hover) and (pointer: fine) {
+  .focus-ppr-btn:hover {
+    transform: translateY(-6px) scale(1.12);
+    background: rgba(255,255,255,.95);
+    box-shadow: 0 10px 32px rgba(0,0,0,.14), 0 0 28px var(--gold-glow);
+  }
+  .focus-ppr-btn:hover img.ppr-icon {
+    filter:
+      drop-shadow(0 0 14px var(--gold))
+      drop-shadow(0 0 28px rgba(255,184,0,.5))
+      drop-shadow(0 3px 8px rgba(0,0,0,.2));
+    transform: scale(1.06);
+  }
+}
+
+/* Mobile press */
+@media (hover: none) {
+  .focus-ppr-btn:active {
+    transform: scale(.84) !important;
+    background: rgba(255,255,255,.95) !important;
+    transition: transform .06s ease-out !important;
+  }
+  .focus-ppr-btn:active img.ppr-icon {
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.3)) brightness(.9);
+    transition: filter .06s ease-out;
+  }
+}
+
+/* Desktop press */
+.focus-ppr-btn:active {
+  transform: translateY(3px) scale(.90) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1) !important;
+  transition: transform .06s ease-out !important;
+}
+
+/* Chosen */
+.focus-ppr-btn.chosen {
+  background: rgba(255,220,40,.25);
+  border-color: var(--gold);
+  box-shadow: 0 6px 0 var(--gold-dk), 0 0 32px var(--gold-glow), 0 8px 24px rgba(0,0,0,.15);
+  animation: pillChosenFocus .38s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.focus-ppr-btn.chosen img.ppr-icon {
+  filter:
+    drop-shadow(0 0 16px var(--gold))
+    drop-shadow(0 0 32px rgba(255,184,0,.55))
+    drop-shadow(0 3px 8px rgba(0,0,0,.2));
+}
+@keyframes pillChosenFocus {
+  0%   { transform: scale(1)    translateY(0);    }
+  45%  { transform: scale(1.26) translateY(-10px); }
+  100% { transform: scale(1.14) translateY(-5px);  }
+}
+
+/* Label */
+.focus-ppr-label {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: clamp(9px, 1.4vw, 13px);
+  letter-spacing: .5px;
+  color: var(--text);
+  line-height: 1;
+}
+
+/* Cancel hint — na base, abaixo dos botões PPR */
+#focus-cancel-hint {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: clamp(9px, 1.3vw, 11px);
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  opacity: 0;
+  animation: focusPillIn .3s ease calc(520ms) forwards;
+  cursor: pointer;
+  transition: color .15s;
+  margin-top: clamp(4px, 1vh, 10px);
+}
+#focus-cancel-hint:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div id="main">
+
+  <!-- P2 zone (top, rotated 180°) -->
+  <div class="player-zone" id="zone-p2">
+    <div class="zone-inner">
+      <div class="player-hp-bar-wrap">
+        <span class="php-label p2-clr" id="deck-p2-label">J2</span>
+        <div class="php-bar"><div class="php-fill" id="p2-php-fill"></div></div>
+        <span class="php-num p2-clr" id="p2-php-num">—</span>
+      </div>
+      <div class="turn-badge" id="tb-p2">🐾 Sua Missão!</div>
+      <div class="deck-wrap" id="deck-p2"></div>
+      <span class="zone-hint" id="hint-p2"></span>
+      <button id="play-btn-p2" onclick="UI.onConfirm('p2')">🚨 MISSÃO!</button>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div id="field-divider"></div>
+
+  <!-- Round counter -->
+  <div id="round-counter">🚨 MISSÃO <span id="round-num">1</span></div>
+
+  <!-- P1 zone (bottom) -->
+  <div class="player-zone" id="zone-p1">
+    <div class="zone-inner">
+      <button id="play-btn-p1" onclick="UI.onConfirm('p1')">🚨 MISSÃO!</button>
+      <span class="zone-hint" id="hint-p1"></span>
+      <div class="deck-wrap" id="deck-p1"></div>
+      <div class="turn-badge" id="tb-p1">🐾 Sua Missão!</div>
+      <div class="player-hp-bar-wrap">
+        <span class="php-label p1-clr" id="deck-p1-label">J1</span>
+        <div class="php-bar"><div class="php-fill" id="p1-php-fill"></div></div>
+        <span class="php-num p1-clr" id="p1-php-num">—</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Card Focus Overlay — v16 -->
+<div id="card-focus-overlay">
+  <div id="focus-card-clone"></div>
+  <div id="focus-ppr-row"></div>
+  <div id="focus-cancel-hint" onclick="UI.onFocusCancel()">↩ Trocar Herói</div>
+</div>
+
+<!-- Reveal overlay -->
+<div id="reveal-focus">
+  <div id="reveal-label">🐾 PATRULHA PRONTA!</div>
+  <div id="reveal-sub">todos nos postos!</div>
+  <button id="btn-reveal" onclick="UI.onReveal()">🐾 HORA DO RESGATE!</button>
+</div>
+
+<!-- Result toast -->
+<div id="result-toast">
+  <div id="toast-inner">
+    <div id="toast-main">—</div>
+    <div id="toast-sub">—</div>
+    <div id="toast-progress-wrap">
+      <div id="toast-progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Over -->
+<div id="gameover-screen">
+  <div id="gameover-box">
+    <div id="go-crown">👑</div>
+    <div id="go-title">—</div>
+    <div id="go-subtitle">—</div>
+    <button class="btn-confirm" onclick="UI.onRestart()">🚨 Nova Missão!</button>
+  </div>
+</div>
+
+
+
+<!-- ① THEME CONFIG -->
+<script id="theme-config">
+'use strict';
+const THEME = Object.freeze({
+  // ── Pasta de assets: coloque a pasta "assets/" junto ao HTML na raiz ──────
+  // Mapeamento PAW Patrol → papel de cada herói:
+  //   Marshall (bombeiro)  → Rex, o Bombeirão   [atk alto]
+  //   Zuma    (mergulho)   → Marina, a Mergulhona [def alta]
+  //   Rubble  (escavadora) → Guto, o Escavador  [def máxima]
+  //   Skye    (avião)      → Asa, o Aviador      [balanceado]
+  //   Rocky   (técnico)    → Faísca, o Técnico   [atk máximo]
+  CARDS: [
+    { id:'rex',    name:'Rex, o Bombeirão',     icon:'assets/c-marshall.png', emoji:'🔥', cls:'rex',    atk:9, def:2, maxHp:5 },
+    { id:'marina', name:'Marina, a Mergulhona', icon:'assets/c-zuma.png',     emoji:'💧', cls:'marina', atk:6, def:5, maxHp:5 },
+    { id:'guto',   name:'Guto, o Escavador',    icon:'assets/c-rubble.png',   emoji:'🌍', cls:'guto',   atk:5, def:6, maxHp:5 },
+    { id:'asa',    name:'Asa, o Aviador',        icon:'assets/c-skye.png',     emoji:'🌪', cls:'asa',    atk:7, def:4, maxHp:5 },
+    { id:'faisca', name:'Faísca, o Técnico',     icon:'assets/c-rocky.png',    emoji:'⚡', cls:'faisca', atk:8, def:2, maxHp:5 },
+  ],
+  PPR: {
+    patada:  { beats:'gancho',  icon:'🐾', label:'Pedra',   iconImg:'assets/pedra.png'   },
+    mapa:    { beats:'patada',  icon:'🗺️', label:'Papel',   iconImg:'assets/papel.png'   },
+    gancho:  { beats:'mapa',    icon:'🪝', label:'Tesoura', iconImg:'assets/tesoura.png' },
+  },
+  STRINGS: {
+    player1: 'Você',
+    player2: 'Adversário',
+    pickCard: '🐾 Chame seu Herói!',
+    pickPPR:  'Patada, Mapa ou Gancho?',
+    ready:    '🚨 Missão pronta!',
+    roundWinP1: '🚨 Missão concluída!',
+    roundWinP2: '⭐ O rival foi mais esperto!',
+    roundTie: '🤝 Duplo Resgate!',
+    gameTitleP1: '🏆 PATRULHEIRO CAMPEÃO!',
+    gameTitleP2: '💪 QUASE LÁ, HERÓI!',
+    gameTitleTie:'🌟 OS DOIS SÃO HERÓIS!',
+    gameSubBoth: 'Toda a patrulha descansando! 😴',
+    gameSubWin:  r => `Missão concluída em ${r} rodadas! ⭐`,
+    crownIcon: '🐾',
+    cardBackIcon: '🐾',
+  },
+  hpColor(hp, max) {
+    const r = hp / max;
+    return r > .6 ? '#3ec96a' : r > .3 ? '#f0a020' : '#e83030';
+  },
+});
+</script>
+
+<!-- ② ENGINE LAYER -->
+<script id="engine-layer">
+'use strict';
+const ENGINE = (() => {
+  const mkDeck   = () => THEME.CARDS.map(d => ({ ...d, hp: d.maxHp }));
+  const cdef     = id  => THEME.CARDS.find(c => c.id === id);
+  const phpe     = (player, id) => state[player].hp.find(c => c.id === id);
+  const totalHp  = player => state[player].hp.reduce((s, c) => s + c.hp, 0);
+  const pprBeats = (a, b) => THEME.PPR[a].beats === b;
+  const calcDmg  = (atk, def) => Math.max(1, Math.ceil(Math.max(1, atk - def) * 1.30));
+  let state = null;
+
+  function init() {
+    state = {
+      round: 1, phase: 'p1select',
+      deck:  mkDeck(),
+      p1: { hp: mkDeck().map(d => ({ id:d.id, hp:d.maxHp })), sel:null, ppr:null },
+      p2: { hp: mkDeck().map(d => ({ id:d.id, hp:d.maxHp })), sel:null, ppr:null },
+      revealed: false,
+      pending: { player:null, cardId:null, ppr:null },
+    };
+  }
+
+  function selectCard(player, cardId) {
+    if (!state || state.phase !== `${player}select`) return { ok:false };
+    const ph = phpe(player, cardId);
+    if (!ph || ph.hp <= 0) return { ok:false };
+    state.pending.player = player;
+    state.pending.cardId = cardId;
+    state.pending.ppr    = null;
+    return { ok:true };
+  }
+
+  function choosePPR(player, cardId, choice) {
+    if (!state) return { ok:false };
+    if (state.pending.player !== player || state.pending.cardId !== cardId) return { ok:false };
+    if (!THEME.PPR[choice]) return { ok:false };
+    state.pending.ppr = choice;
+    return { ok:true };
+  }
+
+  function confirmTurn(player) {
+    const { player:pp, cardId, ppr } = state.pending;
+    if (pp !== player || !cardId || !ppr) return { ok:false };
+    state[player].sel = cardId;
+    state[player].ppr = ppr;
+    state.pending = { player:null, cardId:null, ppr:null };
+    const nextPhase = player === 'p1' ? 'p2select' : 'reveal';
+    state.phase = nextPhase;
+    state.revealed = false;
+    return { ok:true, nextPhase };
+  }
+
+  function resolveRound() {
+    const id1=state.p1.sel, id2=state.p2.sel;
+    const c1=cdef(id1), c2=cdef(id2);
+    const ph1=phpe('p1',id1), ph2=phpe('p2',id2);
+    const r1=state.p1.ppr, r2=state.p2.ppr;
+    let outcome='tie', dmgTo1=0, dmgTo2=0;
+    if (r1===r2)          { dmgTo1=2; dmgTo2=2; }
+    else if(pprBeats(r1,r2)){ outcome='p1'; dmgTo2=calcDmg(c1.atk,c2.def); }
+    else                  { outcome='p2'; dmgTo1=calcDmg(c2.atk,c1.def); }
+    ph1.hp=Math.max(0,ph1.hp-dmgTo1);
+    ph2.hp=Math.max(0,ph2.hp-dmgTo2);
+    const c1Destroyed=ph1.hp===0, c2Destroyed=ph2.hp===0;
+    const p1AllDead=state.p1.hp.every(c=>c.hp<=0);
+    const p2AllDead=state.p2.hp.every(c=>c.hp<=0);
+    return { outcome, c1, c2, r1, r2, dmgTo1, dmgTo2, c1Destroyed, c2Destroyed, p1AllDead, p2AllDead, gameOver:p1AllDead||p2AllDead };
+  }
+
+  function revealCommit(result) {
+    state.revealed = true;
+    state.phase = result.gameOver ? 'gameover' : 'done';
+  }
+
+  function nextRound() {
+    state.round++;
+    state.phase='p1select';
+    state.p1.sel=null; state.p1.ppr=null;
+    state.p2.sel=null; state.p2.ppr=null;
+    state.revealed=false;
+    state.pending={ player:null, cardId:null, ppr:null };
+  }
+
+  function restart() { init(); }
+
+  return {
+    get state()  { return state; },
+    get cdef()   { return cdef; },
+    get phpe()   { return phpe; },
+    get totalHp(){ return totalHp; },
+    init, selectCard, choosePPR, confirmTurn, resolveRound, revealCommit, nextRound, restart,
+  };
+})();
+</script>
+
+<!-- ③ RENDERER LAYER -->
+<script id="renderer-layer">
+'use strict';
+const RENDERER = (() => {
+  const labels = { p1: THEME.STRINGS.player1, p2: THEME.STRINGS.player2 };
+  const getLabel = p => labels[p];
+  const setLabel = (p, v) => { labels[p] = v || THEME.STRINGS[`player${p==='p1'?1:2}`]; };
+  const $ = id => document.getElementById(id);
+
+  // ══════════════════════════════════════════════════════════════════════
+  // v18 STATE MODEL
+  // ──────────────────────────────────────────────────────────────────────
+  // Face state lives on EACH CARD as data-face="up|down".
+  // The deck-wrap carries data-deck-state="active|inactive|waking" for scale.
+  //
+  // This eliminates:
+  //   • flipLock — DOM can be rebuilt any time; new cards inherit correct state
+  //   • deckState object — truth is in the DOM attribute, always readable
+  //   • _snapFace / rAF races — each card sets its own attribute immediately
+  //   • descendant-selector inheritance bugs — each card is self-contained
+  //
+  // Public API that UI layer calls:
+  //   flipDeck(player, onComplete)   — animate face-down + scale inactive
+  //   revealDeck(player, onComplete) — animate face-up   + scale active/waking
+  //   render()                       — full rebuild (reads _faceIntent)
+  //   renderPlayerGrid(player, id, faceOverride) — rebuilds one deck
+  //
+  // _faceIntent = { p1: 'up'|'down', p2: 'up'|'down' }
+  // This is the only state variable. It's set before render() is called.
+  // ══════════════════════════════════════════════════════════════════════
+
+  const _faceIntent = { p1: 'up', p2: 'down' };
+
+  // Track whether a flip animation is in progress (prevents overlapping calls)
+  const _animating  = { p1: false, p2: false };
+
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RENDER FUNCTIONS
+  // ══════════════════════════════════════════════════════════════════════
+
+  function render() {
+    renderDecks();
+    renderPlayerHpBars();
+    renderPhase();
+    updateRoundCounter();
+  }
+
+  function updateRoundCounter() {
+    const el = $('round-num');
+    if (el) el.textContent = ENGINE.state.round;
+  }
+
+  function buildHpHearts(hp, maxHp) {
+    let h = '';
+    for (let i = 0; i < maxHp; i++) {
+      const full = i < hp;
+      h += `<span class="hp-heart ${full?'full':'empty'}">${full?'❤️':'🖤'}</span>`;
+    }
+    return h;
+  }
+
+  function renderDecks() {
+    renderPlayerGrid('p1', 'deck-p1');
+    renderPlayerGrid('p2', 'deck-p2');
+  }
+
+  // ── renderPlayerGrid ───────────────────────────────────────────────────────
+  // Rebuilds a deck from scratch. Each card receives:
+  //   data-face="up|down"   — drives the CSS flip
+  //   data-flip-i="N"       — drives the stagger delay (via CSS var --flip-i)
+  // Since face state is on each card element, rebuild is always safe —
+  // no flipLock needed, no rAF, no race condition possible.
+  function renderPlayerGrid(player, containerId) {
+    // If a flip animation is actively running, skip this rebuild to avoid
+    // interrupting mid-animation. The intent is already stored in _faceIntent.
+    if (_animating[player]) return;
+
+    const G    = ENGINE.state;
+    const grid = $(containerId);
+    if (!grid) return;
+
+    const face      = _faceIntent[player];        // 'up' or 'down'
+    const isSelect  = G.phase === `${player}select`;
+    const pending   = G.pending;
+
+    grid.innerHTML = '';
+    // Set deck-wrap scale state
+    grid.dataset.deckState = (face === 'up') ? 'active' : 'inactive';
+
+    G.deck.forEach((c, idx) => {
+      const div  = document.createElement('div');
+      div.className = `card ${c.cls}`;
+      div.dataset.id   = c.id;
+      div.dataset.face = face;          // v18: face state lives HERE, on each card
+      div.style.setProperty('--flip-i', String(idx));
+      // Desync idle animations per card — random negative delay within 1 full cycle
+      const _durMap = { rex: 2.8, marina: 3.8, guto: 4.4, asa: 3.2, faisca: 2.2 };
+      const _dur = _durMap[c.cls] || 3.2;
+      div.style.setProperty('--anim-offset', `-${(Math.random() * _dur).toFixed(2)}s`);
+
+      const pHp    = ENGINE.phpe(player, c.id).hp;
+      const dead   = pHp <= 0;
+      const isUsed = G[player].sel === c.id;
+
+      if (dead)          div.classList.add('dead');
+      else if (isUsed)   div.classList.add('used');
+      else if (isSelect) {
+        div.classList.add('selectable');
+        div.addEventListener('click', () => UI.onCardClick(c.id, player));
+      } else {
+        div.classList.add('disabled');
+      }
+
+      const isPending = isSelect && pending.player === player && pending.cardId === c.id;
+      if (isPending) {
+        div.classList.remove('selectable');
+        div.classList.add('selected');
+      }
+
+      const heartsHTML = buildHpHearts(pHp, c.maxHp);
+
+      div.innerHTML = `
+        <div class="card-glow"></div>
+        <div class="card-battle-fx" data-card-id="${c.id}" data-player="${player}"></div>
+        <div class="card-back">🐾</div>
+        <div class="card-inner">
+          <div class="card-stats">
+            <span class="cs-atk">⚔${c.atk}</span>
+            <span class="cs-def">🛡${c.def}</span>
+          </div>
+          <div class="card-icon-area"><img src="${c.icon}" class="hero-img" alt="${c.name}" onerror="this.style.display='none';this.parentElement.dataset.fallback='${c.emoji}'"></div>
+          <div class="card-name">${c.name}</div>
+          <div class="card-hp-hearts">${heartsHTML}</div>
+        </div>`;
+
+      grid.appendChild(div);
+    });
+  }
+
+  function renderPlayerHpBars() {
+    const maxTotal = THEME.CARDS.reduce((s, c) => s + c.maxHp, 0);
+    ['p1','p2'].forEach(p => {
+      const t   = ENGINE.totalHp(p);
+      const pct = Math.max(0, t / maxTotal * 100);
+      const col = THEME.hpColor(t, maxTotal);
+      $(`${p}-php-fill`).style.cssText = `width:${pct}%;background:${col}`;
+      $(`${p}-php-num`).textContent     = t;
+    });
+  }
+
+  function renderPhase() {
+    const G = ENGINE.state;
+
+    $('tb-p1').classList.toggle('show', G.phase==='p1select');
+    $('tb-p2').classList.toggle('show', G.phase==='p2select');
+    $('reveal-focus').classList.toggle('show', G.phase==='reveal');
+
+    renderPlayButton('p1');
+    renderPlayButton('p2');
+    renderHint('p1');
+    renderHint('p2');
+
+    updateRoundCounter();
+    syncLabels();
+
+    if (G.phase === 'p1select') applyZoneEmphasis('p1');
+    else if (G.phase === 'p2select') applyZoneEmphasis('p2');
+    else resetZoneEmphasis();
+  }
+
+  function renderPlayButton(p) {
+    const btn  = $(`play-btn-${p}`);
+    const hint = $(`hint-${p}`);
+    if (!btn) return;
+    btn.style.display = 'none';
+    btn.className = '';
+    if (ENGINE.state.phase !== `${p}select`) {
+      if (hint) { hint.textContent = ''; hint.className = 'zone-hint'; }
+      return;
+    }
+    if (hint) { hint.textContent = THEME.STRINGS.pickCard; hint.className = 'zone-hint'; }
+  }
+
+  function renderHint(p) { /* handled in renderPlayButton */ }
+
+  function syncLabels() {
+    const l1=getLabel('p1'), l2=getLabel('p2');
+    const d1=$('deck-p1-label'); if(d1) d1.textContent=l1.slice(0,4);
+    const d2=$('deck-p2-label'); if(d2) d2.textContent=l2.slice(0,4);
+  }
+
+  function showToast(main, sub) {
+    $('toast-main').textContent = main;
+    $('toast-sub').textContent  = sub;
+    $('result-toast').classList.add('show');
+  }
+  function hideToast() { $('result-toast').classList.remove('show'); }
+
+  function showGameOver(p1Dead, p2Dead, round) {
+    const S = THEME.STRINGS;
+    let title='', sub='';
+    if (p1Dead&&p2Dead) { title=S.gameTitleTie;  sub=S.gameSubBoth; }
+    else if (p2Dead)    { title=S.gameTitleP1;   sub=S.gameSubWin(round); }
+    else                { title=S.gameTitleP2;   sub=S.gameSubWin(round); }
+    $('go-crown').textContent    = S.crownIcon;
+    $('go-title').textContent    = title;
+    $('go-subtitle').textContent = sub;
+    $('gameover-screen').classList.add('show');
+  }
+  function hideGameOver() { $('gameover-screen').classList.remove('show'); }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // FLIP ANIMATION ENGINE — v18
+  // ──────────────────────────────────────────────────────────────────────
+  // flipDeck(player, onComplete)
+  //   Flips all cards face-down with stagger, shrinks deck-wrap.
+  //   Cards are already in the DOM. We just change data-face on each.
+  //
+  // revealDeck(player, onComplete)
+  //   Flips all cards face-up with reverse stagger, plays wake animation.
+  //
+  // Both functions:
+  //   1. Set _faceIntent immediately (so any subsequent render() call knows)
+  //   2. Set _animating[player]=true to block renderPlayerGrid mid-anim
+  //   3. Mutate data-face on existing card elements — CSS reacts instantly
+  //   4. After animation duration, clear _animating and call onComplete
+  //
+  // No class on deck-wrap. No inherited styles. No race conditions.
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ── flipDeck — animates deck face-down with opacity stagger ──────────────
+  function flipDeck(player, onComplete) {
+    const deck = $(`deck-${player}`);
+    if (!deck) { if (onComplete) onComplete(); return; }
+
+    _faceIntent[player] = 'down';
+    _animating[player]  = true;
+
+    const cards = deck.querySelectorAll('.card');
+    const n     = cards.length;
+
+    // Shrink deck-wrap
+    deck.dataset.deckState = 'inactive';
+
+    // Stagger each card: set --flip-i then flip data-face
+    // CSS transition on .card-inner/.card-back opacity handles the visual
+    cards.forEach((c, i) => {
+      c.style.setProperty('--flip-i', String(i));
+      c.dataset.face = 'down';
+    });
+
+    // Duration: flip-dur (460ms) + stagger * (n-1) + buffer
+    const total = 460 + (55 * Math.max(0, n - 1)) + 60;
+    setTimeout(() => {
+      _animating[player] = false;
+      if (onComplete) onComplete();
+    }, total);
+  }
+
+  // ── revealDeck — animates deck face-up with reverse opacity stagger ────────
+  function revealDeck(player, onComplete) {
+    const deck = $(`deck-${player}`);
+    if (!deck) { if (onComplete) onComplete(); return; }
+
+    _faceIntent[player] = 'up';
+    _animating[player]  = true;
+
+    const cards = deck.querySelectorAll('.card');
+    const n     = cards.length;
+
+    // Wake animation on the wrapper
+    deck.dataset.deckState = 'waking';
+
+    // Reverse stagger: last card reveals first
+    cards.forEach((c, i) => {
+      c.style.setProperty('--flip-i', String(n - 1 - i));
+      c.dataset.face = 'up';
+    });
+
+    // Duration: flip-dur + reverse stagger + buffer
+    const total = 460 + (55 * Math.max(0, n - 1)) + 60;
+    setTimeout(() => {
+      // Restore normal stagger order for future flips
+      cards.forEach((c, i) => c.style.setProperty('--flip-i', String(i)));
+      deck.dataset.deckState = 'active';
+      _animating[player] = false;
+      if (onComplete) onComplete();
+    }, total);
+  }
+
+  // ── ZONE EMPHASIS ──────────────────────────────────────────────────────────
+  function applyZoneEmphasis(activePlayer) {
+    const z1 = $('zone-p1');
+    const z2 = $('zone-p2');
+    if (!z1 || !z2) return;
+    z1.classList.remove('zone-turn-active', 'zone-turn-inactive');
+    z2.classList.remove('zone-turn-active', 'zone-turn-inactive');
+    if (!activePlayer) return;
+    if (activePlayer === 'p1') {
+      z1.classList.add('zone-turn-active');
+      z2.classList.add('zone-turn-inactive');
+    } else {
+      z2.classList.add('zone-turn-active');
+      z1.classList.add('zone-turn-inactive');
+    }
+  }
+
+  function resetZoneEmphasis() { applyZoneEmphasis(null); }
+
+  return {
+    render, renderDecks, renderPhase, renderPlayerHpBars,
+    renderPlayerGrid,
+    showToast, hideToast, showGameOver, hideGameOver,
+    syncLabels,
+    flipDeck, revealDeck,
+    applyZoneEmphasis, resetZoneEmphasis,
+    getLabel, setLabel, updateRoundCounter,
+    renderPlayButton,
+    // Expose _faceIntent so UI layer can set desired state before render()
+    get faceIntent() { return _faceIntent; },
+  };
+})();
+</script>
+
+<!-- ③½ BATTLE_FX MODULE -->
+<script id="battle-fx-module">
+'use strict';
+const BATTLE_FX = (() => {
+
+  function findCard(player, cardId) {
+    const grid = document.getElementById(`deck-${player}`);
+    if (!grid) return null;
+    return grid.querySelector(`.card[data-id="${cardId}"]`);
+  }
+
+  function fxLayer(player, cardId) {
+    const card = findCard(player, cardId);
+    return card ? card.querySelector('.card-battle-fx') : null;
+  }
+
+  function pulse(el, cls, duration) {
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), duration);
+  }
+
+  function spawnNumber(player, cardId, text, color, big = false) {
+    const card = findCard(player, cardId);
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top  + rect.height / 2;
+    const el = document.createElement('div');
+    el.className = 'dmg-particle' + (big ? ' dmg-big' : '');
+    el.textContent = text;
+    el.style.color = color;
+    el.style.left  = `${cx}px`;
+    el.style.top   = `${cy}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+    if (big || text.startsWith('−')) {
+      const count = big ? 8 : 6;
+      for (let i = 0; i < count; i++) {
+        const angle = (360 / count) * i + Math.random() * 20;
+        const dist  = 28 + Math.random() * 24;
+        const dx = Math.cos(angle * Math.PI/180) * dist;
+        const dy = Math.sin(angle * Math.PI/180) * dist;
+        const dot = document.createElement('div');
+        dot.className = 'burst-dot';
+        dot.style.cssText = `left:${cx}px;top:${cy}px;background:${color};--dx:${dx.toFixed(1)}px;--dy:${dy.toFixed(1)}px;width:${4+Math.random()*4}px;height:${4+Math.random()*4}px;animation-delay:${Math.random()*60}ms;`;
+        document.body.appendChild(dot);
+        setTimeout(() => dot.remove(), 800);
+      }
+    }
+  }
+
+  function strike(player, cardId) {
+    const card = findCard(player, cardId);
+    if (!card) return;
+    const strikeCls = player === 'p1' ? 'fx-strike-p1' : 'fx-strike-p2';
+    pulse(card, strikeCls, 580);
+    const fx = fxLayer(player, cardId);
+    pulse(card, 'fx-attacker', 580);
+    pulse(fx,   'fx-attack',   500);
+  }
+
+  function damage(player, cardId, amount) {
+    const card = findCard(player, cardId);
+    const fx   = fxLayer(player, cardId);
+    pulse(card, 'fx-damage',     530);
+    pulse(fx,   'fx-damage-hit', 470);
+    pulse(fx,   'fx-shockwave',  520);
+    const big = amount >= 4;
+    if (amount > 0) spawnNumber(player, cardId, `−${amount} 💥`, '#ff3838', big);
+  }
+
+  function attack(player, cardId) {
+    const card = findCard(player, cardId);
+    const fx   = fxLayer(player, cardId);
+    pulse(card, 'fx-attacker', 520);
+    pulse(fx,   'fx-attack',   520);
+  }
+
+  function tie(player, cardId) {
+    const card = findCard(player, cardId);
+    pulse(card, 'fx-tie', 650);
+    spawnNumber(player, cardId, '🤝 IGUAIS!', '#c0a060', false);
+  }
+
+  function win(player, cardId) {
+    const card = findCard(player, cardId);
+    const fx   = fxLayer(player, cardId);
+    pulse(card, 'fx-attacker', 800);
+    pulse(fx,   'fx-win-beam', 1200);
+    spawnNumber(player, cardId, '🌟 RESGATE!', '#f5d800', false);
+  }
+
+  function destroyed(player, cardId) {
+    const card = findCard(player, cardId);
+    if (!card) return;
+    pulse(card, 'fx-destroyed', 720);
+    spawnNumber(player, cardId, '😴', '#888', false);
+  }
+
+  /* Expanded reveal timeline — slower, more cinematic:
+     T+0    : decks unflip (reveal)
+     T+600  : attacker strikes
+     T+1000 : impact — defender shakes + number burst
+     T+1300 : win beam
+     T+1700 : destroyed
+  */
+  function resolveResult(result) {
+    const { outcome, c1, c2, dmgTo1, dmgTo2, c1Destroyed, c2Destroyed } = result;
+
+    if (outcome === 'p1') {
+      setTimeout(() => strike('p1', c1.id), 600);
+      setTimeout(() => damage('p2', c2.id, dmgTo2), 1000);
+      setTimeout(() => win('p1', c1.id), 1300);
+    } else if (outcome === 'p2') {
+      setTimeout(() => strike('p2', c2.id), 600);
+      setTimeout(() => damage('p1', c1.id, dmgTo1), 1000);
+      setTimeout(() => win('p2', c2.id), 1300);
+    } else {
+      setTimeout(() => { strike('p1', c1.id); strike('p2', c2.id); }, 600);
+      setTimeout(() => { tie('p1', c1.id); tie('p2', c2.id); }, 900);
+      if (dmgTo1 > 0) setTimeout(() => damage('p1', c1.id, dmgTo1), 1100);
+      if (dmgTo2 > 0) setTimeout(() => damage('p2', c2.id, dmgTo2), 1100);
+    }
+    if (c1Destroyed) setTimeout(() => destroyed('p1', c1.id), 1700);
+    if (c2Destroyed) setTimeout(() => destroyed('p2', c2.id), 1700);
+  }
+
+  return { strike, attack, damage, tie, win, destroyed, resolveResult };
+})();
+</script>
+
+<!-- TOAST CTRL — controle de duração do result toast -->
+<script id="toast-ctrl-module">
+'use strict';
+const TOAST_CTRL = (() => {
+  let durSec   = 2;
+  let _hideTimer   = null;
+  let _nextTimer   = null;
+
+  function setDur(sec) {
+    durSec = sec;
+  }
+
+  function show(main, sub, onDone) {
+    clearTimeout(_hideTimer);
+    clearTimeout(_nextTimer);
+
+    const elMain = document.getElementById('toast-main');
+    const elSub  = document.getElementById('toast-sub');
+    const bar    = document.getElementById('toast-progress-bar');
+    const toast  = document.getElementById('result-toast');
+
+    if (elMain) elMain.textContent = main;
+    if (elSub)  elSub.textContent  = sub;
+
+    // Reset instantâneo da barra
+    if (bar) {
+      bar.classList.remove('draining');
+      bar.style.transition = 'none';
+      bar.style.transform  = 'scaleX(1)';
+    }
+
+    toast.classList.add('show');
+
+    // Dois rAF garantem que o reset foi pintado antes de iniciar o dreno
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (bar) {
+        bar.classList.add('draining');
+        bar.style.transition = `transform ${durSec}s linear`;
+        bar.style.transform  = 'scaleX(0)';
+      }
+    }));
+
+    _hideTimer = setTimeout(() => {
+      toast.classList.remove('show');
+      if (onDone) _nextTimer = setTimeout(onDone, 420);
+    }, durSec * 1000);
+  }
+
+  function hide() {
+    clearTimeout(_hideTimer);
+    clearTimeout(_nextTimer);
+    const bar   = document.getElementById('toast-progress-bar');
+    const toast = document.getElementById('result-toast');
+    if (bar) { bar.classList.remove('draining'); bar.style.transition='none'; bar.style.transform='scaleX(1)'; }
+    if (toast) toast.classList.remove('show');
+  }
+
+  return { setDur, show, hide, getDur: () => durSec };
+})();
+</script>
+
+<!-- ④ UI LAYER -->
+<script id="ui-layer">
+'use strict';
+const UI = (() => {
+
+  // ── Card Focus Overlay State ─────────────────────────────────────────────
+  let _focusPlayer = null;
+  let _focusCardId = null;
+  let _focusDismissing = false;
+
+  function _buildFocusClone(cardDef, playerHp) {
+    const clone = document.getElementById('focus-card-clone');
+    // Apply element token CSS variables
+    const clsMap = {
+      //                  bg sólido escuro               cor do brilho          glow
+      rex:    { solid:'linear-gradient(160deg,#8b1a0a,#c0392b)', color:'var(--rex)',    glow:'var(--rex-glow)'    },
+      marina: { solid:'linear-gradient(160deg,#0a3a7a,#1565c0)', color:'var(--marina)', glow:'var(--marina-glow)' },
+      guto:   { solid:'linear-gradient(160deg,#7a5200,#b07800)', color:'var(--guto)',   glow:'var(--guto-glow)'   },
+      asa:    { solid:'linear-gradient(160deg,#7a3000,#b85500)', color:'var(--asa)',    glow:'var(--asa-glow)'    },
+      faisca: { solid:'linear-gradient(160deg,#0d5c22,#178a30)', color:'var(--faisca)', glow:'var(--faisca-glow)' },
+    };
+    const tk = clsMap[cardDef.cls] || clsMap.marina;
+    clone.style.setProperty('--focus-bg-solid',    tk.solid);
+    clone.style.setProperty('--focus-elem-color',  tk.color);
+    clone.style.setProperty('--focus-elem-glow',   tk.glow);
+
+    // Build hearts
+    let hearts = '';
+    for (let i = 0; i < cardDef.maxHp; i++) {
+      hearts += `<span style="font-size:clamp(7px,.95vw,9px);opacity:${i < playerHp ? '.9' : '.14'}">${i < playerHp ? '❤️' : '🖤'}</span>`;
+    }
+
+    clone.innerHTML = `
+      <div class="focus-stats">
+        <span class="focus-atk">⚔${cardDef.atk}</span>
+        <span class="focus-def">🛡${cardDef.def}</span>
+      </div>
+      <div class="focus-icon"><img src="${cardDef.icon}" class="hero-img" alt="${cardDef.name}" onerror="this.style.display='none';this.parentElement.dataset.fallback='${cardDef.emoji}'"></div>
+      <div class="focus-name">${cardDef.name}</div>
+      <div class="focus-hearts">${hearts}</div>`;
+
+    // Reset animation
+    clone.classList.remove('dismiss');
+    void clone.offsetWidth;
+  }
+
+  function _buildFocusPPR(cardId, player, currentPPR) {
+    const row = document.getElementById('focus-ppr-row');
+    row.innerHTML = Object.entries(THEME.PPR).map(([key, ppr], i) => {
+      const chosen = currentPPR === key ? 'chosen' : '';
+      const iconContent = ppr.iconImg
+        ? `<img class="ppr-icon" src="${ppr.iconImg}" alt="${ppr.label}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
+           ><span style="display:none;font-size:clamp(22px,4vw,34px)">${ppr.icon}</span>`
+        : ppr.icon;
+      return `<button class="focus-ppr-btn ${chosen}"
+        style="--ppr-i:${i}"
+        onclick="UI.onFocusPPR('${key}','${cardId}','${player}')"
+        title="${ppr.label}">
+          ${iconContent}
+          <span class="focus-ppr-label">${ppr.label}</span>
+        </button>`;
+    }).join('');
+  }
+
+  // ── openFocus ─────────────────────────────────────────────────────────────
+  // Called when a player clicks a card in the deck.
+  // Launches the full-screen focus overlay with the card + PPR options.
+  function openFocus(cardId, player) {
+    const res = ENGINE.selectCard(player, cardId);
+    if (!res.ok) return;
+
+    _focusPlayer = player;
+    _focusCardId = cardId;
+    _focusDismissing = false;
+
+    const cardDef  = ENGINE.cdef(cardId);
+    const playerHp = ENGINE.phpe(player, cardId).hp;
+    const pending  = ENGINE.state.pending;
+
+    _buildFocusClone(cardDef, playerHp);
+    _buildFocusPPR(cardId, player, pending.ppr);
+
+    // Reset cancel hint animation
+    const hint = document.getElementById('focus-cancel-hint');
+    hint.style.opacity = '0';
+    hint.style.animation = 'none';
+    void hint.offsetWidth;
+    hint.style.animation = '';
+
+    document.getElementById('card-focus-overlay').classList.add('show');
+  }
+
+  // ── onFocusPPR ────────────────────────────────────────────────────────────
+  // Player clicks a PPR pill inside the focus overlay.
+  function onFocusPPR(choice, cardId, player) {
+    const res = ENGINE.choosePPR(player, cardId, choice);
+    if (!res.ok) return;
+
+    // Mark chosen pill visually
+    const row = document.getElementById('focus-ppr-row');
+    row.querySelectorAll('.focus-ppr-btn').forEach(btn => btn.classList.remove('chosen'));
+    const chosen = row.querySelector(`[onclick*="'${choice}'"]`);
+    if (chosen) chosen.classList.add('chosen');
+
+    // Brief pause then auto-confirm
+    setTimeout(() => _confirmFocus(player), 280);
+  }
+
+  // ── _confirmFocus ─────────────────────────────────────────────────────────
+  // Dismisses the focus overlay, flips card back, triggers confirm flow.
+  function _confirmFocus(player) {
+    if (_focusDismissing) return;
+    _focusDismissing = true;
+
+    const clone = document.getElementById('focus-card-clone');
+    clone.classList.add('dismiss');
+
+    const overlay = document.getElementById('card-focus-overlay');
+    overlay.style.transition = 'opacity .3s ease .12s';
+    overlay.classList.remove('show');
+
+    // After dismiss animation, run onConfirm which handles deck flip
+    setTimeout(() => {
+      overlay.style.transition = '';
+      _focusPlayer = null;
+      _focusCardId = null;
+      _focusDismissing = false;
+      onConfirm(player);
+    }, 420);
+  }
+
+  // ── onFocusCancel ─────────────────────────────────────────────────────────
+  function onFocusCancel() {
+    if (_focusDismissing) return;
+
+    // Reset engine pending selection
+    if (_focusPlayer) {
+      ENGINE.state.pending.player  = null;
+      ENGINE.state.pending.cardId  = null;
+      ENGINE.state.pending.ppr     = null;
+    }
+    _focusPlayer = null;
+    _focusCardId = null;
+    _focusDismissing = false;
+
+    const overlay = document.getElementById('card-focus-overlay');
+    overlay.classList.remove('show');
+
+    // Re-render so the card goes back to selectable state
+    RENDERER.renderPlayerGrid(ENGINE.state.phase === 'p1select' ? 'p1' : 'p2',
+      `deck-${ENGINE.state.phase === 'p1select' ? 'p1' : 'p2'}`);
+  }
+
+  // ── onCardClick ───────────────────────────────────────────────────────────
+  // v16: opens the focus overlay instead of inline PPR
+  function onCardClick(cardId, player) {
+    // If focus is already open for same card, ignore
+    if (_focusPlayer === player && _focusCardId === cardId) return;
+    openFocus(cardId, player);
+  }
+
+  // ── onPPRClick (legacy fallback, now unused) ──────────────────────────────
+  function onPPRClick(e, choice, cardId, player) {
+    e.stopPropagation();
+    const res = ENGINE.choosePPR(player, cardId, choice);
+    if (!res.ok) return;
+    RENDERER.renderPlayerGrid(player, `deck-${player}`);
+    RENDERER.renderPlayButton(player);
+  }
+
+  // ── onConfirm ──────────────────────────────────────────────────────────────
+  // Turn flow:
+  //   P1 confirms → flip P1 deck down → then reveal P2 deck up → render P2 turn
+  //   P2 confirms → flip P2 deck down → go to reveal phase
+  function onConfirm(player) {
+    const res = ENGINE.confirmTurn(player);
+    if (!res.ok) return;
+
+    if (res.nextPhase === 'p2select') {
+      // ── P1 just finished ──
+      // Step 1: flip P1's deck face-down with animation
+      RENDERER.flipDeck('p1', () => {
+        // Step 2: after P1 flip done, reveal P2's deck with animation
+        RENDERER.revealDeck('p2', () => {
+          // Step 3: after P2 reveal done, render the full P2 turn UI
+          RENDERER.render();
+          RENDERER.applyZoneEmphasis('p2');
+        });
+      });
+    } else {
+      // ── P2 just finished → reveal phase ──
+      RENDERER.flipDeck('p2', () => {
+        RENDERER.render(); // renders reveal overlay (phase === 'reveal')
+      });
+    }
+  }
+
+  // ── onReveal ───────────────────────────────────────────────────────────────
+  function onReveal() {
+    const result = ENGINE.resolveRound();
+
+    // 1) Fade out overlay
+    const rf = document.getElementById('reveal-focus');
+    rf.classList.remove('show');
+    rf.classList.add('hiding');
+
+    // 2) Reveal both decks simultaneously (dramatic unflip)
+    RENDERER.revealDeck('p1');
+    RENDERER.revealDeck('p2');
+
+    // 3) Battle FX fire after both decks are face-up (~600ms)
+    setTimeout(() => {
+      BATTLE_FX.resolveResult(result);
+    }, 500);
+
+    // 4) Commit result state — but do NOT call renderDecks here (would kill animation)
+    setTimeout(() => {
+      rf.classList.remove('hiding');
+      ENGINE.revealCommit(result);
+      // Only update HP hearts on existing card elements, don't rebuild DOM
+      _updateCardHpHearts('p1');
+      _updateCardHpHearts('p2');
+    }, 600);
+
+    // 5) HP bars update
+    setTimeout(() => {
+      RENDERER.renderPlayerHpBars();
+    }, 1200);
+
+    // 6) Toast
+    setTimeout(() => {
+      RENDERER.renderPhase();
+      const S=THEME.STRINGS, p1=result.c1, p2=result.c2;
+      const pprP1=THEME.PPR[result.r1], pprP2=THEME.PPR[result.r2];
+      let main='', sub='';
+      if (result.outcome==='tie') {
+        main=`🤝 ${S.roundTie} ${pprP1.icon} vs ${pprP2.icon}`;
+        sub=`Cada herói perde 2 de vida`;
+      } else if (result.outcome==='p1') {
+        main=`🔴 ${S.roundWinP1} ${pprP1.icon} derrota ${pprP2.icon}`;
+        sub=`${p1.name} causou ${result.dmgTo2} 💥 de dano!`;
+      } else {
+        main=`🔵 ${S.roundWinP2} ${pprP2.icon} derrota ${pprP1.icon}`;
+        sub=`${p2.name} causou ${result.dmgTo1} 💥 de dano!`;
+      }
+      if (result.c1Destroyed) sub += ` 😴 ${p1.name} foi descansar!`;
+      if (result.c2Destroyed) sub += ` 😴 ${p2.name} foi descansar!`;
+
+      // 7) Usa TOAST_CTRL.show() — duração e barra de progresso configuráveis.
+      //    O callback onDone dispara automaticamente ao fim da duração escolhida.
+      if (result.gameOver) {
+        // Em game over, mostra o toast e depois exibe a tela de resultado
+        TOAST_CTRL.show(main, sub, () => {
+          RENDERER.showGameOver(result.p1AllDead, result.p2AllDead, ENGINE.state.round);
+        });
+      } else {
+        TOAST_CTRL.show(main, sub, () => {
+          ENGINE.nextRound();
+          RENDERER.faceIntent.p1 = 'up';
+          RENDERER.faceIntent.p2 = 'down';
+          RENDERER.render();
+        });
+      }
+    }, 1800);
+  }
+
+  // ── Helper: update HP hearts in-place without rebuilding cards ──────────────
+  function _updateCardHpHearts(player) {
+    const grid = document.getElementById(`deck-${player}`);
+    if (!grid) return;
+    grid.querySelectorAll('.card').forEach(cardEl => {
+      const cardId = cardEl.dataset.id;
+      const ph = ENGINE.phpe(player, cardId);
+      if (!ph) return;
+      const template = THEME.CARDS.find(c => c.id === cardId);
+      if (!template) return;
+      const heartsEl = cardEl.querySelector('.card-hp-hearts');
+      if (!heartsEl) return;
+      let h = '';
+      for (let i = 0; i < template.maxHp; i++) {
+        const full = i < ph.hp;
+        h += `<span class="hp-heart ${full?'full':'empty'}">${full?'❤️':'🖤'}</span>`;
+      }
+      heartsEl.innerHTML = h;
+      if (ph.hp <= 0) {
+        cardEl.classList.add('dead');
+        cardEl.classList.remove('used', 'selectable', 'selected');
+      }
+    });
+  }
+
+  function onRestart() {
+    RENDERER.hideGameOver();
+    TOAST_CTRL.hide();
+    RENDERER.resetZoneEmphasis();
+    document.getElementById('card-focus-overlay').classList.remove('show');
+    ENGINE.restart();
+    RENDERER.faceIntent.p1 = 'up';
+    RENDERER.faceIntent.p2 = 'down';
+    RENDERER.render();
+  }
+
+  return { onCardClick, onPPRClick, onConfirm, onReveal, onRestart, onFocusPPR, onFocusCancel, openFocus };
+})();
+</script>
+
+<!-- BOOT -->
+<script id="boot">
+// v18: _faceIntent is already {p1:'up', p2:'down'} by default in RENDERER.
+// render() reads _faceIntent and stamps data-face on each card directly.
+// First painted frame is correct — zero rAF, zero setTimeout, zero race.
+ENGINE.init();
+RENDERER.render();
+</script>
+
+</body>
+</html>
